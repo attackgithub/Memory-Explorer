@@ -9,8 +9,7 @@ namespace MemoryExplorer
     {
         public MainWindow()
         {
-            InitializeComponent();
-            this.DataContext = new MainWindowViewModel();
+            InitializeComponent();            
         }
         
     }
