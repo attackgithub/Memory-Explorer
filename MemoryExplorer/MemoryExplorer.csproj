@@ -75,6 +75,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Artifacts\ProcessArtifact.cs" />
+    <Compile Include="Artifacts\RootArtifact.cs" />
+    <Compile Include="Artifacts\ArtifactBase.cs" />
     <Compile Include="Details\Details1.xaml.cs">
       <DependentUpon>Details1.xaml</DependentUpon>
     </Compile>
@@ -88,6 +91,7 @@
       <DependentUpon>MxTree.xaml</DependentUpon>
     </Compile>
     <Compile Include="Tree\MxTreeViewModel.cs" />
+    <Compile Include="Tree\TreeItem.cs" />
     <Page Include="Details\Details1.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

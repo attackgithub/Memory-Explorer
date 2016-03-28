@@ -9,7 +9,23 @@
     <UserControl.DataContext>
         <local:MxTreeViewModel />
     </UserControl.DataContext>
+    <UserControl.Resources>
+        <HierarchicalDataTemplate x:Key="HierarchicalItemDataTemplate" ItemsSource="{Binding Children}" >
+            <StackPanel Orientation="Horizontal">
+                <!--<CheckBox Content="" IsChecked="{Binding Checked}"/>-->
+                <TextBlock Text="{Binding Name}"></TextBlock>
+            </StackPanel>
+        </HierarchicalDataTemplate>
+    </UserControl.Resources>
     <Grid>
         <TextBlock Text="MXtree"></TextBlock>
+        <TreeView x:Name="MasterTree" Grid.Column="0" Background="Aqua" Margin="2" Grid.Row="1" ItemsSource="{Binding TreeItems}" ItemTemplate="{DynamicResource HierarchicalItemDataTemplate}">
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="TreeViewItem">
+                    <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                </Style>
+            </TreeView.ItemContainerStyle>
+        </TreeView>
     </Grid>
 </UserControl>
