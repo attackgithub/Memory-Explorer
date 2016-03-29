@@ -29,11 +29,11 @@
             </StatusBarItem>
             <Separator Grid.Column="1" />
             <StatusBarItem Grid.Column="2">
-                <TextBlock Text="aaa" />
+                <TextBlock Text="{Binding Architecture}" />
             </StatusBarItem>
             <Separator Grid.Column="3" />
             <StatusBarItem Grid.Column="4">
-                <ProgressBar Value="50" Width="90" Height="16" />
+                <TextBlock Text="{Binding ActivityMessage}" />
             </StatusBarItem>
         </StatusBar>
     </Grid>

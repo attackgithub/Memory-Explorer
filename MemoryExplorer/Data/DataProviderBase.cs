@@ -15,7 +15,11 @@ namespace MemoryExplorer.Data
         {
             _data = data;
         }
-        public abstract byte[] ReadMemoryPage(ulong address);
+        protected abstract byte[] ReadMemoryPage(ulong address);
         public abstract Dictionary<string, object> GetInformation();
+        public abstract byte[] ReadMemory(ulong startAddress, uint pageCount);
+
+        public ulong ImageLength { get; set; }
+
     }
 }

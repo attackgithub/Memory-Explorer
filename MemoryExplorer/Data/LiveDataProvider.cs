@@ -22,10 +22,14 @@ namespace MemoryExplorer.Data
         {
             FreeLibrary(_helperLib);
         }
-        public override byte[] ReadMemoryPage(ulong address)
+        protected override byte[] ReadMemoryPage(ulong address)
         {
             byte[] buffer = GetPage(address);
             return buffer;
+        }
+        public override byte[] ReadMemory(ulong startAddress, uint pageCount = 1)
+        {
+            return ReadMemoryPage(startAddress);
         }
         private byte[] GetPage(ulong address)
         {

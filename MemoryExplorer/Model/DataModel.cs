@@ -7,13 +7,14 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
 namespace MemoryExplorer.Model
 {
-    public class DataModel : INotifyPropertyChanged
+    public partial class DataModel : INotifyPropertyChanged
     {
         #region globals
         private bool _runningAsAdmin = false;
@@ -23,12 +24,33 @@ namespace MemoryExplorer.Model
         private DriverManager _driverManager = null;
         private List<ArtifactBase> _artifacts = new List<ArtifactBase>();
         private ArtifactBase _activeArtifact = null;
+        private string _imageMd5 = "";
+        private string _cacheLocation = "";
+        private string _profileName = "";
+        private string _activityMessage = "Idle";
+        private int _activeJobCount = 0;
+        private string _architecture = "";
 
 
         public event PropertyChangedEventHandler PropertyChanged;
 
         #endregion
         #region access
+        public string Architecture
+        {
+            get { return _architecture; }
+            set { SetProperty(ref _architecture, value); }
+        }
+        public string ActivityMessage
+        {
+            get { return _activityMessage; }
+            set { SetProperty(ref _activityMessage, value); }
+        }
+        public string ProfileName
+        {
+            get { return _profileName; }
+            set { SetProperty(ref _profileName, value); }
+        }
         public bool RunningAsAdmin { get { return _runningAsAdmin; } }
         public bool LiveCapture
         {
@@ -86,6 +108,7 @@ namespace MemoryExplorer.Model
             MemoryImageFilename = "Live";
             _dataProvider = new LiveDataProvider(this);            
             UpdateDetails(AddArtifact(ArtifactType.Root, "Live Capture", true));
+            InitialSurvey();
             return true;
         }
         public bool NewImageInvestigation()
@@ -94,12 +117,20 @@ namespace MemoryExplorer.Model
             FileInfo fi = new FileInfo(possibleFilename);
             if (!fi.Exists)
                 return false;
+            IncrementActiveJobs();
+            _imageMd5 = GetMD5HashFromFile(possibleFilename);
+            _cacheLocation = fi.Directory.FullName + "\\[" + fi.Name + "]" + _imageMd5;
+            DirectoryInfo di = new DirectoryInfo(_cacheLocation);
+            if (!di.Exists)
+                di.Create();
+
             _liveCapture = false;
             BigCleanUp();
             MemoryImageFilename = possibleFilename;
             _dataProvider = new ImageDataProvider(this);
             UpdateDetails(AddArtifact(ArtifactType.Root, fi.Name, true));
-            
+            DecrementActiveJobs();
+            InitialSurvey();
             return true;
         }
         /// <summary>
@@ -113,6 +144,33 @@ namespace MemoryExplorer.Model
                 return;
             _activeArtifact = selectedArtifact;
 
+        }
+        private void IncrementActiveJobs()
+        {
+            _activeJobCount++;
+            ActivityMessage = "Busy";
+        }
+        private void DecrementActiveJobs()
+        {
+            if(_activeJobCount != 0)
+                _activeJobCount--;
+            if (_activeJobCount == 0)
+                ActivityMessage = "Idle";
+
+
+        }
+        private string GetMD5HashFromFile(string filename)
+        {
+            using (var md5 = new MD5CryptoServiceProvider())
+            {
+                var buffer = md5.ComputeHash(File.ReadAllBytes(filename));
+                var sb = new StringBuilder();
+                for (int i = 0; i < buffer.Length; i++)
+                {
+                    sb.Append(buffer[i].ToString("x2"));
+                }
+                return sb.ToString();
+            }
         }
         private ArtifactBase AddArtifact(ArtifactType type, string name, bool selected = false, ArtifactBase parent=null)
         {
@@ -146,6 +204,8 @@ namespace MemoryExplorer.Model
             }
             FlushArtifactsList();
             _activeArtifact = null;
+            _imageMd5 = "";
+            _cacheLocation = "";
         }
         private void FlushArtifactsList()
         {
