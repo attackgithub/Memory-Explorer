@@ -40,9 +40,7 @@ namespace MemoryExplorer.Data
         public override Dictionary<string, object> GetInformation()
         {
             Dictionary<string, object> info = new Dictionary<string, object>();
-            info.Add("dtb", 0x01aa00);
-            info.Add("buildNumber", 4444);
-            info.Add("kernelBase", 0xf80012542332);
+            info.Add("maximumPhysicalAddress", ImageLength);
             return info;
         }
         protected override byte[] ReadMemoryPage(ulong address)

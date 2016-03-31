@@ -19,6 +19,9 @@
         <DataTemplate DataType="{x:Type dt:Details2ViewModel}">
             <dt:Details2 />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type dt:RootDetailsViewModel}">
+            <dt:RootDetails />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type tr:MxTreeViewModel}">
             <tr:MxTree />
         </DataTemplate>

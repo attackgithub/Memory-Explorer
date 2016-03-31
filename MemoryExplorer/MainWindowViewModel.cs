@@ -14,6 +14,7 @@ namespace MemoryExplorer
         private BindableBase _currentDetailsViewModel;
         private Details1ViewModel _details1ViewModel = null;
         private Details2ViewModel _details2ViewModel = null;
+        private RootDetailsViewModel _rootDetailsViewModel = null;
 
 
         public MainWindowViewModel()
@@ -21,7 +22,8 @@ namespace MemoryExplorer
             _dataModel = new DataModel(IsAdmin());
             _details1ViewModel = new Details1ViewModel();
             _details2ViewModel = new Details2ViewModel();
-            _currentDetailsViewModel = _details2ViewModel;
+            _rootDetailsViewModel = new RootDetailsViewModel();
+            _currentDetailsViewModel = _rootDetailsViewModel;
         }
         private bool IsAdmin()
         {

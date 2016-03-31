@@ -1,4 +1,5 @@
-﻿using MemoryExplorer.Model;
+﻿using MemoryExplorer.Memory;
+using MemoryExplorer.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,8 +14,12 @@ namespace MemoryExplorer.Data
     {
         string _libraryFilename = @"C:\Users\mark\OneDrive\Code\MvvmPlaytime\Resources\DriverLib.dll";
         IntPtr _helperLib;
+        private List<MemoryRange> _memoryRangeList = new List<MemoryRange>();
+        private ulong _maximumPhysicalAddress = 0;
+
         public LiveDataProvider(DataModel data) : base(data)
         {
+            _libraryFilename = data.HelperLibrary;
             _helperLib = LoadLibrary(_libraryFilename);
 
         }
@@ -24,12 +29,35 @@ namespace MemoryExplorer.Data
         }
         protected override byte[] ReadMemoryPage(ulong address)
         {
-            byte[] buffer = GetPage(address);
-            return buffer;
+            foreach (var item in _memoryRangeList)
+            {
+                if(address >= item.StartAddress && address <= (item.StartAddress + item.Length - 0x1000))
+                {
+                    byte[] buffer = GetPage(address);
+                    return buffer;
+                }
+            }
+            return null;
         }
         public override byte[] ReadMemory(ulong startAddress, uint pageCount = 1)
         {
-            return ReadMemoryPage(startAddress);
+            try
+            {
+                byte[] buffer = new byte[pageCount * 0x1000];
+                for (uint i = 0; i < pageCount; i++)
+                {
+                    byte[] tempBuffer = ReadMemoryPage(startAddress);
+                    if (tempBuffer != null)
+                        Array.Copy(tempBuffer, 0, buffer, (i * 0x1000), 0x1000);
+                    else
+                        throw new ArgumentException("Unable to read requested memory");
+                }
+                return buffer;
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException(ex.Message);
+            }
         }
         private byte[] GetPage(ulong address)
         {
@@ -58,6 +86,30 @@ namespace MemoryExplorer.Data
                 _information.Add("buildNumber", itemValue);
                 itemValue = BitConverter.ToUInt64(buffer, 16);
                 _information.Add("kernelBase", itemValue);
+                itemValue = BitConverter.ToUInt64(buffer, 24);
+                _information.Add("kdbg", itemValue);
+                itemValue = BitConverter.ToUInt64(buffer, 288);
+                _information.Add("pfnDatabase", itemValue);
+                itemValue = BitConverter.ToUInt64(buffer, 296);
+                _information.Add("psLoadedModuleList", itemValue);
+                itemValue = BitConverter.ToUInt64(buffer, 304);
+                _information.Add("ntBuildNumberAddress", itemValue);
+                itemValue = BitConverter.ToUInt64(buffer, 2352);
+                _information.Add("runCount", itemValue);
+                int count = (int)itemValue;
+                for (int i = 0; i < count; i++)
+                {
+                    MemoryRange range = new MemoryRange();
+                    range.StartAddress = BitConverter.ToUInt64(buffer, 2360 + (i * 16));
+                    range.Length = BitConverter.ToUInt64(buffer, 2368 + (i * 16));
+                    range.PageCount = (uint)(range.Length / 4096);
+                    _memoryRangeList.Add(range);
+                    if (range.StartAddress + range.Length > _maximumPhysicalAddress)
+                        _maximumPhysicalAddress = range.StartAddress + range.Length;
+                }
+                _information.Add("maximumPhysicalAddress", _maximumPhysicalAddress);
+                ImageLength = _maximumPhysicalAddress;
+                _information.Add("memoryRanges", _memoryRangeList);
             }
             return _information;
         }

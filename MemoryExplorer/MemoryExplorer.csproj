@@ -90,6 +90,16 @@
       <DependentUpon>Details2.xaml</DependentUpon>
     </Compile>
     <Compile Include="Details\Details2ViewModel.cs" />
+    <Compile Include="Details\InformationDetails.xaml.cs">
+      <DependentUpon>InformationDetails.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Details\InformationDetailsViewModel.cs" />
+    <Compile Include="Details\KvpResult.cs" />
+    <Compile Include="Details\RootDetails.xaml.cs">
+      <DependentUpon>RootDetails.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Details\RootDetailsViewModel.cs" />
+    <Compile Include="Memory\MemoryRange.cs" />
     <Compile Include="Model\BusinessLogic.cs" />
     <Compile Include="Profiles\Profile.cs" />
     <Compile Include="Profiles\RSDS.cs" />
@@ -105,6 +115,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Details\Details2.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Details\InformationDetails.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Details\RootDetails.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

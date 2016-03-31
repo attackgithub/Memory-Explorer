@@ -30,12 +30,17 @@ namespace MemoryExplorer.Model
         private string _activityMessage = "Idle";
         private int _activeJobCount = 0;
         private string _architecture = "";
+        private Dictionary<string, string> _infoDictionary = new Dictionary<string, string>();
 
 
         public event PropertyChangedEventHandler PropertyChanged;
 
         #endregion
         #region access
+        public Dictionary<string, string> InfoDictionary
+        {
+            get { return _infoDictionary; }
+            set { SetProperty(ref _infoDictionary, value); } }
         public string Architecture
         {
             get { return _architecture; }
@@ -67,6 +72,15 @@ namespace MemoryExplorer.Model
             get { return _memoryImageFilename; }
             set { SetProperty(ref _memoryImageFilename, value); }
         }
+        public string HelperLibrary
+        {
+            get
+            {
+                if (_driverManager == null)
+                    return "";
+                return _driverManager.LibraryFilename;
+            }
+        }
         public List<ArtifactBase> Artifacts
         {
             get { return _artifacts; }
@@ -87,15 +101,20 @@ namespace MemoryExplorer.Model
             pa.Name = "system.exe (12)";
             pa.Parent = ba;
             _artifacts.Add(pa);
+            InfoDictionary.Add("PAE", "No");
+            InfoDictionary.Add("OS", "Windows 8.1");
+            InfoDictionary.Add("Build Number", "2600");
+
         }
         public bool NewLiveInvestigation()
-        {            
+        {
+            BigCleanUp();
             if (_driverManager == null)
             {
                 try
                 {
-                _driverManager = new DriverManager();
-                _driverManager.LoadDriver();
+                    _driverManager = new DriverManager();
+                    bool result = _driverManager.LoadDriver();
                 }
                 catch(Exception ex)
                 {
@@ -104,7 +123,6 @@ namespace MemoryExplorer.Model
                 }
             }
             _liveCapture = true;
-            BigCleanUp();
             MemoryImageFilename = "Live";
             _dataProvider = new LiveDataProvider(this);            
             UpdateDetails(AddArtifact(ArtifactType.Root, "Live Capture", true));
@@ -156,8 +174,16 @@ namespace MemoryExplorer.Model
                 _activeJobCount--;
             if (_activeJobCount == 0)
                 ActivityMessage = "Idle";
-
-
+        }
+        private void AddToInfoDictionary(string key, string value)
+        {
+            Dictionary<string, string> _tempInfo = new Dictionary<string, string>();
+            foreach (var item in InfoDictionary)
+            {
+                _tempInfo.Add(item.Key, item.Value);
+            }
+            _tempInfo.Add(key, value);
+            InfoDictionary = _tempInfo;
         }
         private string GetMD5HashFromFile(string filename)
         {

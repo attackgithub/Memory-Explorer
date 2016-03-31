@@ -14,11 +14,23 @@ namespace MemoryExplorer.Model
     {
         async private void InitialSurvey()
         {
+
+            IncrementActiveJobs();
+            await GetInformation();
+            DecrementActiveJobs();
+
             IncrementActiveJobs();
             await FindProfileGuid();
             DecrementActiveJobs();
 
 
+        }
+        async private Task GetInformation()
+        {
+            await Task.Run(() => 
+            {
+                Dictionary<string, object> info = _dataProvider.GetInformation();
+            });
         }
         async private Task FindProfileGuid()
         {
@@ -40,8 +52,10 @@ namespace MemoryExplorer.Model
                             if (rsds.Signature == "RSDS" && (rsds.Filename == "ntkrnlpa.pdb" || rsds.Filename == "ntkrnlmp.pdb" || rsds.Filename == "ntkrpamp.pdb"))
                             {
                                 ProfileName = rsds.GuidAge + ".gz";
+                                AddToInfoDictionary("ProfileName", ProfileName);
                                 Profile profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache"); // TO DO - make this a user option when you get around to writing the settings dialog
                                 Architecture = profile.Architecture;
+                                AddToInfoDictionary("Architecture", Architecture);
                                 break;
                             }
                         }

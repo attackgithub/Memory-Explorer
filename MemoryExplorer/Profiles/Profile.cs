@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace MemoryExplorer.Profiles
 {
@@ -48,8 +49,15 @@ namespace MemoryExplorer.Profiles
             if (!offlineAvailable && onlineAvailable)
             {
                 _profileDictionary = RetrieveFromGithub(_requestedImage, true);
+                if (_profileDictionary == null)
+                    onlineAvailable = false;
             }
-            // if both online and offline are available, check to see if we have the latest version
+            if (!offlineAvailable && !onlineAvailable)
+            {
+                MessageBox.Show("Couldn't Retrieve Profile " + _requestedImage + " from local cache or online.\n\nLocal cache is " + _cacheRoot + "\n\nYou might need to manually retrieve the profile using fetch_pdb.", "Profile Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw new ArgumentException("Profile Could Not Be Located");
+            }
+                // if both online and offline are available, check to see if we have the latest version
             if (offlineAvailable && onlineAvailable)
             {
                 var localInventory = GetLocalInventory();
@@ -198,7 +206,7 @@ namespace MemoryExplorer.Profiles
             }
             catch (Exception ex)
             {
-                throw new ArgumentException("Couldn't Get File From Github: " + ex.Message);
+                return null;
             }
         }
         private Dictionary<string, JToken> CheckInventory()
