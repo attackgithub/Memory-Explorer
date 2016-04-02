@@ -1,4 +1,5 @@
-﻿using MemoryExplorer.Model;
+﻿using MemoryExplorer.Memory;
+using MemoryExplorer.Model;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -35,12 +36,17 @@ namespace MemoryExplorer.Data
                     throw new ArgumentException("Memory Image Doesn't Exist: " + _imageFilename);
                 }
                 ImageLength = (ulong)fiCheck.Length;
+                MemoryRange range = new MemoryRange();
+                range.StartAddress = 0;
+                range.Length = ImageLength;
+                range.PageCount = (uint)(ImageLength / 0x1000);
+                _memoryRangeList.Add(range);
             }
         }
         public override Dictionary<string, object> GetInformation()
         {
             Dictionary<string, object> info = new Dictionary<string, object>();
-            info.Add("maximumPhysicalAddress", ImageLength);
+            info.Add("maximumPhysicalAddress", ImageLength - 1);
             return info;
         }
         protected override byte[] ReadMemoryPage(ulong address)

@@ -9,7 +9,7 @@ namespace MemoryExplorer
     {
         public MainWindow()
         {
-            InitializeComponent();            
+            InitializeComponent();
         }
         
     }

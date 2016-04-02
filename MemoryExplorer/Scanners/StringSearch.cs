@@ -25,7 +25,63 @@ namespace MemoryExplorer.Scanners
         {
             _needleList.Clear();
         }
-        public Dictionary<string, List<ulong>> Scan()
+        public IEnumerable<Dictionary<string, List<ulong>>> Scan()
+        {
+            ulong filePointer = 0;
+            ulong bufferStart = 0;
+            ulong hitMarker = 0;
+            uint pages = 0;
+            byte[] dataBuffer = null;
+            foreach (var item in _dataProvider.MemoryRangeList)
+            {
+                filePointer = item.StartAddress;
+                bufferStart = item.StartAddress;
+                pages = item.PageCount;
+                uint pageBlockSize = 64;
+                if (pages < pageBlockSize)
+                    pageBlockSize = pages;
+                while(pages > 0)
+                {
+                    try
+                    {
+                        dataBuffer = _dataProvider.ReadMemory(bufferStart, pageBlockSize + 1);
+                        hitMarker = bufferStart;
+                        filePointer += (pageBlockSize * 0x1000);
+                        bufferStart = filePointer - 0x1000; // read backwards one page
+                        pages -= pageBlockSize;
+                        if(pages < pageBlockSize)
+                            pageBlockSize = pages;
+                    }
+                    catch
+                    {
+                        pages = 0;
+                        continue;
+                    }
+                    foreach (string needle in _needleList)
+                    {
+                        List<ulong> hitList = new List<ulong>();
+                        byte[] pattern = Encoding.UTF8.GetBytes(needle);
+                        List<uint> result = IndexOfSequence(dataBuffer, pattern);
+                        foreach (uint i in result)
+                            hitList.Add(hitMarker + i);
+                        if (hitList.Count > 0)
+                        {
+                            List<ulong> existingHitList;
+                            if (_hitListDict.TryGetValue(needle, out existingHitList))
+                            {
+                                foreach (ulong l in hitList)
+                                    existingHitList.Add(l);
+                            }
+                            else
+                                _hitListDict.Add(needle, hitList);
+                            yield return _hitListDict;
+                            _hitListDict.Clear();
+                        }
+                    }
+                }
+            }
+        }
+        public Dictionary<string, List<ulong>> Scan2()
         {
             ulong filePointer = 0;
             ulong bufferStart = 0;

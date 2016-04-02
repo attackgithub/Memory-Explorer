@@ -101,10 +101,12 @@
     <Compile Include="Details\RootDetailsViewModel.cs" />
     <Compile Include="Memory\MemoryRange.cs" />
     <Compile Include="Model\BusinessLogic.cs" />
+    <Compile Include="Processes\EProcess.cs" />
     <Compile Include="Profiles\Profile.cs" />
     <Compile Include="Profiles\RSDS.cs" />
     <Compile Include="RelayCommand.cs" />
     <Compile Include="Scanners\StringSearch.cs" />
+    <Compile Include="StructureBase.cs" />
     <Compile Include="Tree\MxTree.xaml.cs">
       <DependentUpon>MxTree.xaml</DependentUpon>
     </Compile>

@@ -1,4 +1,5 @@
-﻿using MemoryExplorer.Model;
+﻿using MemoryExplorer.Memory;
+using MemoryExplorer.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,7 @@ namespace MemoryExplorer.Data
     public abstract class DataProviderBase
     {
         protected DataModel _data;
+        protected List<MemoryRange> _memoryRangeList = new List<MemoryRange>();
 
         public DataProviderBase(DataModel data)
         {
@@ -21,5 +23,12 @@ namespace MemoryExplorer.Data
 
         public ulong ImageLength { get; set; }
 
+        public List<MemoryRange> MemoryRangeList
+        {
+            get
+            {
+                return _memoryRangeList;
+            }
+        }
     }
 }

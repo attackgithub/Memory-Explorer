@@ -1,5 +1,6 @@
 ﻿using MemoryExplorer.Artifacts;
 using MemoryExplorer.Data;
+using MemoryExplorer.Profiles;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -31,12 +32,20 @@ namespace MemoryExplorer.Model
         private int _activeJobCount = 0;
         private string _architecture = "";
         private Dictionary<string, string> _infoDictionary = new Dictionary<string, string>();
-
+        private ulong _kiUserSharedData = 0;
+        private ulong _kernelDtb = 0;
+        private Profile _profile = null;
+        private List<string> _mru = new List<string>();
 
         public event PropertyChangedEventHandler PropertyChanged;
 
         #endregion
         #region access
+        public List<string> Mru
+        {
+            get { return _mru; }
+            set { SetProperty(ref _mru, value); }
+        }
         public Dictionary<string, string> InfoDictionary
         {
             get { return _infoDictionary; }
@@ -44,8 +53,7 @@ namespace MemoryExplorer.Model
         public string Architecture
         {
             get { return _architecture; }
-            set { SetProperty(ref _architecture, value); }
-        }
+            set { SetProperty(ref _architecture, value); } }
         public string ActivityMessage
         {
             get { return _activityMessage; }
@@ -90,21 +98,26 @@ namespace MemoryExplorer.Model
         public DataModel(bool IsAdmin)
         {
             _runningAsAdmin = IsAdmin;
-
+            var mru = Properties.Settings.Default.MRU;
+            if(mru != null)
+            {
+                foreach (string item in mru)
+                {
+                    if(item != "empty")
+                        _mru.Add(item);
+                }                   
+            }
+           
             // some temporary test data
-            RootArtifact ba = new RootArtifact();
-            ba.Name = "Live Capture";
-            ba.Parent = null;
-            ba.IsExpanded = true;
-            _artifacts.Add(ba);
-            ProcessArtifact pa = new ProcessArtifact();
-            pa.Name = "system.exe (12)";
-            pa.Parent = ba;
-            _artifacts.Add(pa);
-            InfoDictionary.Add("PAE", "No");
-            InfoDictionary.Add("OS", "Windows 8.1");
-            InfoDictionary.Add("Build Number", "2600");
-
+            //RootArtifact ba = new RootArtifact();
+            //ba.Name = "Live Capture";
+            //ba.Parent = null;
+            //ba.IsExpanded = true;
+            //_artifacts.Add(ba);
+            //ProcessArtifact pa = new ProcessArtifact();
+            //pa.Name = "system.exe (12)";
+            //pa.Parent = ba;
+            //_artifacts.Add(pa);
         }
         public bool NewLiveInvestigation()
         {
@@ -129,9 +142,8 @@ namespace MemoryExplorer.Model
             InitialSurvey();
             return true;
         }
-        public bool NewImageInvestigation()
-        {            
-            string possibleFilename = GetImageFile();
+        public bool NewImageInvestigation(string possibleFilename)
+        {
             FileInfo fi = new FileInfo(possibleFilename);
             if (!fi.Exists)
                 return false;
@@ -147,9 +159,15 @@ namespace MemoryExplorer.Model
             MemoryImageFilename = possibleFilename;
             _dataProvider = new ImageDataProvider(this);
             UpdateDetails(AddArtifact(ArtifactType.Root, fi.Name, true));
+            UpdateMru(MemoryImageFilename);
             DecrementActiveJobs();
             InitialSurvey();
             return true;
+        }
+        public bool NewImageInvestigation()
+        {            
+            string possibleFilename = GetImageFile();
+            return NewImageInvestigation(possibleFilename);
         }
         /// <summary>
         /// This function gets called everytime something gets selected in the tree view
@@ -162,6 +180,28 @@ namespace MemoryExplorer.Model
                 return;
             _activeArtifact = selectedArtifact;
 
+        }
+        public void UpdateMru(string newEntry)
+        {
+            if (_mru.Contains(newEntry))
+            {
+                // it already exists, so move it to the top of the list
+                _mru.Remove(newEntry);
+                _mru.Insert(0, newEntry);
+            }
+            else
+            {
+                if (_mru.Count == 5)
+                    _mru.RemoveAt(4);
+                _mru.Insert(0, newEntry);
+            }
+            if (Properties.Settings.Default.MRU != null)
+                Properties.Settings.Default.MRU.Clear();
+            foreach (var item in _mru)
+            {
+                Properties.Settings.Default.MRU.Add(item);
+            }
+            Properties.Settings.Default.Save();
         }
         private void IncrementActiveJobs()
         {
@@ -177,12 +217,22 @@ namespace MemoryExplorer.Model
         }
         private void AddToInfoDictionary(string key, string value)
         {
+            string testValue;
+            int suffix = 1;
+            bool trying = true;
+            string alternativeKey = key;
+            while(trying)
+            {
+                trying = InfoDictionary.TryGetValue(alternativeKey, out testValue);
+                if (trying)
+                    alternativeKey = key + (suffix++).ToString();
+            }
             Dictionary<string, string> _tempInfo = new Dictionary<string, string>();
             foreach (var item in InfoDictionary)
             {
                 _tempInfo.Add(item.Key, item.Value);
             }
-            _tempInfo.Add(key, value);
+            _tempInfo.Add(alternativeKey, value);
             InfoDictionary = _tempInfo;
         }
         private string GetMD5HashFromFile(string filename)
@@ -232,6 +282,10 @@ namespace MemoryExplorer.Model
             _activeArtifact = null;
             _imageMd5 = "";
             _cacheLocation = "";
+            _profile = null;
+            _kernelDtb = 0;
+            _infoDictionary.Clear();
+            _architecture = "";
         }
         private void FlushArtifactsList()
         {

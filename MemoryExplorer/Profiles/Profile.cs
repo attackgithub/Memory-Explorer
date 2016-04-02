@@ -14,12 +14,16 @@ namespace MemoryExplorer.Profiles
 {
     public class Profile
     {
+        private bool _fileActive = false;
         private string _requestedImage;
         private string _cacheRoot;
         private Dictionary<string, JToken> _profileDictionary = null;
         private string _architecture = null;
+        private Dictionary<string, List<Structure>> _entriesDictionary = new Dictionary<string, List<Structure>>();
+
 
         public string Architecture { get { return _architecture; } }
+        public bool FileActive { get { return _fileActive; } }
 
         public Profile(string sourceFile, string cacheRoot)
         {
@@ -43,7 +47,7 @@ namespace MemoryExplorer.Profiles
             }
             catch { }
             // now see if we have the file in the cache
-            FileInfo fi = new FileInfo(_cacheRoot + _requestedImage);
+            FileInfo fi = new FileInfo(_cacheRoot + @"v1.0\nt\GUID\" + _requestedImage);
             bool offlineAvailable = fi.Exists;
             // if offline isn't available but online is, download it and copy to the cache
             if (!offlineAvailable && onlineAvailable)
@@ -79,6 +83,7 @@ namespace MemoryExplorer.Profiles
             {
                 _profileDictionary = gzToDictionary(fi);
             }
+            _fileActive = true;
             GetArchitectureFromProfile();
         }
         private void GetArchitectureFromProfile()
@@ -123,6 +128,240 @@ namespace MemoryExplorer.Profiles
                 return -1;
             }
             catch { return -1; }
+        }
+        public ulong GetOffset(string structure, string member)
+        {
+            /// Example Usage
+            /// long result = profile.GetOffset("_EPROCESS", "Pcb.Flags.ExecuteDisable");
+            /// 
+            if (!_fileActive)
+                throw new System.ArgumentException("Invalid Profile: " + _requestedImage);
+            char[] v = { '.' };
+            string[] parts = member.Split(v, StringSplitOptions.RemoveEmptyEntries);
+
+            string activeStructure = structure;
+            JArray targetNode;
+            ulong offsetCount = 0;
+            foreach (string s in parts)
+            {
+                targetNode = GetNode(activeStructure, s);
+                offsetCount += (ulong)((long)((JValue)targetNode[0]).Value);
+                activeStructure = ((JValue)targetNode[1][0]).Value.ToString();
+                if (activeStructure == "Pointer")
+                    activeStructure = ((JValue)targetNode[1][1]["target"]).Value.ToString();
+            }
+            return offsetCount;
+        }
+        public List<Structure> GetEntries(string structure)
+        {
+            try
+            {
+                List<Structure> results = new List<Structure>();
+
+                // first see if you already have it in the dictionary
+                if (_entriesDictionary.TryGetValue(structure, out results))
+                    return results;
+                results = new List<Structure>();
+                JArray node;
+                foreach (KeyValuePair<string, JToken> element in _profileDictionary)
+                {
+                    if (element.Value is JObject && element.Key == "$STRUCTS")
+                    {
+                        node = (JArray)element.Value.SelectToken(structure);
+                        if (node == null)
+                            return null;
+                        long size = (long)((JValue)node[0]).Value;
+                        JObject part2 = (JObject)node[1];
+                        foreach (KeyValuePair<string, JToken> stuff in part2)
+                        {
+                            Structure wrapper = new Structure(structure);
+                            wrapper.Name = stuff.Key;
+                            JArray t = (JArray)stuff.Value;
+                            wrapper.Offset = (ulong)(long)((JValue)t[0]).Value;
+                            wrapper.EntryType = (t[1][0]).ToString();
+                            JObject q = (JObject)t[1][1];
+                            wrapper.Size = (ulong)Size(wrapper.EntryType);
+                            switch (wrapper.EntryType)
+                            {
+                                case "Array":
+                                    foreach (KeyValuePair<string, JToken> k in q)
+                                    {
+                                        if (k.Key == "target")
+                                            wrapper.ArrayType = k.Value.ToString();
+                                        if (k.Key == "count")
+                                            wrapper.ArrayCount = (ulong)k.Value;
+                                    }
+                                    wrapper.Size = (uint)Size(wrapper.ArrayType) * wrapper.ArrayCount;
+                                    break;
+                                case "Pointer":
+                                    foreach (KeyValuePair<string, JToken> k in q)
+                                    {
+                                        if (k.Key == "target")
+                                            wrapper.PointerType = k.Value.ToString();
+                                    }
+                                    break;
+                                case "BitField":
+                                    foreach (KeyValuePair<string, JToken> k in q)
+                                    {
+                                        if (k.Key == "start_bit")
+                                            wrapper.StartBit = (uint)k.Value;
+                                        if (k.Key == "end_bit")
+                                            wrapper.EndBit = (uint)k.Value;
+                                        if (k.Key == "target")
+                                            wrapper.BitType = k.Value.ToString();
+                                    }
+                                    wrapper.Size = (uint)Size(wrapper.BitType);
+                                    break;
+                                default:
+                                    break;
+                            }
+                            results.Add(wrapper);
+                        }
+                        _entriesDictionary.Add(structure, results);
+                        return results;
+                    }
+                }
+                return null;
+            }
+            catch { return null; }
+        }
+        public uint GetSize(string structure, string member)
+        {
+            /// Example Usage
+            /// int result = profile.GetType("_EPROCESS", "ImageFileName");
+            /// 
+            if (!_fileActive)
+                throw new System.ArgumentException("Invalid Profile: " + _requestedImage);
+            char[] v = { '.' };
+            string[] parts = member.Split(v, StringSplitOptions.RemoveEmptyEntries);
+
+            string activeStructure = structure;
+            JArray targetNode = null;
+            long offsetCount = 0;
+            foreach (string s in parts)
+            {
+                targetNode = GetNode(activeStructure, s);
+                offsetCount += (long)((JValue)targetNode[0]).Value;
+                activeStructure = ((JValue)targetNode[1][0]).Value.ToString();
+                if (activeStructure == "Pointer")
+                    //activeStructure = ((JValue)targetNode[1][1]["target"]).Value.ToString();
+                    break;
+            }
+            uint calculatedSize = Size(activeStructure);
+            if (calculatedSize > 0)
+                return calculatedSize;
+            if (activeStructure == "Array")
+            {
+                uint count =(uint)targetNode[1][1]["count"];
+                string target = (targetNode[1][1]["target"]).ToString();
+                return count * Size(target);
+            }
+            throw new System.ArgumentException("Couldn't Calculate Size For: " + activeStructure);
+        }
+        private uint Size(string memberType)
+        {
+            switch (memberType)
+            {
+                case "unsigned char":
+                case "char":
+                    return 1;
+                case "unsigned short":
+                case "short":
+                    return 2;
+                case "unsigned long":
+                case "long":
+                    return 4;
+                case "Pointer":
+                    if (Architecture == "AMD64")
+                        return 8;
+                    else
+                        return 4;
+                case "unsigned long long":
+                case "long long":
+                    return 8;
+                default:
+                    return (uint)GetStructureSize(memberType);
+            }
+        }
+        public MemberInfo GetMemberInfo(string structure, string member)
+        {
+            MemberInfo mi = new MemberInfo();
+            mi.Name = member;
+            mi.Offset = GetOffset(structure, member);
+            mi.Size = GetSize(structure, member);
+            mi.IsArray = IsArray(structure, member);
+
+            if (!_fileActive)
+                throw new System.ArgumentException("Invalid Profile: " + _requestedImage);
+            char[] v = { '.' };
+            string[] parts = member.Split(v, StringSplitOptions.RemoveEmptyEntries);
+
+            string activeStructure = structure;
+            JArray targetNode = null;
+            long offsetCount = 0;
+            foreach (string s in parts)
+            {
+                targetNode = GetNode(activeStructure, s);
+                offsetCount += (long)((JValue)targetNode[0]).Value;
+                activeStructure = ((JValue)targetNode[1][0]).Value.ToString();
+                if (activeStructure == "Pointer")
+                    activeStructure = ((JValue)targetNode[1][1]["target"]).Value.ToString();
+            }
+            if (activeStructure == "Array")
+            {
+                mi.Count = (long)((JValue)targetNode[1][1]["count"]).Value;
+                mi.Size = Size(((JValue)targetNode[1][1]["target"]).Value.ToString());
+            }
+            return mi;
+        }
+        public bool IsArray(string structure, string member)
+        {
+            if (!_fileActive)
+                throw new System.ArgumentException("Invalid Profile: " + _requestedImage);
+            return (GetType(structure, member) == "Array");
+        }
+        public string GetType(string structure, string member)
+        {
+            /// Example Usage
+            /// string result = profile.GetType("_EPROCESS", "Pcb.Flags.ExecuteDisable");
+            /// 
+            if (!_fileActive)
+                throw new System.ArgumentException("Invalid Profile: " + _requestedImage);
+            char[] v = { '.' };
+            string[] parts = member.Split(v, StringSplitOptions.RemoveEmptyEntries);
+
+            string activeStructure = structure;
+            JArray targetNode;
+            long offsetCount = 0;
+            foreach (string s in parts)
+            {
+                targetNode = GetNode(activeStructure, s);
+                offsetCount += (long)((JValue)targetNode[0]).Value;
+                activeStructure = ((JValue)targetNode[1][0]).Value.ToString();
+                if (activeStructure == "Pointer")
+                    activeStructure = ((JValue)targetNode[1][1]["target"]).Value.ToString();
+            }
+            return activeStructure;
+        }
+        private JArray GetNode(string structure, string member)
+        {
+            JArray node, node2;
+            foreach (KeyValuePair<string, JToken> element in _profileDictionary)
+            {
+                if (element.Value is JObject && element.Key == "$STRUCTS")
+                {
+                    node = (JArray)element.Value.SelectToken(structure);
+                    if (node == null)
+                        throw new System.ArgumentException("Structure " + structure + " Not Present");
+                    long size = (long)((JValue)node[0]).Value;
+                    JObject contents = (JObject)node[1];
+                    node2 = (JArray)contents.SelectToken(member);
+                    if (node2 == null)
+                        throw new System.ArgumentException("Member " + member + " Not Present");
+                    return node2;
+                }
+            }
+            throw new System.ArgumentException("Structure or Member Not Present");
         }
         private string GetTimestampFromInventory()
         {

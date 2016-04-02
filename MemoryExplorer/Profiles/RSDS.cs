@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MemoryExplorer.Data;
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -27,6 +28,33 @@ namespace MemoryExplorer.Profiles
         public uint Age { get { return _age; } }
         public Guid ImageGuid { get { return _guid; } }
         public string GuidAge { get { return (_guid.ToString("N") + _age.ToString()).ToUpper(); } }
+
+        public RSDS(DataProviderBase dataProvider, ulong offset)
+        {
+            try
+            {
+                ulong alignedAddress = offset & 0xfffffffff000;
+                byte[] buffer = dataProvider.ReadMemory(alignedAddress, 2);
+                GCHandle pinnedPacket = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+                RSDS_HEADER rsds = (RSDS_HEADER)Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, (int)(offset - alignedAddress)), typeof(RSDS_HEADER));
+                pinnedPacket.Free();
+                _signature = System.Text.Encoding.UTF8.GetString(rsds.Signature);
+                _guid = new Guid(rsds.Guid);
+                _age = rsds.Age;
+                int marker = 24 + (int)(offset - alignedAddress);
+                char c = (char)buffer[marker];
+                while (c != 0 && marker < 0x2000)
+                {
+                    _filename += c;
+                    c = (char)buffer[++marker];
+                }
+
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException("Error Creating RSDS: " + ex.Message);
+            }
+        }
 
         public RSDS(string targetFile, ulong offset)
         {

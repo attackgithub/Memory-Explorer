@@ -19,7 +19,7 @@
     </UserControl.Resources>
     <Grid>
         <TextBlock Text="MXtree"></TextBlock>
-        <TreeView x:Name="MasterTree" Grid.Column="0" Background="Aqua" Margin="2" Grid.Row="1" ItemsSource="{Binding TreeItems}" ItemTemplate="{DynamicResource HierarchicalItemDataTemplate}">
+        <TreeView x:Name="MasterTree" Grid.Column="0" Margin="2" Grid.Row="1" ItemsSource="{Binding TreeItems}" ItemTemplate="{DynamicResource HierarchicalItemDataTemplate}">
             <TreeView.ItemContainerStyle>
                 <Style TargetType="TreeViewItem">
                     <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />

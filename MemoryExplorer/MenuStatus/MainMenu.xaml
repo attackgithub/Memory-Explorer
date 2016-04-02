@@ -17,20 +17,30 @@
                     <MenuItem Header="_Open" Command="{Binding ImageRequest}"/>
                     <MenuItem Header="_Save" />
                     <Separator />
+                    <MenuItem Header="_Recent" ItemsSource="{Binding MruMenuItems}">
+                        <MenuItem.Resources>
+                            <Style TargetType="{x:Type MenuItem}">
+                                <Setter Property="Header" Value="{Binding MenuItemText}" />
+                                <Setter Property="Command" Value="{Binding MenuItemCommand}" />
+                                <Setter Property="CommandParameter" Value="{Binding MenuItemCommandParameter}" />
+                            </Style>
+                        </MenuItem.Resources>
+                    </MenuItem>
+                    <Separator />
                     <MenuItem Header="_Exit" Command="{Binding ExitRequest}"/>
                 </MenuItem>
             </Menu>
             <ToolBarTray>
                 <ToolBar>
-                    <Button Command="New" Content="New" />
-                    <Button Command="Open" Content="Open" />
+                    <Button Command="{Binding LiveRequest}" Content="Live" IsEnabled="{Binding IsLiveCapturePossible}"/>
+                    <Button Command="{Binding ImageRequest}" Content="Open" IsEnabled="True"/>
                     <Button Command="Save" Content="Save" />
                 </ToolBar>
-                <ToolBar>
+                <!--<ToolBar>
                     <Button Command="Cut" Content="Cut" />
                     <Button Command="Copy" Content="Copy" />
                     <Button Command="Paste" Content="Paste" />
-                </ToolBar>
+                </ToolBar>-->
             </ToolBarTray>
         </StackPanel>
     </Grid>

@@ -14,7 +14,6 @@ namespace MemoryExplorer.Data
     {
         string _libraryFilename = @"C:\Users\mark\OneDrive\Code\MvvmPlaytime\Resources\DriverLib.dll";
         IntPtr _helperLib;
-        private List<MemoryRange> _memoryRangeList = new List<MemoryRange>();
         private ulong _maximumPhysicalAddress = 0;
 
         public LiveDataProvider(DataModel data) : base(data)
@@ -46,7 +45,7 @@ namespace MemoryExplorer.Data
                 byte[] buffer = new byte[pageCount * 0x1000];
                 for (uint i = 0; i < pageCount; i++)
                 {
-                    byte[] tempBuffer = ReadMemoryPage(startAddress);
+                    byte[] tempBuffer = ReadMemoryPage(startAddress + (i * 0x1000));
                     if (tempBuffer != null)
                         Array.Copy(tempBuffer, 0, buffer, (i * 0x1000), 0x1000);
                     else
@@ -95,7 +94,7 @@ namespace MemoryExplorer.Data
                 itemValue = BitConverter.ToUInt64(buffer, 304);
                 _information.Add("ntBuildNumberAddress", itemValue);
                 itemValue = BitConverter.ToUInt64(buffer, 2352);
-                _information.Add("runCount", itemValue);
+                //_information.Add("runCount", itemValue);
                 int count = (int)itemValue;
                 for (int i = 0; i < count; i++)
                 {
@@ -105,11 +104,10 @@ namespace MemoryExplorer.Data
                     range.PageCount = (uint)(range.Length / 4096);
                     _memoryRangeList.Add(range);
                     if (range.StartAddress + range.Length > _maximumPhysicalAddress)
-                        _maximumPhysicalAddress = range.StartAddress + range.Length;
+                        _maximumPhysicalAddress = range.StartAddress + range.Length - 1;
                 }
                 _information.Add("maximumPhysicalAddress", _maximumPhysicalAddress);
                 ImageLength = _maximumPhysicalAddress;
-                _information.Add("memoryRanges", _memoryRangeList);
             }
             return _information;
         }

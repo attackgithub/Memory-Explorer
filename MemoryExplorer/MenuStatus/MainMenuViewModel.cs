@@ -1,24 +1,66 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace MemoryExplorer.MenuStatus
 {
+    public class MenuItem
+    {
+        public string MenuItemText { get; set; }
+        public ICommand MenuItemCommand { get; set; }
+        public object MenuItemCommandParameter { get; set; }
+    }
     public class MainMenuViewModel : BindableBase
     {
+        public ObservableCollection<MenuItem> MenuItems = new ObservableCollection<MenuItem>();
+
         public MainMenuViewModel()
         {
             LiveRequest = new RelayCommand(OnLiveRequest);
             ImageRequest = new RelayCommand(OnImageRequest);
             ExitRequest = new RelayCommand(OnExitRequest);
-
+            MruRequest = new RelayCommand<string>(OnMruRequest);            
         }
 
+        public Visibility MruCollapsed
+        {
+            get
+            {
+                if (_dataModel.Mru.Count > 0)
+                    return Visibility.Visible;
+                else
+                    return Visibility.Collapsed;
+            }
+        }
+        public ObservableCollection<MenuItem> MruMenuItems
+        {
+            get
+            {
+                MenuItems.Clear();
+                int counter = 1;
+                foreach (var item in _dataModel.Mru)
+                {
+                    MenuItem mi = new MenuItem();
+                    mi.MenuItemText = (counter++).ToString() + " " + item;
+                    mi.MenuItemCommand = MruRequest;
+                    mi.MenuItemCommandParameter = item;
+                    MenuItems.Add(mi);
+                }
 
+                return MenuItems;
+            }
+        }
+        public string MruName
+        {
+            get { return "hello"; }
+        }
         public bool IsLiveCapturePossible
         {
             get
@@ -28,8 +70,13 @@ namespace MemoryExplorer.MenuStatus
                 return _dataModel.RunningAsAdmin;
             }
         }
-        public RelayCommand LiveRequest { get; private set; }
+        public RelayCommand<string> MruRequest { get; private set; }
 
+        private void OnMruRequest(string name)
+        {
+            _dataModel.NewImageInvestigation(name);
+        }
+        public RelayCommand LiveRequest { get; private set; }
         private void OnLiveRequest()
         {
 
