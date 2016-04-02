@@ -16,11 +16,11 @@ namespace MemoryExplorer.Data
         IntPtr _helperLib;
         private ulong _maximumPhysicalAddress = 0;
 
-        public LiveDataProvider(DataModel data) : base(data)
+        public LiveDataProvider(DataModel data, string cacheFolder=null) : base(data, cacheFolder)
         {
             _libraryFilename = data.HelperLibrary;
             _helperLib = LoadLibrary(_libraryFilename);
-
+            IsLive = true;
         }
         ~LiveDataProvider()
         {

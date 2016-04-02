@@ -1,5 +1,6 @@
 ﻿using MemoryExplorer.Artifacts;
 using MemoryExplorer.Data;
+using MemoryExplorer.Processes;
 using MemoryExplorer.Profiles;
 using Microsoft.Win32;
 using System;
@@ -25,6 +26,7 @@ namespace MemoryExplorer.Model
         private DriverManager _driverManager = null;
         private List<ArtifactBase> _artifacts = new List<ArtifactBase>();
         private ArtifactBase _activeArtifact = null;
+        private ArtifactBase _rootArtifact = null;
         private string _imageMd5 = "";
         private string _cacheLocation = "";
         private string _profileName = "";
@@ -36,11 +38,13 @@ namespace MemoryExplorer.Model
         private ulong _kernelDtb = 0;
         private Profile _profile = null;
         private List<string> _mru = new List<string>();
+        private List<ProcessInfo> _processList = new List<ProcessInfo>();
 
         public event PropertyChangedEventHandler PropertyChanged;
 
         #endregion
         #region access
+        public string CacheLocation { get { return _cacheLocation; } }
         public List<string> Mru
         {
             get { return _mru; }
@@ -138,7 +142,7 @@ namespace MemoryExplorer.Model
             _liveCapture = true;
             MemoryImageFilename = "Live";
             _dataProvider = new LiveDataProvider(this);            
-            UpdateDetails(AddArtifact(ArtifactType.Root, "Live Capture", true));
+            UpdateDetails(_rootArtifact = AddArtifact(ArtifactType.Root, "Live Capture", true));
             InitialSurvey();
             return true;
         }
@@ -148,6 +152,7 @@ namespace MemoryExplorer.Model
             if (!fi.Exists)
                 return false;
             IncrementActiveJobs();
+            BigCleanUp();
             _imageMd5 = GetMD5HashFromFile(possibleFilename);
             _cacheLocation = fi.Directory.FullName + "\\[" + fi.Name + "]" + _imageMd5;
             DirectoryInfo di = new DirectoryInfo(_cacheLocation);
@@ -155,10 +160,9 @@ namespace MemoryExplorer.Model
                 di.Create();
 
             _liveCapture = false;
-            BigCleanUp();
             MemoryImageFilename = possibleFilename;
-            _dataProvider = new ImageDataProvider(this);
-            UpdateDetails(AddArtifact(ArtifactType.Root, fi.Name, true));
+            _dataProvider = new ImageDataProvider(this, _cacheLocation);
+            UpdateDetails(_rootArtifact = AddArtifact(ArtifactType.Root, fi.Name, true));
             UpdateMru(MemoryImageFilename);
             DecrementActiveJobs();
             InitialSurvey();
@@ -270,6 +274,20 @@ namespace MemoryExplorer.Model
             NotifyPropertyChange("TreeItems"); // this forces the set property / INotifyPropertyCHange
             return artifact;
         }
+        #region PROCESSES
+        private void FlushProcesses()
+        {
+
+        }
+        private void AddProcess(ProcessInfo process)
+        {
+            _processList.Add(process);
+            _rootArtifact.IsExpanded = true;
+            ProcessArtifact pa = AddArtifact(ArtifactType.Process, process.ProcessName, false, _rootArtifact) as ProcessArtifact;
+            pa.LinkedProcess = process;            
+
+        }
+        #endregion
         #region cleanup
         private void BigCleanUp()
         {

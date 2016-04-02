@@ -12,10 +12,13 @@ namespace MemoryExplorer.Data
     {
         protected DataModel _data;
         protected List<MemoryRange> _memoryRangeList = new List<MemoryRange>();
+        private bool _isLive;
+        private string _cacheFolder;
 
-        public DataProviderBase(DataModel data)
+        public DataProviderBase(DataModel data, string cacheFolder)
         {
             _data = data;
+            _cacheFolder = cacheFolder;
         }
         protected abstract byte[] ReadMemoryPage(ulong address);
         public abstract Dictionary<string, object> GetInformation();
@@ -28,6 +31,27 @@ namespace MemoryExplorer.Data
             get
             {
                 return _memoryRangeList;
+            }
+        }
+
+        public bool IsLive
+        {
+            get
+            {
+                return _isLive;
+            }
+
+            set
+            {
+                _isLive = value;
+            }
+        }
+
+        public string CacheFolder
+        {
+            get
+            {
+                return _cacheFolder;
             }
         }
     }

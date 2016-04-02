@@ -18,12 +18,13 @@ namespace MemoryExplorer.Data
         private Queue<ulong> _cacheTracker = new Queue<ulong>();
 
 
-        public ImageDataProvider(DataModel data) : base(data)
+        public ImageDataProvider(DataModel data, string cacheFolder) : base(data, cacheFolder)
         {
             _imageFilename = "";
             ImageLength = 0;
             if (_data.MemoryImageFilename == "")
                 throw new ArgumentException("Memory Image Name Isn't Set");
+            IsLive = false;
             // check to see if we are looking at a new image file
             if (_data.MemoryImageFilename != _imageFilename)
             {

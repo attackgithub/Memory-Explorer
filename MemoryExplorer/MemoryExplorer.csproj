@@ -79,6 +79,18 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Address\AddressBase.cs" />
+    <Compile Include="Address\AddressRecord.cs" />
+    <Compile Include="Address\AddressSpacex64.cs" />
+    <Compile Include="Address\AddressSpacex86Pae.cs" />
+    <Compile Include="Address\L4PageDirectoryEntry.cs" />
+    <Compile Include="Address\LargePageDirectoryEntry.cs" />
+    <Compile Include="Address\MemoryMap.cs" />
+    <Compile Include="Address\PageDirectoryEntry.cs" />
+    <Compile Include="Address\PageDirectoryPointerTableEntry.cs" />
+    <Compile Include="Address\PageTableEntry.cs" />
+    <Compile Include="Address\PxeBase.cs" />
+    <Compile Include="Address\SoftwarePageTableEntry.cs" />
     <Compile Include="Artifacts\ProcessArtifact.cs" />
     <Compile Include="Artifacts\RootArtifact.cs" />
     <Compile Include="Artifacts\ArtifactBase.cs" />
@@ -102,6 +114,7 @@
     <Compile Include="Memory\MemoryRange.cs" />
     <Compile Include="Model\BusinessLogic.cs" />
     <Compile Include="Processes\EProcess.cs" />
+    <Compile Include="Processes\Process.cs" />
     <Compile Include="Profiles\Profile.cs" />
     <Compile Include="Profiles\RSDS.cs" />
     <Compile Include="RelayCommand.cs" />

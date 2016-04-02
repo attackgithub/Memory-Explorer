@@ -1,4 +1,5 @@
-﻿using MemoryExplorer.Processes;
+﻿using MemoryExplorer.Address;
+using MemoryExplorer.Processes;
 using MemoryExplorer.Profiles;
 using MemoryExplorer.Scanners;
 using System;
@@ -33,6 +34,17 @@ namespace MemoryExplorer.Model
             if (_kernelDtb == 0)
                 return;
 
+            IncrementActiveJobs();
+            AddressBase addr = await LoadKernelAddressSpace();
+            if(addr != null)
+            {
+                ProcessInfo p = new ProcessInfo();
+                p.AddressSpace = addr;
+                p.ProcessName = "Idle";
+                p.Pid = 0;
+                AddProcess(p);
+            }
+            DecrementActiveJobs();
         }
         async private Task GetInformation()
         {
@@ -152,7 +164,7 @@ namespace MemoryExplorer.Model
                                 AddToInfoDictionary("Directory Table Base", "0x" + _kernelDtb.ToString("X08") + " (" + _kernelDtb.ToString() + ")");
                                 AddToInfoDictionary("PID", ep.Pid.ToString());
                                 AddToInfoDictionary("Parent PID", ep.Ppid.ToString());
-
+                                return;
                             }
                             catch (Exception ex)
                             {
@@ -167,6 +179,18 @@ namespace MemoryExplorer.Model
                     }
                 }
             });
+        }
+        async private Task<AddressBase> LoadKernelAddressSpace()
+        {
+            AddressBase addressSpace = null;
+            await Task.Run(() =>
+            {
+                if (_profile.Architecture == "I386")
+                    addressSpace = new AddressSpacex86Pae(_dataProvider, "idle", _kernelDtb, true);
+                else
+                    addressSpace = new AddressSpacex64(_dataProvider, "idle", _kernelDtb, true);
+            });
+            return addressSpace;
         }
     }
 }
