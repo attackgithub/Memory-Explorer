@@ -29,16 +29,6 @@ namespace MemoryExplorer.MenuStatus
             MruRequest = new RelayCommand<string>(OnMruRequest);            
         }
 
-        public Visibility MruCollapsed
-        {
-            get
-            {
-                if (_dataModel.Mru.Count > 0)
-                    return Visibility.Visible;
-                else
-                    return Visibility.Collapsed;
-            }
-        }
         public ObservableCollection<MenuItem> MruMenuItems
         {
             get
@@ -56,10 +46,6 @@ namespace MemoryExplorer.MenuStatus
 
                 return MenuItems;
             }
-        }
-        public string MruName
-        {
-            get { return "hello"; }
         }
         public bool IsLiveCapturePossible
         {
