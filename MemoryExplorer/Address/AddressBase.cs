@@ -260,7 +260,7 @@ namespace MemoryExplorer.Address
                 }
             }
         }
-        public abstract UInt64 vtop(ulong virtualAddress);
+        public abstract UInt64 vtop(ulong virtualAddress, bool live);
         public abstract string TraceAddress(ulong virtualAddress);
     }
 }

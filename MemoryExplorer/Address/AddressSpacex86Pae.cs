@@ -60,7 +60,7 @@ namespace MemoryExplorer.Address
             throw new NotImplementedException();
         }
 
-        public override ulong vtop(ulong virtualAddress)
+        public override ulong vtop(ulong virtualAddress, bool live=false)
         {
             throw new NotImplementedException();
         }
