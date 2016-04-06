@@ -35,15 +35,19 @@ namespace MemoryExplorer.Model
                 return;
 
             IncrementActiveJobs();
-            AddressBase addr = await LoadKernelAddressSpace();
-            if(addr != null)
+            _kernelAddressSpace = await LoadKernelAddressSpace();
+            if(_kernelAddressSpace != null)
             {
                 ProcessInfo p = new ProcessInfo();
-                p.AddressSpace = addr;
+                p.AddressSpace = _kernelAddressSpace;
                 p.ProcessName = "Idle";
                 p.Pid = 0;
                 AddProcess(p);
             }
+            DecrementActiveJobs();
+
+            IncrementActiveJobs();
+            await FindKernelImage();
             DecrementActiveJobs();
         }
         async private Task GetInformation()
@@ -191,6 +195,72 @@ namespace MemoryExplorer.Model
                     addressSpace = new AddressSpacex64(_dataProvider, "idle", _kernelDtb, true);
             });
             return addressSpace;
+        }
+        async private Task FindKernelImage()
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    uint buildOffset = (uint)_profile.GetConstant("NtBuildLab");
+                    StringSearch mySearch = new StringSearch(_dataProvider);
+                    mySearch.AddNeedle("INITKDBG");
+                    mySearch.AddNeedle("MISYSPTE");
+                    mySearch.AddNeedle("PAGEKD");
+                    byte[] buffer = null;
+                    foreach (var answer in mySearch.Scan())
+                    {
+                        foreach (var kvp in answer)
+                        {
+                            List<ulong> hitList = kvp.Value;
+                            foreach (ulong hit in hitList)
+                            {
+                                // the physical address must exist in the kernel address space space
+                                ulong vAddr = _kernelAddressSpace.ptov(hit);
+                                if (vAddr == 0)
+                                    continue;
+                                //// let's grab the PE header while we're here
+                                ulong page = vAddr & 0xfffffffff000;
+                                // remember PE images are page aligned
+                                for (int i = 0; i < 10; i++) // need to think about 10 being enough
+                                {
+                                    ulong tryAddress = _kernelAddressSpace.vtop(page, false);
+                                    buffer = _dataProvider.ReadMemory(tryAddress, 1);
+                                    string sig = Encoding.Default.GetString(buffer, 0, 2);
+                                    if(sig == "MZ")
+                                    {
+                                        PE peHeader = new PE(_dataProvider, _kernelAddressSpace, page);
+                                    }
+                                    // move backwards one page at a time
+                                    page -= 0x1000;
+                                }
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+
+                }
+            });
+        }
+        async private Task LocatePfnDatabase()
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    uint pfnAddressOffset = (uint)_profile.GetConstant("MmPfnDatabase");
+                    ulong pfnVAddr = _kernelBaseAddress + pfnAddressOffset;
+                    ulong pfnPAddr = _kernelAddressSpace.vtop(pfnVAddr);
+                    byte[] buffer = _dataProvider.ReadMemory(pfnPAddr & 0xfffffffff000, 1);
+                    _pfnDatabaseBaseAddress = BitConverter.ToUInt64(buffer, (int)(pfnPAddr & 0xfff));
+                }
+                catch
+                {
+                    return;
+                }                
+            });
         }
     }
 }

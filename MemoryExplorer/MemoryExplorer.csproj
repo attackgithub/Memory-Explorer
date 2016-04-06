@@ -115,6 +115,7 @@
     <Compile Include="Model\BusinessLogic.cs" />
     <Compile Include="Processes\EProcess.cs" />
     <Compile Include="Processes\Process.cs" />
+    <Compile Include="Profiles\PeHeader.cs" />
     <Compile Include="Profiles\Profile.cs" />
     <Compile Include="Profiles\RSDS.cs" />
     <Compile Include="RelayCommand.cs" />

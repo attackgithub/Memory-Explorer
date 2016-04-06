@@ -396,6 +396,22 @@ namespace MemoryExplorer.Address
             result += "\n";
             return result;
         }
+        public override ulong ptov(ulong physicalAddress)
+        {
+            foreach (AddressRecord ar in _memoryMap.MemoryRecords)
+            {
+                if (ar.IsSoftware)
+                    continue;
+                ulong first = ar.PhysicalAddress;
+                ulong last = ar.PhysicalAddress + ar.Size;
+                if(physicalAddress >= first && physicalAddress < last)
+                {
+                    var offset = physicalAddress - ar.PhysicalAddress;
+                    return ar.VirtualAddress + offset;
+                }
+            }
+            return 0;
+        }
         public override ulong vtop(ulong virtualAddress, bool live=false)
         {
             if(!live)

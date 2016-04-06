@@ -64,5 +64,10 @@ namespace MemoryExplorer.Address
         {
             throw new NotImplementedException();
         }
+
+        public override ulong ptov(ulong physicalAddress)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using MemoryExplorer.Artifacts;
+﻿using MemoryExplorer.Address;
+using MemoryExplorer.Artifacts;
 using MemoryExplorer.Data;
 using MemoryExplorer.Processes;
 using MemoryExplorer.Profiles;
@@ -39,6 +40,9 @@ namespace MemoryExplorer.Model
         private Profile _profile = null;
         private List<string> _mru = new List<string>();
         private List<ProcessInfo> _processList = new List<ProcessInfo>();
+        private AddressBase _kernelAddressSpace = null;
+        private ulong _kernelBaseAddress = 0;
+        private ulong _pfnDatabaseBaseAddress = 0;
 
         public event PropertyChangedEventHandler PropertyChanged;
 

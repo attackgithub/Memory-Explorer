@@ -476,5 +476,20 @@ namespace MemoryExplorer.Profiles
                 return resultStream.ToArray();
             }
         }
+        public int GetConstant(string name)
+        {
+            try
+            {
+                foreach (KeyValuePair<string, JToken> element in _profileDictionary)
+                {
+                    if (element.Value is JObject && element.Key == "$CONSTANTS")
+                    {
+                        return (int)element.Value.SelectToken(name);
+                    }
+                }
+            }
+            catch { }
+            throw new System.ArgumentException("Constant " + name + " Not Present");
+        }
     }
 }
