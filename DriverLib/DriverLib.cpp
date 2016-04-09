@@ -117,7 +117,7 @@ namespace GuardianAngel
 		BOOL		fStatus;
 
 		if (!(hSCManager = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS)))
-			return 0;
+			return FALSE;
 
 		if (!(hService = OpenService(hSCManager, szDriverName, SERVICE_ALL_ACCESS)))
 		{
