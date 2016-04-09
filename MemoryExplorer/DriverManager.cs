@@ -108,6 +108,7 @@ namespace MemoryExplorer
             procAddress = GetProcAddress(_helperLib, "StartDriver");
             StartDriver start = (StartDriver)Marshal.GetDelegateForFunctionPointer(procAddress, typeof(StartDriver));
             result = start("pmem");
+            error = GetLastError();
             _driverLoaded = true;
             return result;
         }

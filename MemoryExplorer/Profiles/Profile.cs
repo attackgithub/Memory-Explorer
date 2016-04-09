@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using MemoryExplorer.Address;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -20,8 +21,19 @@ namespace MemoryExplorer.Profiles
         private Dictionary<string, JToken> _profileDictionary = null;
         private string _architecture = null;
         private Dictionary<string, List<Structure>> _entriesDictionary = new Dictionary<string, List<Structure>>();
+        private AddressBase _kernelAddressSpace = null;
+        private ulong _kernelBaseAddress = 0;
 
-
+        public ulong KernelBaseAddress
+        {
+            get { return _kernelBaseAddress; }
+            set { _kernelBaseAddress = value; }
+        }
+        public AddressBase KernelAddressSpace
+        {
+            get { return _kernelAddressSpace; }
+            set { _kernelAddressSpace = value; }
+        }
         public string Architecture { get { return _architecture; } }
         public bool FileActive { get { return _fileActive; } }
 
@@ -484,12 +496,28 @@ namespace MemoryExplorer.Profiles
                 {
                     if (element.Value is JObject && element.Key == "$CONSTANTS")
                     {
+                        var test = element.Value.SelectToken(name);
                         return (int)element.Value.SelectToken(name);
                     }
                 }
             }
             catch { }
             throw new System.ArgumentException("Constant " + name + " Not Present");
+        }
+        public ulong GetUnicodeStringLength(string structure, string member)
+        {
+            try
+            {
+                JArray targetNode = GetNode(structure, member);
+                var t1 = ((JValue)targetNode[1][0]).Value.ToString();
+                if (t1 == "UnicodeString")
+                {
+                    var a = ((JValue)targetNode[1][1]["length"]).Value;
+                    return (ulong)((long)a);
+                }
+                throw new System.ArgumentException("Entry Isn't Unicode");
+            }
+            catch { throw new System.ArgumentException("Entry Isn't Unicode"); }
         }
     }
 }

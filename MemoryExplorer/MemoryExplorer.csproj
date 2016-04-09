@@ -107,12 +107,20 @@
     </Compile>
     <Compile Include="Details\InformationDetailsViewModel.cs" />
     <Compile Include="Details\KvpResult.cs" />
+    <Compile Include="Details\ObjectTypes.xaml.cs">
+      <DependentUpon>ObjectTypes.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Details\ObjectTypesViewModel.cs" />
     <Compile Include="Details\RootDetails.xaml.cs">
       <DependentUpon>RootDetails.xaml</DependentUpon>
     </Compile>
     <Compile Include="Details\RootDetailsViewModel.cs" />
     <Compile Include="Memory\MemoryRange.cs" />
+    <Compile Include="ModelObjects\KUserSharedData.cs" />
+    <Compile Include="ModelObjects\ObjectTypes.cs" />
+    <Compile Include="ModelObjects\UnicodeString.cs" />
     <Compile Include="Model\BusinessLogic.cs" />
+    <Compile Include="Model\Common.cs" />
     <Compile Include="Processes\EProcess.cs" />
     <Compile Include="Processes\Process.cs" />
     <Compile Include="Profiles\PeHeader.cs" />
@@ -135,6 +143,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Details\InformationDetails.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Details\ObjectTypes.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

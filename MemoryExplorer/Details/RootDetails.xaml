@@ -11,7 +11,9 @@
             <TabItem Header="Information">
                 <local:InformationDetails />
             </TabItem>
-            <TabItem Header="Other" />
+            <TabItem Header="Object List">
+                <local:ObjectTypes />
+            </TabItem>
             <TabItem Header="More" />
         </TabControl>
     </Grid>

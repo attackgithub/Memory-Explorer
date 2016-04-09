@@ -32,7 +32,7 @@ namespace MemoryExplorer.Address
             _processName = processName;
             // first check to see if it is already cached
             FileInfo cachedFile = new FileInfo(_dataProvider.CacheFolder + "\\" + _processName + "_memorymap.gz");
-            if (cachedFile.Exists)
+            if (cachedFile.Exists && !_dataProvider.IsLive)
             {
                 MemoryMap test = RetrieveMemoryMap(cachedFile);
                 if (test != null)
@@ -455,7 +455,7 @@ namespace MemoryExplorer.Address
             if (!pde.InUse)
                 return 0;
             if (pde.IsLarge)
-                return 0;
+                return (pdeEntry & 0xfffffffe00000) | (virtualAddress & 0x1fffff);
             // PTE
             buffer = ReadData(pde.RealEntry, 4096);
             ulong pteEntry = BitConverter.ToUInt64(buffer, (int)(pteIndex * 8));

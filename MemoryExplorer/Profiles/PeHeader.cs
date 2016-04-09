@@ -438,10 +438,17 @@ namespace MemoryExplorer.Profiles
                         _imageSectionHeaders[headerNo] = (IMAGE_SECTION_HEADER)Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, marker), typeof(IMAGE_SECTION_HEADER));
                         marker += Marshal.SizeOf(_imageSectionHeaders[0]);
                     }
-                    ulong debugAddr = Is32BitHeader ? _optionalHeader32.Debug.VirtualAddress + _imageBaseVirtualAddress : _optionalHeader64.Debug.VirtualAddress + _imageBaseVirtualAddress;
-
+                    ulong debugVAddr = Is32BitHeader ? _optionalHeader32.Debug.VirtualAddress + _imageBaseVirtualAddress : _optionalHeader64.Debug.VirtualAddress + _imageBaseVirtualAddress;
+                    pinnedPacket.Free();
+                    pAddr = _kernelAddressSpace.vtop(debugVAddr, false);
+                    buffer = dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
+                    pinnedPacket = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+                    IMAGE_DEBUG_DIRECTORY idd = (IMAGE_DEBUG_DIRECTORY)Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, (int)(pAddr & 0xfff)), typeof(IMAGE_DEBUG_DIRECTORY));
+                    _debugSectionOffset = idd.AddressOfRawData + _imageBaseVirtualAddress;
+                    pinnedPacket.Free();
                 }
-                pinnedPacket.Free();
+                else
+                    pinnedPacket.Free();
             }
             catch { }
 
@@ -452,6 +459,22 @@ namespace MemoryExplorer.Profiles
             {
                 UInt16 IMAGE_FILE_32BIT_MACHINE = 0x0100;
                 return (IMAGE_FILE_32BIT_MACHINE & _fileHeader.Characteristics) == IMAGE_FILE_32BIT_MACHINE;
+            }
+        }
+        public RSDS DebugSection
+        {
+            get
+            {
+                try
+                {
+                    ulong pAddr = _kernelAddressSpace.vtop(_debugSectionOffset, false);
+                    RSDS rsds = new RSDS(_dataProvider, pAddr);
+                    return rsds;
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
     }

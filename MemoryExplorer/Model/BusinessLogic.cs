@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Address;
+using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Processes;
 using MemoryExplorer.Profiles;
 using MemoryExplorer.Scanners;
@@ -36,7 +37,8 @@ namespace MemoryExplorer.Model
 
             IncrementActiveJobs();
             _kernelAddressSpace = await LoadKernelAddressSpace();
-            if(_kernelAddressSpace != null)
+            _profile.KernelAddressSpace = _kernelAddressSpace;
+            if (_kernelAddressSpace != null)
             {
                 ProcessInfo p = new ProcessInfo();
                 p.AddressSpace = _kernelAddressSpace;
@@ -49,6 +51,16 @@ namespace MemoryExplorer.Model
             IncrementActiveJobs();
             await FindKernelImage();
             DecrementActiveJobs();
+            _profile.KernelBaseAddress = _kernelBaseAddress;
+
+            IncrementActiveJobs();
+            await FindUserSharedData();
+            DecrementActiveJobs();
+
+            IncrementActiveJobs();
+            await EnumerateObjectTypes();
+            DecrementActiveJobs();
+
         }
         async private Task GetInformation()
         {
@@ -66,7 +78,10 @@ namespace MemoryExplorer.Model
                     else if (item.Key == "buildNumber")
                         friendlyKey = "Build Number";
                     else if (item.Key == "kernelBase")
+                    {
+                        _kernelBaseAddress = (ulong)item.Value;
                         friendlyKey = "Kernel Base Address";
+                    }
                     else if (item.Key == "kdbg")
                         friendlyKey = "KDBG";
                     else if (item.Key == "pfnDatabase")
@@ -199,10 +214,33 @@ namespace MemoryExplorer.Model
         async private Task FindKernelImage()
         {
             await Task.Run(() =>
-            {
+            {                                
                 try
                 {
                     uint buildOffset = (uint)_profile.GetConstant("NtBuildLab");
+                    // first check that we haven't already got it - the live info grab will have got it!             
+                    if (_kernelBaseAddress != 0)
+                    {
+                        ulong pAddr = _kernelAddressSpace.vtop(_kernelBaseAddress + buildOffset, true);
+                        if (pAddr == 0)
+                            return;
+                        byte[] buffer2 = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
+                        string build = ReadString(buffer2, (uint)(pAddr & 0xfff));
+                        AddToInfoDictionary("Build String", build);
+                        try
+                        {
+                            uint buildOffset2 = (uint)_profile.GetConstant("NtBuildLabEx");
+                            pAddr = _kernelAddressSpace.vtop(_kernelBaseAddress + buildOffset2, true);
+                            if (pAddr == 0)
+                                return;
+                            buffer2 = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
+                            build = ReadString(buffer2, (uint)(pAddr & 0xfff));
+                            AddToInfoDictionary("Build String Ex", build);
+                        }
+                        catch { }                        
+                        return;
+                    }
+
                     StringSearch mySearch = new StringSearch(_dataProvider);
                     mySearch.AddNeedle("INITKDBG");
                     mySearch.AddNeedle("MISYSPTE");
@@ -230,6 +268,30 @@ namespace MemoryExplorer.Model
                                     if(sig == "MZ")
                                     {
                                         PE peHeader = new PE(_dataProvider, _kernelAddressSpace, page);
+                                        RSDS debugSection = peHeader.DebugSection;
+                                        if (IsValidKernel(debugSection.Filename))
+                                        {
+                                            _kernelBaseAddress = page;
+                                            ulong pAddr = _kernelAddressSpace.vtop(_kernelBaseAddress + buildOffset, false);
+                                            if (pAddr == 0)
+                                                continue;
+                                            buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
+                                            string build = ReadString(buffer, (uint)(pAddr & 0xfff));
+                                            AddToInfoDictionary("Kernel Base Address", "0x" + _kernelBaseAddress.ToString("X08"));
+                                            AddToInfoDictionary("Build String", build);
+                                            try
+                                            {
+                                                uint buildOffset2 = (uint)_profile.GetConstant("NtBuildLabEx");
+                                                pAddr = _kernelAddressSpace.vtop(_kernelBaseAddress + buildOffset2, true);
+                                                if (pAddr == 0)
+                                                    continue;
+                                                buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
+                                                build = ReadString(buffer, (uint)(pAddr & 0xfff));
+                                                AddToInfoDictionary("Build String Ex", build);
+                                            }
+                                            catch { }
+                                            return;
+                                        }
                                     }
                                     // move backwards one page at a time
                                     page -= 0x1000;
@@ -240,10 +302,61 @@ namespace MemoryExplorer.Model
                 }
                 catch
                 {
+                    return;
+                }
+            });
+        }        
+        async private Task FindUserSharedData()
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    ulong pAddr = _kernelAddressSpace.vtop(_kiUserSharedData, _liveCapture);
+                    if (pAddr == 0)
+                        return;
+                    KUserSharedData kusd = new KUserSharedData(_dataProvider , _profile, pAddr);
+                    string version = kusd.Version;
+                    version = VersionHelper(version);
 
+
+                    AddToInfoDictionary("Version", version);
+                    var pageCount = kusd.Get("NumberOfPhysicalPages");
+                    AddToInfoDictionary("Physical Page Count", pageCount.ToString());
+                    string rootDir = kusd.GetString("NtSystemRoot");
+                    AddToInfoDictionary("System Root", rootDir);
+                    var procCount = kusd.Get("ActiveProcessorCount");
+                    AddToInfoDictionary("Active Processor Count", procCount.ToString());
+
+
+                    return;
+                }
+                catch (Exception)
+                {
+
+                    return;
                 }
             });
         }
+
+        async private Task EnumerateObjectTypes()
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    ObjectTypes objectTypes = new ObjectTypes(_dataProvider, _profile);
+                    if (objectTypes.Records != null && objectTypes.Records.Count > 0)
+                        ObjectTypeList = objectTypes.Records;
+                    return;
+                }
+                catch (Exception)
+                {
+                    return;
+                }
+            });
+        }
+
         async private Task LocatePfnDatabase()
         {
             await Task.Run(() =>

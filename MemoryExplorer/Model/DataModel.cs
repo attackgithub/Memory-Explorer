@@ -1,6 +1,7 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Artifacts;
 using MemoryExplorer.Data;
+using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Processes;
 using MemoryExplorer.Profiles;
 using Microsoft.Win32;
@@ -43,11 +44,17 @@ namespace MemoryExplorer.Model
         private AddressBase _kernelAddressSpace = null;
         private ulong _kernelBaseAddress = 0;
         private ulong _pfnDatabaseBaseAddress = 0;
+        private List<ObjectTypeRecord> _objectTypeList = new List<ObjectTypeRecord>();
 
         public event PropertyChangedEventHandler PropertyChanged;
 
         #endregion
         #region access
+        public List<ObjectTypeRecord> ObjectTypeList
+        {
+            get { return _objectTypeList; }
+            set { SetProperty(ref _objectTypeList, value); }
+        }
         public string CacheLocation { get { return _cacheLocation; } }
         public List<string> Mru
         {
@@ -225,6 +232,8 @@ namespace MemoryExplorer.Model
         }
         private void AddToInfoDictionary(string key, string value)
         {
+            if (value == null)
+                return;
             string testValue;
             int suffix = 1;
             bool trying = true;
@@ -278,6 +287,13 @@ namespace MemoryExplorer.Model
             NotifyPropertyChange("TreeItems"); // this forces the set property / INotifyPropertyCHange
             return artifact;
         }
+        
+        private void AddObjectType(ObjectTypeRecord record)
+        {
+            _objectTypeList.Add(record);
+            NotifyPropertyChange("ObjectTypes"); // this forces the set property / INotifyPropertyCHange
+        }
+
         #region PROCESSES
         private void FlushProcesses()
         {
@@ -307,7 +323,9 @@ namespace MemoryExplorer.Model
             _profile = null;
             _kernelDtb = 0;
             _infoDictionary.Clear();
+            _kernelBaseAddress = 0;
             _architecture = "";
+            _objectTypeList.Clear();
         }
         private void FlushArtifactsList()
         {

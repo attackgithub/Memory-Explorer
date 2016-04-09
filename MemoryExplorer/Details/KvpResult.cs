@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using MemoryExplorer.ModelObjects;
+using System.Collections.Generic;
 
 namespace MemoryExplorer.Details
 {
@@ -11,6 +12,11 @@ namespace MemoryExplorer.Details
         {
             _name = record.Key;
             _value = record.Value;
+        }
+        public KvpResult(ObjectTypeRecord record)
+        {
+            _name = record.Index.ToString();
+            _value = record.Name;
         }
 
         public string InfoKey { get { return _name; } }
