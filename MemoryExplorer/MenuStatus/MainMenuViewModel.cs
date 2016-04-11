@@ -56,6 +56,18 @@ namespace MemoryExplorer.MenuStatus
                 return _dataModel.RunningAsAdmin;
             }
         }
+        public bool IsInterpreterActive
+        {
+            get
+            {
+                return _dataModel.InterpreterWindowIsActive;
+            }
+            set
+            {
+                _dataModel.InterpreterWindowIsActive = value;
+            }
+        }
+
         public RelayCommand<string> MruRequest { get; private set; }
 
         private void OnMruRequest(string name)

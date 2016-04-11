@@ -390,7 +390,7 @@ namespace MemoryExplorer.Profiles
         private IMAGE_OPTIONAL_HEADER32 _optionalHeader32;
         private IMAGE_OPTIONAL_HEADER64 _optionalHeader64;
         private IMAGE_SECTION_HEADER[] _imageSectionHeaders;
-        private string _targetFile;
+        //private string _targetFile;
         private ulong _imageBaseVirtualAddress;
         private ulong _debugSectionOffset;
         private bool _valid = false;

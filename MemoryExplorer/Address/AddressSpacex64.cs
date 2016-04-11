@@ -10,18 +10,18 @@ namespace MemoryExplorer.Address
 {
     public class AddressSpacex64 : AddressBase
     {
-        private ulong _p4Index;
-        private ulong _pdpteIndex;
-        private ulong _pdeIndex;
-        private ulong _pteIndex;
-        private uint _p4Flags;
-        private uint _pdpteFlags;
-        private uint _pdeFlags;
-        private uint _pteFlags;
-        private ulong _p4Address;
-        private ulong _pdpteAddress;
-        private ulong _pdeAddress;
-        private ulong _pteAddress;
+        //private ulong _p4Index;
+        //private ulong _pdpteIndex;
+        //private ulong _pdeIndex;
+        //private ulong _pteIndex;
+        //private uint _p4Flags;
+        //private uint _pdpteFlags;
+        //private uint _pdeFlags;
+        //private uint _pteFlags;
+        //private ulong _p4Address;
+        //private ulong _pdpteAddress;
+        //private ulong _pdeAddress;
+        //private ulong _pteAddress;
 
 
         public AddressSpacex64(DataProviderBase dataProvider, string processName, UInt64 dtb, bool kernel = false)

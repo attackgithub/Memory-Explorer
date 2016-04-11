@@ -33,7 +33,17 @@ namespace MemoryExplorer
         }
         public BindableBase CurrentDetailsViewModel
         {
-            get { return _currentDetailsViewModel; }
+            get
+            {
+                switch(_dataModel.CurrentDetailsViewModelHint)
+                {
+                    case "hello":
+                        return _details1ViewModel;
+                    default:
+                        return _currentDetailsViewModel;
+                }
+                
+            }
             set { SetProperty(ref _currentDetailsViewModel, value); }
         }
         //private void OnNav(string destination)

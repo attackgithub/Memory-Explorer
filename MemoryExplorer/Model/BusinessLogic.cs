@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace MemoryExplorer.Model
 {
-    public partial class DataModel : INotifyPropertyChanged
+    public partial class DataModel : INotifyPropertyChanged, IDisposable
     {
         async private void InitialSurvey()
         {
@@ -276,6 +276,8 @@ namespace MemoryExplorer.Model
                                             if (pAddr == 0)
                                                 continue;
                                             buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
+                                            CurrentHexViewerContentAddress = pAddr & 0xfffffffff000;
+                                            CurrentHexViewerContent = buffer;
                                             string build = ReadString(buffer, (uint)(pAddr & 0xfff));
                                             AddToInfoDictionary("Kernel Base Address", "0x" + _kernelBaseAddress.ToString("X08"));
                                             AddToInfoDictionary("Build String", build);
@@ -374,6 +376,11 @@ namespace MemoryExplorer.Model
                     return;
                 }                
             });
+        }
+
+        public void Dispose()
+        {
+            BigCleanUp();
         }
     }
 }

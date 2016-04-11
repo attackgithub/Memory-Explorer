@@ -9,7 +9,7 @@ using System.Security.Principal;
 
 namespace MemoryExplorer
 {
-    public class DriverManager
+    public class DriverManager : IDisposable
     {
         private string _driverFilename;
         private string _libraryFilename;
@@ -31,18 +31,7 @@ namespace MemoryExplorer
             _helperLib = LoadLibrary(_libraryFilename);
             if(_helperLib == IntPtr.Zero)
                 throw new ArgumentException("Problem Loading Helper Library");
-        }
-        ~DriverManager()
-        {
-            try
-            {
-                if (_driverLoaded && IsAdmin())
-                    UnloadDriver();
-                if (_helperLib != IntPtr.Zero)
-                    FreeLibrary(_helperLib);
-            }
-            catch { }
-        }
+        }       
         private string ExtractResources(string ResourceName)
         {
             string resourceFilename = null;
@@ -90,7 +79,7 @@ namespace MemoryExplorer
         {
             if (_driverLoaded)
                 return true;
-            uint error = GetLastError();
+            //uint error = GetLastError();
             IntPtr procAddress = GetProcAddress(_helperLib, "Version");
             GetVersion ver = (GetVersion)Marshal.GetDelegateForFunctionPointer(procAddress, typeof(GetVersion));
             int realVersion = ver();
@@ -108,7 +97,7 @@ namespace MemoryExplorer
             procAddress = GetProcAddress(_helperLib, "StartDriver");
             StartDriver start = (StartDriver)Marshal.GetDelegateForFunctionPointer(procAddress, typeof(StartDriver));
             result = start("pmem");
-            error = GetLastError();
+            //error = GetLastError();
             _driverLoaded = true;
             return result;
         }
@@ -155,14 +144,27 @@ namespace MemoryExplorer
 
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern IntPtr LoadLibrary(string dllName);
-        [DllImport("kernel32.dll")]
+        [DllImport("kernel32.dll", CharSet=CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
         internal static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
         [DllImport("kernel32.dll")]
         internal static extern uint GetLastError();
         [DllImport("kernel32.dll")]
         [SuppressUnmanagedCodeSecurity]
         internal static extern bool FreeLibrary(IntPtr handle);
-
         #endregion
+
+        public void Dispose()
+        {
+            try
+            {
+                if (_driverLoaded && IsAdmin())
+                    UnloadDriver();
+                if (_helperLib != IntPtr.Zero)
+                    FreeLibrary(_helperLib);
+                GC.SuppressFinalize(this);
+
+            }
+            catch { }
+        }
     }
 }

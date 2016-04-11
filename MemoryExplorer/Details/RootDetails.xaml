@@ -14,7 +14,9 @@
             <TabItem Header="Object List">
                 <local:ObjectTypes />
             </TabItem>
-            <TabItem Header="More" />
+            <TabItem Header="Hex Viewer">
+                <local:HexViewer />
+            </TabItem>
         </TabControl>
     </Grid>
 </UserControl>

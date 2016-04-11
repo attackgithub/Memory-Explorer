@@ -61,6 +61,8 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -70,9 +72,11 @@
     <Reference Include="System.Xaml">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
+    <Reference Include="UIAutomationProvider" />
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -102,6 +106,10 @@
       <DependentUpon>Details2.xaml</DependentUpon>
     </Compile>
     <Compile Include="Details\Details2ViewModel.cs" />
+    <Compile Include="Details\HexViewer.xaml.cs">
+      <DependentUpon>HexViewer.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Details\HexViewerViewModel.cs" />
     <Compile Include="Details\InformationDetails.xaml.cs">
       <DependentUpon>InformationDetails.xaml</DependentUpon>
     </Compile>
@@ -115,6 +123,27 @@
       <DependentUpon>RootDetails.xaml</DependentUpon>
     </Compile>
     <Compile Include="Details\RootDetailsViewModel.cs" />
+    <Compile Include="HexView\BuiltInContextMenu.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="HexView\ByteCharConverters.cs" />
+    <Compile Include="HexView\ByteCollection.cs" />
+    <Compile Include="HexView\BytePositionInfo.cs" />
+    <Compile Include="HexView\DataBlock.cs" />
+    <Compile Include="HexView\DataMap.cs" />
+    <Compile Include="HexView\DynamicByteProvider.cs" />
+    <Compile Include="HexView\DynamicFileByteProvider.cs" />
+    <Compile Include="HexView\FileByteProvider.cs" />
+    <Compile Include="HexView\FileDataBlock.cs" />
+    <Compile Include="HexView\FindOptions.cs" />
+    <Compile Include="HexView\HexCasing.cs" />
+    <Compile Include="HexView\HexView.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="HexView\IByteProvider.cs" />
+    <Compile Include="HexView\MemoryDataBlock.cs" />
+    <Compile Include="HexView\NativeMethods.cs" />
+    <Compile Include="HexView\Utils.cs" />
     <Compile Include="Memory\MemoryRange.cs" />
     <Compile Include="ModelObjects\KUserSharedData.cs" />
     <Compile Include="ModelObjects\ObjectTypes.cs" />
@@ -139,6 +168,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Details\Details2.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Details\HexViewer.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -225,6 +258,13 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\DriverLib.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Icons\Exclamation.ico" />
+    <Resource Include="Images\Icons\highlight_delete.ico" />
+    <Resource Include="Images\Icons\resize_16.ico" />
+    <Resource Include="Images\Icons\resize_8.ico" />
+    <Resource Include="Images\Icons\resize_auto.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

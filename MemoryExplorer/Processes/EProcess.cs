@@ -10,8 +10,8 @@ namespace MemoryExplorer.Processes
 {
     public class EProcess : StructureBase
     {
-        private ulong _virtualAddress;
-        private ulong _objectTable;
+        ///private ulong _virtualAddress;
+        //private ulong _objectTable;
         private ulong _dtbOffset;
         private uint _dtbSize;
         private ulong _offset;

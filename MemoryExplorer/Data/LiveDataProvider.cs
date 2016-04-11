@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace MemoryExplorer.Data
 {
-    public class LiveDataProvider : DataProviderBase
+    public class LiveDataProvider : DataProviderBase, IDisposable
     {
         string _libraryFilename = @"C:\Users\mark\OneDrive\Code\MvvmPlaytime\Resources\DriverLib.dll";
         IntPtr _helperLib;
@@ -24,8 +24,9 @@ namespace MemoryExplorer.Data
         }
         ~LiveDataProvider()
         {
-            FreeLibrary(_helperLib);
+
         }
+        
         protected override byte[] ReadMemoryPage(ulong address)
         {
             foreach (var item in _memoryRangeList)
@@ -72,7 +73,7 @@ namespace MemoryExplorer.Data
         public override Dictionary<string, object> GetInformation()
         {
             Dictionary<string, object> _information = new Dictionary<string, object>();
-            uint error = GetLastError();
+            //uint error = GetLastError();
             byte[] buffer = new byte[4096];
             IntPtr procAddress = GetProcAddress(_helperLib, "GetInfo");
             GetInfo info = (GetInfo)Marshal.GetDelegateForFunctionPointer(procAddress, typeof(GetInfo));
@@ -119,15 +120,26 @@ namespace MemoryExplorer.Data
         internal delegate int ReadPage(ulong address, [MarshalAs(UnmanagedType.LPArray)]byte[] buffer);
 
 
-        [DllImport("kernel32.dll", SetLastError = true)]
+        [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError = true)]
         internal static extern IntPtr LoadLibrary(string dllName);
-        [DllImport("kernel32.dll")]
+        [DllImport("kernel32.dll", CharSet = CharSet.Ansi)]
         internal static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
         [DllImport("kernel32.dll")]
         internal static extern uint GetLastError();
         [DllImport("kernel32.dll")]
         [SuppressUnmanagedCodeSecurity]
         internal static extern bool FreeLibrary(IntPtr handle);
+
+        public void Dispose()
+        {
+            try
+            {
+                FreeLibrary(_helperLib);
+            }
+            catch (Exception)
+            {
+            }
+        }
 
         #endregion
     }

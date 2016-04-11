@@ -59,10 +59,12 @@ namespace MemoryExplorer.Data
             try
             {
                 using (FileStream fs = new FileStream(_imageFilename, FileMode.Open, FileAccess.Read))
-                using (BinaryReader br = new BinaryReader(fs))
                 {
-                    fs.Seek((long)address, SeekOrigin.Begin);
-                    buffer = br.ReadBytes(4096);
+                    using (BinaryReader br = new BinaryReader(fs))
+                    {
+                        fs.Seek((long)address, SeekOrigin.Begin);
+                        buffer = br.ReadBytes(4096);
+                    }
                 }
                 return buffer;
             }

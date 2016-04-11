@@ -29,6 +29,9 @@
                     <Separator />
                     <MenuItem Header="_Exit" Command="{Binding ExitRequest}"/>
                 </MenuItem>
+                <MenuItem Header="_View">
+                    <MenuItem Header="_Data Interpreter" IsCheckable="True" IsChecked="{Binding IsInterpreterActive}"/>
+                </MenuItem>
             </Menu>
             <ToolBarTray>
                 <ToolBar>

@@ -23,6 +23,7 @@ namespace MemoryExplorer.Model
         #region globals
         private bool _runningAsAdmin = false;
         private bool _liveCapture = false;
+        private bool _interpreterWindowIsActive = false;
         private DataProviderBase _dataProvider = null;
         private string _memoryImageFilename = "";
         private DriverManager _driverManager = null;
@@ -45,11 +46,30 @@ namespace MemoryExplorer.Model
         private ulong _kernelBaseAddress = 0;
         private ulong _pfnDatabaseBaseAddress = 0;
         private List<ObjectTypeRecord> _objectTypeList = new List<ObjectTypeRecord>();
+        private byte[] _currentHexViewerContent = null;
+        private ulong _currentHexViewerContentAddress = 0;
+        private string _currentDetailsViewModelHint = "";
 
         public event PropertyChangedEventHandler PropertyChanged;
 
         #endregion
         #region access
+        public string CurrentDetailsViewModelHint
+        {
+            get { return _currentDetailsViewModelHint; }
+            set { _currentDetailsViewModelHint = value; }
+        }
+        
+        public ulong CurrentHexViewerContentAddress
+        {
+            get { return _currentHexViewerContentAddress; }
+            set { _currentHexViewerContentAddress = value; }
+        }
+        public byte[] CurrentHexViewerContent
+        {
+            get { return _currentHexViewerContent; }
+            set { SetProperty(ref _currentHexViewerContent, value); }
+        }
         public List<ObjectTypeRecord> ObjectTypeList
         {
             get { return _objectTypeList; }
@@ -80,6 +100,11 @@ namespace MemoryExplorer.Model
             set { SetProperty(ref _profileName, value); }
         }
         public bool RunningAsAdmin { get { return _runningAsAdmin; } }
+        public bool InterpreterWindowIsActive
+        {
+            get { return _interpreterWindowIsActive; }
+            set { SetProperty(ref _interpreterWindowIsActive, value); }
+        }
         public bool LiveCapture
         {
             get { return _liveCapture; }
@@ -194,7 +219,13 @@ namespace MemoryExplorer.Model
             if (selectedArtifact == null || selectedArtifact == _activeArtifact)
                 return;
             _activeArtifact = selectedArtifact;
+            ProcessArtifact pa = _activeArtifact as ProcessArtifact;
+            if(pa != null)
+            {
+                CurrentDetailsViewModelHint = "hello";
+                NotifyPropertyChange("CurrentDetailsViewModel"); // this forces the set property / INotifyPropertyCHange  CurrentHexViewerContent   CurrentDetailsViewModel
 
+            }
         }
         public void UpdateMru(string newEntry)
         {
