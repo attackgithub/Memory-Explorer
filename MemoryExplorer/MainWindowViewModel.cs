@@ -2,6 +2,8 @@
 using MemoryExplorer.Model;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Principal;
 using System.Text;
@@ -24,6 +26,27 @@ namespace MemoryExplorer
             _details2ViewModel = new Details2ViewModel();
             _rootDetailsViewModel = new RootDetailsViewModel();
             _currentDetailsViewModel = _rootDetailsViewModel;
+            // I shouldn't need this, but I just can't get the property change to get the view binding to update
+            _dataModel.PropertyChanged += WtfPropertyChangedEventHandler;
+        }
+        private void WtfPropertyChangedEventHandler(object sender, PropertyChangedEventArgs e)
+        {
+            Debug.WriteLine("Event: " + e.PropertyName);
+            if (e.PropertyName == "CurrentDetailsViewModel")
+            {
+                switch(_dataModel.CurrentDetailsViewModelHint)
+                {
+                    case "root":
+                        CurrentDetailsViewModel = _rootDetailsViewModel;
+                        break;
+                    case "process":
+                        CurrentDetailsViewModel = _details1ViewModel;
+                        break;
+                    default:
+                        CurrentDetailsViewModel = _rootDetailsViewModel;
+                        break;
+                }
+            }
         }
         private bool IsAdmin()
         {
@@ -33,17 +56,7 @@ namespace MemoryExplorer
         }
         public BindableBase CurrentDetailsViewModel
         {
-            get
-            {
-                switch(_dataModel.CurrentDetailsViewModelHint)
-                {
-                    case "hello":
-                        return _details1ViewModel;
-                    default:
-                        return _currentDetailsViewModel;
-                }
-                
-            }
+            get { return _currentDetailsViewModel; }
             set { SetProperty(ref _currentDetailsViewModel, value); }
         }
         //private void OnNav(string destination)

@@ -54,38 +54,33 @@ namespace MemoryExplorer.ModelObjects
                 kernelAS = _profile.KernelAddressSpace as AddressSpacex64;
             else
                 kernelAS = _profile.KernelAddressSpace as AddressSpacex86Pae;
-
-            uint indexTableOffset = (uint)_profile.GetConstant("ObTypeIndexTable");
+            uint indexTableOffset = (uint)_profile.GetConstant("ObpObjectTypes");
             ulong startOffset = _profile.KernelBaseAddress + indexTableOffset;
-            ulong[] indexTable = new ulong[64];
-
-            // the object index table has 64 8 byte entries = 512 bytes
-            // if the startOffset is less than 512 bytes from the end of the page, I'll need to read the next page as well
-            byte[] bigBuffer = new byte[8192];
             ulong pAddr = kernelAS.vtop(startOffset, _dataProvider.IsLive);
-            _objectMap.StartAddress = startOffset;
+            if (pAddr == 0)
+                return;
+            _buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 1);
+            ulong ptr = ReadUInt64((int)(pAddr & 0xfff));
+            ulong pAddress = kernelAS.vtop(ptr);
+            ObjectType ot = new ObjectType(_profile, _dataProvider, pAddress);
 
-            byte[] buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 1);
-            Array.Copy(buffer, 0, bigBuffer, 0, 4096);
-            pAddr = kernelAS.vtop(startOffset + 0x1000, _dataProvider.IsLive);
-            buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 1);
-            Array.Copy(buffer, 0, bigBuffer, 4096, 4096);
-
-            for (int i = 0; i < 64; i++)
+            int count = (int)ot.TotalNumberOfObjects;
+            for (int i = 0; i < count; i++)
             {
-                indexTable[i] = (BitConverter.ToUInt64(bigBuffer, (int)(startOffset & 0xfff) + (i * 8))) & 0xffffffffffff;
-                if (indexTable[i] == 0)
-                    continue;
-                ulong pAddress = kernelAS.vtop(indexTable[i]);
-                if (pAddress == 0)
-                    continue;
-                ObjectType ot = new ObjectType(_profile, _dataProvider, pAddress);
+                startOffset = _profile.KernelBaseAddress + indexTableOffset + (uint)(i * 8);
+                pAddr = kernelAS.vtop(startOffset, _dataProvider.IsLive);
+                _buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 1);
+                ptr = ReadUInt64((int)(pAddr & 0xfff));
+                pAddress = kernelAS.vtop(ptr);
+                ot = new ObjectType(_profile, _dataProvider, pAddress);
                 ObjectTypeRecord otr = new ObjectTypeRecord();
                 otr.Name = ot.Name;
                 otr.Index = ot.Index;
+                if (otr.Index == 0 || otr.Name == "")
+                    continue;
                 _objectMap.ObjectTypeRecords.Add(otr);
             }
-            if(!dataProvider.IsLive)
+            if (!dataProvider.IsLive)
                 PersistObjectMap(_objectMap, _dataProvider.CacheFolder + "\\object_type_map.gz");
         }
         public List<ObjectTypeRecord> Records { get { return _objectMap.ObjectTypeRecords; } }
@@ -113,30 +108,15 @@ namespace MemoryExplorer.ModelObjects
                 return JsonConvert.DeserializeObject<ObjectTypeMap>(Encoding.UTF8.GetString(decompressed));
             }
             catch { return null; }
-        }
-        byte[] Decompress(byte[] inputData)
-        {
-            if (inputData == null)
-                throw new ArgumentNullException("inputData must be non-null");
-
-            using (var compressedMs = new MemoryStream(inputData))
-            {
-                using (var decompressedMs = new MemoryStream())
-                {
-                    using (var gzs = new BufferedStream(new GZipStream(compressedMs, CompressionMode.Decompress)))
-                    {
-                        gzs.CopyTo(decompressedMs);
-                    }
-                    return decompressedMs.ToArray();
-                }
-            }
-        }
+        }        
     }
     
     public class ObjectType : StructureBase
     {
         private ulong _index;
         private string _name;
+        private ulong _totalNumberOfObjects;
+
         public ObjectType(Profile profile, DataProviderBase dataProvider, ulong address)
         {
             _dataProvider = dataProvider;
@@ -152,9 +132,12 @@ namespace MemoryExplorer.ModelObjects
             s = GetStructureMember("Name");
             UnicodeString us = new UnicodeString(_profile, _dataProvider, address + s.Offset);
             _name = us.Name;
-
+            s = GetStructureMember("TotalNumberOfObjects");
+            _totalNumberOfObjects = BitConverter.ToUInt64(_buffer, (int)s.Offset + (int)(address & 0xfff));
         }
         public ulong Index { get { return _index; } }
         public string Name { get { return _name; } }
+        public ulong TotalNumberOfObjects { get { return _totalNumberOfObjects; } }
+
     }
 }

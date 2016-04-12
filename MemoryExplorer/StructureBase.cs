@@ -3,6 +3,7 @@ using MemoryExplorer.Profiles;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -104,5 +105,29 @@ namespace MemoryExplorer
             return sBuilder.ToString();
         }
         public long Size { get { return _structureSize; } }
+
+        public ulong ReadUInt64(int offset)
+        {
+            if (_buffer == null || offset > _buffer.Length)
+                return 0;
+            return BitConverter.ToUInt64(_buffer, offset);
+        }
+        public byte[] Decompress(byte[] inputData)
+        {
+            if (inputData == null)
+                throw new ArgumentNullException("inputData must be non-null");
+
+            using (var compressedMs = new MemoryStream(inputData))
+            {
+                using (var decompressedMs = new MemoryStream())
+                {
+                    using (var gzs = new BufferedStream(new GZipStream(compressedMs, CompressionMode.Decompress)))
+                    {
+                        gzs.CopyTo(decompressedMs);
+                    }
+                    return decompressedMs.ToArray();
+                }
+            }
+        }
     }
 }

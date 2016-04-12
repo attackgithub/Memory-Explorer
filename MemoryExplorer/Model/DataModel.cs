@@ -219,13 +219,21 @@ namespace MemoryExplorer.Model
             if (selectedArtifact == null || selectedArtifact == _activeArtifact)
                 return;
             _activeArtifact = selectedArtifact;
-            ProcessArtifact pa = _activeArtifact as ProcessArtifact;
-            if(pa != null)
+            RootArtifact ra = _activeArtifact as RootArtifact;
+            if(ra != null)
             {
-                CurrentDetailsViewModelHint = "hello";
+                CurrentDetailsViewModelHint = "root";
                 NotifyPropertyChange("CurrentDetailsViewModel"); // this forces the set property / INotifyPropertyCHange  CurrentHexViewerContent   CurrentDetailsViewModel
-
+                return;
             }
+            ProcessArtifact pa = _activeArtifact as ProcessArtifact;
+            if (pa != null)
+            {
+                CurrentDetailsViewModelHint = "process";
+                NotifyPropertyChange("CurrentDetailsViewModel"); 
+                return;
+            }
+
         }
         public void UpdateMru(string newEntry)
         {
