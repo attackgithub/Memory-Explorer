@@ -10,13 +10,13 @@ namespace MemoryExplorer.Address
 {
     public class AddressSpacex86Pae : AddressBase
     {
-
         public AddressSpacex86Pae(DataProviderBase dataProvider, string processName, UInt64 dtb, bool kernel = false)
         {
             _dataProvider = dataProvider;
             _dtb = dtb;
             _isKernel = kernel;
             _processName = processName;
+            _is64 = false;
             // first check to see if it is already cached
             FileInfo cachedFile = new FileInfo(_dataProvider.CacheFolder + "\\" + _processName + "_memorymap.gz");
             if (cachedFile.Exists && !_dataProvider.IsLive)

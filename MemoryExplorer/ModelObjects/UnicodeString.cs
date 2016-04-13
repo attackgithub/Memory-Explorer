@@ -40,7 +40,10 @@ namespace MemoryExplorer.ModelObjects
             _maximumLength = BitConverter.ToUInt16(_buffer, realOffset);
             s = GetStructureMember("Buffer");
             realOffset = (int)s.Offset + (int)(_physicalAddress & 0xfff);
-            _pointerBuffer = BitConverter.ToUInt64(_buffer, realOffset) & 0xffffffffffff;
+            if(_is64)
+                _pointerBuffer = BitConverter.ToUInt64(_buffer, realOffset) & 0xffffffffffff;
+            else
+                _pointerBuffer = BitConverter.ToUInt32(_buffer, realOffset) & 0xffffffff;
             ulong pAddress = _addressSpace.vtop(_pointerBuffer);            
             if (pAddress != 0)
             {

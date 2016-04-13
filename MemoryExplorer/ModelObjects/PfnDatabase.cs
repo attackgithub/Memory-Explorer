@@ -1,5 +1,10 @@
-﻿using System;
+﻿using MemoryExplorer.Data;
+using MemoryExplorer.Profiles;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -7,6 +12,119 @@ using System.Threading.Tasks;
 
 namespace MemoryExplorer.ModelObjects
 {
+    public class PfnDatabaseMap
+    {
+        public List<PfnRecord> PfnDatabaseRecords;
+    }
+    public class PfnRecord
+    {
+        public u1 U1;
+        public u2 U2;
+        public long Lock;
+        public ulong PteAddress;
+        public ulong PteLong;
+        public ulong VolatilePteAddress;
+        public u3 U3;
+        public ushort NodeBlinkLow;
+        public byte VaType;
+        public byte NodeFlinkLow;
+        public byte ViewCount;
+        public ulong OriginalPte;
+        public u4 U4;
+        public ushort E1;
+        public uint E2;
+        public ulong PhysicalAddress;
+        public ulong PtePhysicalLocation;
+    }
+    public class PfnDatabase : StructureBase
+    {
+        private List<PfnRecord> _pfnDatabaseList = new List<PfnRecord>();
+
+        public PfnDatabase(DataProviderBase dataProvider, Profile profile, ulong address)
+        {
+            _dataProvider = dataProvider;
+            _profile = profile;
+            _is64 = (_profile.Architecture == "AMD64");
+            // first let's see if it already exists
+            FileInfo cachedFile = new FileInfo(_dataProvider.CacheFolder + "\\pfn_database_map.gz");
+            if (cachedFile.Exists && !dataProvider.IsLive)
+            {
+                PfnDatabaseMap dbm = RetrievePfnMap(cachedFile);
+                if (dbm != null)
+                {
+                    _pfnDatabaseList = dbm.PfnDatabaseRecords;
+                    return;
+                }
+            }
+            int pageCount = (int)(_dataProvider.ImageLength / 0x1000);
+            int blockTracker = 25600; // this is how many records are on 300 pages
+            byte[] blockBuffer = null;
+            for (int i = 0; i < pageCount; i++)
+            {
+                ulong startAddress = address + (uint)(i * 0x30); // assuming pfn records are always 48 bytes long!
+                if (blockTracker == 25600)
+                {
+                    blockTracker = 0;
+                    blockBuffer = _dataProvider.ReadMemoryBlock(startAddress, 300 * 0x1000);
+                    if (blockBuffer == null)
+                        break;
+                }
+                MMPFN entry = new MMPFN(blockBuffer, blockTracker * 48);
+                PfnRecord record = entry.PfnRecord;
+                ulong containingPage = record.U4.PteFrame;
+                record.PtePhysicalLocation = (containingPage << 12) | record.PteAddress & 0xfff;
+                record.PhysicalAddress = (ulong)(i * 0x1000);
+                blockTracker++;
+                if (record.PteAddress == 0)
+                    continue;
+                _pfnDatabaseList.Add(record);
+
+                //ulong startAddress = address + (uint)(i * 0x30); // assuming pfn records are always 48 bytes long!
+                //MMPFN entry = new MMPFN(_dataProvider.ReadMemoryBlock(startAddress, 0x30), 0);
+                //PfnRecord record = entry.PfnRecord;
+                //ulong containingPage = record.U4.PteFrame;
+                //record.PtePhysicalLocation = (containingPage << 12) | record.PteAddress & 0xfff;
+                //record.PhysicalAddress = (ulong)(i * 0x1000);
+                //if (record.PteAddress == 0)
+                //    continue;
+                //_pfnDatabaseList.Add(record);
+            }
+            PfnDatabaseMap map = new PfnDatabaseMap();
+            map.PfnDatabaseRecords = _pfnDatabaseList;
+            if (!dataProvider.IsLive)
+                PersistPfnMap(map, _dataProvider.CacheFolder + "\\pfn_database_map.gz");
+        }
+        private byte[] NextBlock(ulong startAddress, uint pageCount)
+        {
+            return _dataProvider.ReadMemoryBlock(startAddress, pageCount * 0x1000);
+        }
+        public List<PfnRecord> PfnDatabaseList { get { return _pfnDatabaseList; } }
+
+        public void PersistPfnMap(PfnDatabaseMap source, string fileName)
+        {
+            byte[] bytesToCompress = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(source));
+            using (FileStream fileToCompress = File.Create(fileName))
+            using (GZipStream compressionStream = new GZipStream(fileToCompress, CompressionMode.Compress))
+            {
+                compressionStream.Write(bytesToCompress, 0, bytesToCompress.Length);
+            }
+        }
+        public PfnDatabaseMap RetrievePfnMap(FileInfo sourceFile)
+        {
+            try
+            {
+                byte[] buffer;
+                using (FileStream fs = new FileStream(sourceFile.FullName, FileMode.Open, FileAccess.Read))
+                using (BinaryReader br = new BinaryReader(fs))
+                {
+                    buffer = br.ReadBytes((int)sourceFile.Length);
+                }
+                byte[] decompressed = Decompress(buffer);
+                return JsonConvert.DeserializeObject<PfnDatabaseMap>(Encoding.UTF8.GetString(decompressed));
+            }
+            catch { return null; }
+        }
+    }
     public class MMPFN
     {
         [StructLayout(LayoutKind.Explicit, Size =48, Pack =1)]
@@ -45,42 +163,31 @@ namespace MemoryExplorer.ModelObjects
             [FieldOffset(40)]
             public ulong u4;
         }
-        public u1 U1;
-        public u2 U2;
-        public long Lock;
-        public ulong PteAddress;
-        public ulong PteLong;
-        public ulong VolatilePteAddress;
-        public u3 U3;
-        public ushort NodeBlinkLow;
-        public byte VaType;
-        public byte NodeFlinkLow;
-        public byte ViewCount;
-        public ulong OriginalPte;
-        public u4 U4;
-        public ushort E1;
-        public uint E2;
+        private PfnRecord _pfnRecord;
+
+        public PfnRecord PfnRecord { get { return _pfnRecord; } }
 
         public MMPFN(byte[] buffer, int offset)
         {
             GCHandle pinnedPacket = GCHandle.Alloc(buffer, GCHandleType.Pinned);
             _MMPFN pfnRecord = (_MMPFN)Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset), typeof(_MMPFN));
-            Lock = pfnRecord.Lock;
-            PteAddress = pfnRecord.PteAddress & 0xffffffffffff;
-            PteLong = pfnRecord.PteLong;
-            VolatilePteAddress = pfnRecord.VolatilePteAddress;
-            NodeBlinkLow = pfnRecord.NodeBlinkLow;
-            VaType = pfnRecord.VaType;
-            NodeFlinkLow = pfnRecord.NodeFlinkLow;
-            ViewCount = pfnRecord.ViewCount;
+            _pfnRecord = new PfnRecord();
+            _pfnRecord.Lock = pfnRecord.Lock;
+            _pfnRecord.PteAddress = pfnRecord.PteAddress & 0xffffffffffff;
+            _pfnRecord.PteLong = pfnRecord.PteLong;
+            _pfnRecord.VolatilePteAddress = pfnRecord.VolatilePteAddress;
+            _pfnRecord.NodeBlinkLow = pfnRecord.NodeBlinkLow;
+            _pfnRecord.VaType = pfnRecord.VaType;
+            _pfnRecord.NodeFlinkLow = pfnRecord.NodeFlinkLow;
+            _pfnRecord.ViewCount = pfnRecord.ViewCount;
 
-            U1 = new u1(pfnRecord.u1);
-            U2 = new u2(pfnRecord.u2);
-            U3 = new u3(pfnRecord.u3);
-            OriginalPte = pfnRecord.OriginalPte;
-            U4 = new u4(pfnRecord.u4);
-            E1 = pfnRecord.e1;
-            E2 = pfnRecord.e2;
+            _pfnRecord.U1 = new u1(pfnRecord.u1);
+            _pfnRecord.U2 = new u2(pfnRecord.u2);
+            _pfnRecord.U3 = new u3(pfnRecord.u3);
+            _pfnRecord.OriginalPte = pfnRecord.OriginalPte;
+            _pfnRecord.U4 = new u4(pfnRecord.u4);
+            _pfnRecord.E1 = pfnRecord.e1;
+            _pfnRecord.E2 = pfnRecord.e2;
             pinnedPacket.Free();
         }
     }
@@ -177,9 +284,29 @@ namespace MemoryExplorer.ModelObjects
     }
     public class MMPFNENTRY
     {
+        public bool Modified;
+        public bool ReadInProgress;
+        public bool WriteInProgress;
+        public PageState PageLocation;
+        public bool RemovalRequested;
+        public uint CacheAttribute;
+        public bool OnProtectedStandby;
+        public bool ParityError;
+        public bool InPageError;
+        public uint Priority;
+
         public MMPFNENTRY(ushort entry)
         {
-
+            Modified = ((entry & 0x10) > 0);
+            ReadInProgress = ((entry & 0x20) > 0);
+            WriteInProgress = ((entry & 0x8) > 0);
+            PageLocation = (PageState)(entry & 0x7);
+            RemovalRequested = ((entry & 0x4000) > 0);
+            CacheAttribute = (uint)(entry & 0xc0);
+            OnProtectedStandby = ((entry & 0x800) > 0);
+            ParityError = ((entry & 0x8000) > 0);
+            InPageError = ((entry & 0x1000) > 0);
+            Priority = (uint)((entry & 0x700) >> 8);
         }
     }
     public enum PageState : uint

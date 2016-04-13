@@ -60,17 +60,27 @@ namespace MemoryExplorer.ModelObjects
             if (pAddr == 0)
                 return;
             _buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 1);
-            ulong ptr = ReadUInt64((int)(pAddr & 0xfff));
+            ulong ptr = 0;
+            if (_is64)
+                ptr = ReadUInt64((int)(pAddr & 0xfff));
+            else
+                ptr = ReadUInt32((int)(pAddr & 0xfff));
             ulong pAddress = kernelAS.vtop(ptr);
             ObjectType ot = new ObjectType(_profile, _dataProvider, pAddress);
 
             int count = (int)ot.TotalNumberOfObjects;
             for (int i = 0; i < count; i++)
             {
-                startOffset = _profile.KernelBaseAddress + indexTableOffset + (uint)(i * 8);
+                if(_is64)
+                    startOffset = _profile.KernelBaseAddress + indexTableOffset + (uint)(i * 8);
+                else
+                    startOffset = _profile.KernelBaseAddress + indexTableOffset + (uint)(i * 4);
                 pAddr = kernelAS.vtop(startOffset, _dataProvider.IsLive);
                 _buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 1);
-                ptr = ReadUInt64((int)(pAddr & 0xfff));
+                if (_is64)
+                    ptr = ReadUInt64((int)(pAddr & 0xfff));
+                else
+                    ptr = ReadUInt32((int)(pAddr & 0xfff));
                 pAddress = kernelAS.vtop(ptr);
                 ot = new ObjectType(_profile, _dataProvider, pAddress);
                 ObjectTypeRecord otr = new ObjectTypeRecord();
@@ -116,6 +126,10 @@ namespace MemoryExplorer.ModelObjects
         private ulong _index;
         private string _name;
         private ulong _totalNumberOfObjects;
+        private ulong _totalNumberOfHandles;
+        private ulong _highWaterNumberOfHandles;
+        private ulong _highWaterNumberOfObjects;
+
 
         public ObjectType(Profile profile, DataProviderBase dataProvider, ulong address)
         {
@@ -134,10 +148,19 @@ namespace MemoryExplorer.ModelObjects
             _name = us.Name;
             s = GetStructureMember("TotalNumberOfObjects");
             _totalNumberOfObjects = BitConverter.ToUInt64(_buffer, (int)s.Offset + (int)(address & 0xfff));
+            s = GetStructureMember("TotalNumberOfHandles");
+            _totalNumberOfHandles = BitConverter.ToUInt64(_buffer, (int)s.Offset + (int)(address & 0xfff));
+            s = GetStructureMember("HighWaterNumberOfHandles");
+            _highWaterNumberOfHandles = BitConverter.ToUInt64(_buffer, (int)s.Offset + (int)(address & 0xfff));
+            s = GetStructureMember("HighWaterNumberOfObjects");
+            _highWaterNumberOfObjects = BitConverter.ToUInt64(_buffer, (int)s.Offset + (int)(address & 0xfff));
+
         }
         public ulong Index { get { return _index; } }
         public string Name { get { return _name; } }
         public ulong TotalNumberOfObjects { get { return _totalNumberOfObjects; } }
-
+        public ulong TotalNumberOfHandles { get { return _totalNumberOfObjects; } }
+        public ulong HighWaterNumberOfHandles { get { return _highWaterNumberOfHandles; } }
+        public ulong HighWaterNumberOfObjects { get { return _highWaterNumberOfObjects; } }
     }
 }

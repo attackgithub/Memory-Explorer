@@ -106,6 +106,12 @@ namespace MemoryExplorer
         }
         public long Size { get { return _structureSize; } }
 
+        public uint ReadUInt32(int offset)
+        {
+            if (_buffer == null || offset > _buffer.Length)
+                return 0;
+            return BitConverter.ToUInt32(_buffer, offset);
+        }
         public ulong ReadUInt64(int offset)
         {
             if (_buffer == null || offset > _buffer.Length)

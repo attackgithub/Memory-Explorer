@@ -49,6 +49,7 @@ namespace MemoryExplorer.Model
         private byte[] _currentHexViewerContent = null;
         private ulong _currentHexViewerContentAddress = 0;
         private string _currentDetailsViewModelHint = "";
+        private PfnDatabase _pfnDatabase = null;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -257,10 +258,10 @@ namespace MemoryExplorer.Model
             }
             Properties.Settings.Default.Save();
         }
-        private void IncrementActiveJobs()
+        private void IncrementActiveJobs(string message = "")
         {
             _activeJobCount++;
-            ActivityMessage = "Busy";
+            ActivityMessage = "Busy: " + message;
         }
         private void DecrementActiveJobs()
         {
@@ -365,6 +366,7 @@ namespace MemoryExplorer.Model
             _kernelBaseAddress = 0;
             _architecture = "";
             _objectTypeList.Clear();
+            _pfnDatabaseBaseAddress = 0;
         }
         private void FlushArtifactsList()
         {

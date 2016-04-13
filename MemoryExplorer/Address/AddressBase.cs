@@ -20,7 +20,7 @@ namespace MemoryExplorer.Address
         protected bool _isKernel = false;
         protected MemoryMap _memoryMap;
         protected List<AddressRecord> _translationLookasideBuffer = new List<AddressRecord>();
-
+        protected bool _is64 = false;
 
 
         public AddressBase()
@@ -172,10 +172,8 @@ namespace MemoryExplorer.Address
             set { _processName = value; }
         }
 
-        public UInt64 Dtb
-        {
-            get { return _dtb; }
-        }
+        public ulong Dtb { get { return _dtb; } }
+        public bool Is64 { get { return _is64; } }
 
         public MemoryMap MemoryMap { get { return _memoryMap; } }
 

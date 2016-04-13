@@ -17,25 +17,25 @@ namespace MemoryExplorer.Model
     {
         async private void InitialSurvey()
         {
-            IncrementActiveJobs();
+            IncrementActiveJobs("Collecting Information");
             await GetInformation();
             DecrementActiveJobs();
 
-            IncrementActiveJobs();
+            IncrementActiveJobs("Detecting Profile");
             await FindProfileGuid();
             DecrementActiveJobs();
 
             if (_profile == null)
                 return;
 
-            IncrementActiveJobs();
+            IncrementActiveJobs("Finding Kernel DTB");
             await FindKernelDtb();
             DecrementActiveJobs();
 
             if (_kernelDtb == 0)
                 return;
 
-            IncrementActiveJobs();
+            IncrementActiveJobs("Loading Kernel Address Space");
             _kernelAddressSpace = await LoadKernelAddressSpace();
             _profile.KernelAddressSpace = _kernelAddressSpace;
             if (_kernelAddressSpace != null)
@@ -48,17 +48,21 @@ namespace MemoryExplorer.Model
             }
             DecrementActiveJobs();
 
-            IncrementActiveJobs();
+            IncrementActiveJobs("Locating Kernel Image");
             await FindKernelImage();
             DecrementActiveJobs();
             _profile.KernelBaseAddress = _kernelBaseAddress;
 
-            IncrementActiveJobs();
+            IncrementActiveJobs("Processing Shared Data");
             await FindUserSharedData();
             DecrementActiveJobs();
 
-            IncrementActiveJobs();
+            IncrementActiveJobs("Detecting Object Types");
             await EnumerateObjectTypes();
+            DecrementActiveJobs();
+
+            IncrementActiveJobs("Processing Pfn Database");
+            await LocatePfnDatabase();
             DecrementActiveJobs();
 
         }
@@ -81,11 +85,18 @@ namespace MemoryExplorer.Model
                     {
                         _kernelBaseAddress = (ulong)item.Value;
                         friendlyKey = "Kernel Base Address";
+                        if (_kernelBaseAddress == 0)
+                            continue;
                     }
                     else if (item.Key == "kdbg")
                         friendlyKey = "KDBG";
                     else if (item.Key == "pfnDatabase")
+                    {
+                        _pfnDatabaseBaseAddress = (ulong)item.Value;
                         friendlyKey = "PFN Database Address";
+                        if (_pfnDatabaseBaseAddress == 0)
+                            continue;
+                    }
                     else if (item.Key == "psLoadedModuleList")
                         friendlyKey = "PsLoadedModuleList Address";
                     else if (item.Key == "ntBuildNumberAddress")
@@ -367,9 +378,13 @@ namespace MemoryExplorer.Model
                 {
                     uint pfnAddressOffset = (uint)_profile.GetConstant("MmPfnDatabase");
                     ulong pfnVAddr = _kernelBaseAddress + pfnAddressOffset;
-                    ulong pfnPAddr = _kernelAddressSpace.vtop(pfnVAddr);
-                    byte[] buffer = _dataProvider.ReadMemory(pfnPAddr & 0xfffffffff000, 1);
-                    _pfnDatabaseBaseAddress = BitConverter.ToUInt64(buffer, (int)(pfnPAddr & 0xfff));
+                    _dataProvider.ActiveAddressSpace = _kernelAddressSpace;
+                    ulong? pfnPAddr = _dataProvider.ReadUInt64(pfnVAddr);
+                    if (pfnPAddr == null)
+                        return;
+                    _pfnDatabaseBaseAddress = (ulong)pfnPAddr;
+                    AddToInfoDictionary("PFN Database Address", _pfnDatabaseBaseAddress.ToString("X08"));
+                    _pfnDatabase = new PfnDatabase(_dataProvider, _profile, _pfnDatabaseBaseAddress);
                 }
                 catch
                 {

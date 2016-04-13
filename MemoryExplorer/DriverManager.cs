@@ -97,6 +97,11 @@ namespace MemoryExplorer
             procAddress = GetProcAddress(_helperLib, "StartDriver");
             StartDriver start = (StartDriver)Marshal.GetDelegateForFunctionPointer(procAddress, typeof(StartDriver));
             result = start("pmem");
+            if (result == false)
+            {
+                _driverLoaded = false;
+                return result;
+            }
             //error = GetLastError();
             _driverLoaded = true;
             return result;
@@ -121,6 +126,7 @@ namespace MemoryExplorer
             procAddress = GetProcAddress(_helperLib, "UnregisterDriver");
             UnregisterDriver unreg = (UnregisterDriver)Marshal.GetDelegateForFunctionPointer(procAddress, typeof(UnregisterDriver));
             result = unreg("pmem");
+
             _driverLoaded = false;
             return result;
         }

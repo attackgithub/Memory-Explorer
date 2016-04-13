@@ -1,4 +1,5 @@
-﻿using MemoryExplorer.Memory;
+﻿using MemoryExplorer.Address;
+using MemoryExplorer.Memory;
 using MemoryExplorer.Model;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ namespace MemoryExplorer.Data
         protected List<MemoryRange> _memoryRangeList = new List<MemoryRange>();
         private bool _isLive;
         private string _cacheFolder;
+        private AddressBase _activeAddressSpace;
 
         public DataProviderBase(DataModel data, string cacheFolder)
         {
@@ -28,31 +30,79 @@ namespace MemoryExplorer.Data
 
         public List<MemoryRange> MemoryRangeList
         {
-            get
-            {
-                return _memoryRangeList;
-            }
+            get { return _memoryRangeList; }
         }
 
         public bool IsLive
         {
-            get
-            {
-                return _isLive;
-            }
-
-            set
-            {
-                _isLive = value;
-            }
+            get { return _isLive; }
+            set { _isLive = value; }
         }
 
         public string CacheFolder
         {
-            get
+            get { return _cacheFolder; }
+        }
+
+        public AddressBase ActiveAddressSpace
+        {
+            get { return _activeAddressSpace; }
+            set { _activeAddressSpace = value; }
+        }
+        public byte[] ReadMemoryBlock(ulong startAddress, uint byteCount)
+        {
+            byte[] buffer = new byte[byteCount];
+            ulong startPage;
+            if(_activeAddressSpace.Is64)
+                startPage = startAddress & 0xfffffffff000;
+            else
+                startPage = startAddress & 0xfffff000;
+
+            uint pageCount = (uint)(((startAddress + byteCount) - startPage) / 0x1000);
+            uint pageDiff = (uint)(((startAddress + byteCount) - startPage) % 0x1000);
+            if (pageDiff > 0)
+                pageCount++;
+            byte[] bigBuffer = new byte[pageCount * 0x1000];
+            for (int i = 0; i < pageCount; i++)
             {
-                return _cacheFolder;
+                ulong pAddr = _activeAddressSpace.vtop(startPage + (ulong)(i * 0x1000));
+                if (pAddr == 0)
+                    return null;
+                byte[] pageBuffer = ReadMemory(pAddr, 1);
+                if (pageBuffer == null)
+                    return null;
+                Array.Copy(pageBuffer, 0, bigBuffer, (i * 0x1000), 0x1000);
             }
+            Array.Copy(bigBuffer, (int)(startAddress - startPage), buffer, 0, byteCount);
+            return buffer;
+        }
+        public uint? ReadUInt32(ulong startAddress)
+        {
+            byte[] buffer = ReadMemoryBlock(startAddress, 4);
+            if (buffer == null)
+                return null;
+            return BitConverter.ToUInt32(buffer, 0);
+        }
+        public ulong? ReadUInt64(ulong startAddress)
+        {
+            byte[] buffer = ReadMemoryBlock(startAddress, 8);
+            if (buffer == null)
+                return null;
+            return BitConverter.ToUInt64(buffer, 0);
+        }
+        public int? ReadInt32(ulong startAddress)
+        {
+            byte[] buffer = ReadMemoryBlock(startAddress, 4);
+            if (buffer == null)
+                return null;
+            return BitConverter.ToInt32(buffer, 0);
+        }
+        public long? ReadInt64(ulong startAddress)
+        {
+            byte[] buffer = ReadMemoryBlock(startAddress, 8);
+            if (buffer == null)
+                return null;
+            return BitConverter.ToInt64(buffer, 0);
         }
     }
 }
