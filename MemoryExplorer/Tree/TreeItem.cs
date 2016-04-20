@@ -1,5 +1,6 @@
 ﻿using MemoryExplorer.Artifacts;
 using MemoryExplorer.Model;
+using MemoryExplorer.Processes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -62,7 +63,11 @@ namespace MemoryExplorer.Tree
         {
             get
             {
-                return _artifactItem.Name;
+                ProcessArtifact a = _artifactItem as ProcessArtifact;
+                if(a == null)
+                    return _artifactItem.Name;
+                ProcessInfo p = a.LinkedProcess;
+                return p.ProcessName + " (" + p.Pid.ToString() + ")";
             }
         }
 

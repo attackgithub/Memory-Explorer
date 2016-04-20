@@ -54,6 +54,9 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Images\Icons\mx.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -98,6 +101,10 @@
     <Compile Include="Artifacts\ProcessArtifact.cs" />
     <Compile Include="Artifacts\RootArtifact.cs" />
     <Compile Include="Artifacts\ArtifactBase.cs" />
+    <Compile Include="Details\DebugViewer.xaml.cs">
+      <DependentUpon>DebugViewer.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Details\DebugViewerViewModel.cs" />
     <Compile Include="Details\Details1.xaml.cs">
       <DependentUpon>Details1.xaml</DependentUpon>
     </Compile>
@@ -146,6 +153,7 @@
     <Compile Include="HexView\Utils.cs" />
     <Compile Include="Memory\MemoryRange.cs" />
     <Compile Include="ModelObjects\KUserSharedData.cs" />
+    <Compile Include="ModelObjects\ListEntry.cs" />
     <Compile Include="ModelObjects\ObjectTypes.cs" />
     <Compile Include="ModelObjects\PfnDatabase.cs" />
     <Compile Include="ModelObjects\UnicodeString.cs" />
@@ -164,6 +172,10 @@
     </Compile>
     <Compile Include="Tree\MxTreeViewModel.cs" />
     <Compile Include="Tree\TreeItem.cs" />
+    <Page Include="Details\DebugViewer.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Details\Details1.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -266,6 +278,18 @@
     <Resource Include="Images\Icons\resize_16.ico" />
     <Resource Include="Images\Icons\resize_8.ico" />
     <Resource Include="Images\Icons\resize_auto.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Awicons-Vista-Artistic-Computer-search.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Nishad2m8-Hologram-Dock-My-computer.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Icons\badge.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Icons\mx.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

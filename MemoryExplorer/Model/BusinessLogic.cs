@@ -44,6 +44,8 @@ namespace MemoryExplorer.Model
                 p.AddressSpace = _kernelAddressSpace;
                 p.ProcessName = "Idle";
                 p.Pid = 0;
+                p.ParentPid = 0;
+                p.Dtb = _kernelDtb;
                 AddProcess(p);
             }
             DecrementActiveJobs();
@@ -63,6 +65,10 @@ namespace MemoryExplorer.Model
 
             IncrementActiveJobs("Processing Pfn Database");
             await LocatePfnDatabase();
+            DecrementActiveJobs();
+
+            IncrementActiveJobs("Process List One");
+            await PsList_Method1();
             DecrementActiveJobs();
 
         }
@@ -179,7 +185,7 @@ namespace MemoryExplorer.Model
                         {
                             try
                             {
-                                EProcess ep = new EProcess(_profile, _dataProvider, hit - filenameOffset);
+                                EProcess ep = new EProcess(_profile, _dataProvider, 0, hit - filenameOffset);
                                 _kernelDtb = ep.DTB;
                                 if(_kernelDtb > _dataProvider.ImageLength || _kernelDtb == 0)
                                 {
@@ -351,7 +357,6 @@ namespace MemoryExplorer.Model
                 }
             });
         }
-
         async private Task EnumerateObjectTypes()
         {
             await Task.Run(() =>
@@ -369,7 +374,6 @@ namespace MemoryExplorer.Model
                 }
             });
         }
-
         async private Task LocatePfnDatabase()
         {
             await Task.Run(() =>
@@ -392,7 +396,54 @@ namespace MemoryExplorer.Model
                 }                
             });
         }
+        async private Task PsList_Method1()
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    uint processHeadOffset = (uint)_profile.GetConstant("PsActiveProcessHead");
+                    ulong vAddr = _kernelBaseAddress + processHeadOffset;
+                    _dataProvider.ActiveAddressSpace = _kernelAddressSpace;
+                    LIST_ENTRY le = new LIST_ENTRY(_dataProvider, vAddr);
+                    ulong apl = (ulong)_profile.GetOffset("_EPROCESS", "ActiveProcessLinks");
+                    List<LIST_ENTRY> lists = FindAllLists(_dataProvider, le);
+                    foreach (LIST_ENTRY entry in lists)
+                    {
+                        if (entry.VirtualAddress == vAddr)
+                            continue;
 
+                        EProcess ep = new EProcess(_profile, _dataProvider, entry.VirtualAddress - apl);
+                        string name = ep.ImageFileName;                        
+                        uint pid = ep.Pid;
+                        ProcessInfo p = GetProcessInfo(pid, name);
+                        if (p == null )
+                        {
+                            p = new ProcessInfo();
+                            p.AddressSpace = _kernelAddressSpace;
+                            p.ProcessName = name;
+                            p.Pid = pid;
+                            p.Dtb = ep.DTB;
+                            p.ParentPid = ep.Ppid;
+                            p.ActiveThreads = ep.ActiveThreads;
+                            p.Session = ep.Session;
+                            p.StartTime = ep.StartTime;
+                            p.ExitTime = ep.ExitTime;
+                            p.FoundByMethod1 = true;
+                            AddProcess(p);
+                        }
+                        else
+                        {
+                            p.FoundByMethod1 = true;
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+            });
+        }
         public void Dispose()
         {
             BigCleanUp();

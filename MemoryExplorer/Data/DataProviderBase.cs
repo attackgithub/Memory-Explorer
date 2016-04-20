@@ -49,6 +49,16 @@ namespace MemoryExplorer.Data
             get { return _activeAddressSpace; }
             set { _activeAddressSpace = value; }
         }
+        public byte[] ReadPhysicalMemory(ulong startAddress, uint byteCount)
+        {
+            byte[] buffer = new byte[byteCount];
+            byte[] pageBuffer = ReadMemory(startAddress & 0xfffffffff000, 1);
+            if (pageBuffer == null)
+                return null;
+            uint realOffset = (uint)(startAddress - (startAddress & 0xfffffffff000));
+            Array.Copy(pageBuffer, realOffset, buffer, 0, byteCount);
+            return buffer;
+        }
         public byte[] ReadMemoryBlock(ulong startAddress, uint byteCount)
         {
             byte[] buffer = new byte[byteCount];

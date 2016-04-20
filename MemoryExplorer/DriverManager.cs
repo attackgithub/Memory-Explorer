@@ -15,8 +15,10 @@ namespace MemoryExplorer
         private string _libraryFilename;
         private bool _driverLoaded = false;
         private IntPtr _helperLib = IntPtr.Zero;
+        private int _driverVersion = 0;
 
         public string LibraryFilename { get { return _libraryFilename; } }
+        public int Version { get { return _driverVersion; } }
 
         public DriverManager()
         {
@@ -77,12 +79,20 @@ namespace MemoryExplorer
         }
         public bool LoadDriver()
         {
+            if (LoadDriverEx())
+                return true;
+            UnloadDriver();
+            return LoadDriverEx();
+        }
+
+        public bool LoadDriverEx()
+        {
             if (_driverLoaded)
                 return true;
             //uint error = GetLastError();
             IntPtr procAddress = GetProcAddress(_helperLib, "Version");
             GetVersion ver = (GetVersion)Marshal.GetDelegateForFunctionPointer(procAddress, typeof(GetVersion));
-            int realVersion = ver();
+            _driverVersion = ver();
             bool result;
             // register driver
             procAddress = GetProcAddress(_helperLib, "RegisterDriver");
@@ -130,6 +140,7 @@ namespace MemoryExplorer
             _driverLoaded = false;
             return result;
         }
+        
         private bool IsAdmin()
         {
             WindowsIdentity identity = WindowsIdentity.GetCurrent();

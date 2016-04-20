@@ -45,6 +45,9 @@ namespace MemoryExplorer.ModelObjects
             _dataProvider = dataProvider;
             _profile = profile;
             _is64 = (_profile.Architecture == "AMD64");
+            // there's no point if the system is live
+            if (_dataProvider.IsLive)
+                return;
             // first let's see if it already exists
             FileInfo cachedFile = new FileInfo(_dataProvider.CacheFolder + "\\pfn_database_map.gz");
             if (cachedFile.Exists && !dataProvider.IsLive)
@@ -78,16 +81,6 @@ namespace MemoryExplorer.ModelObjects
                 if (record.PteAddress == 0)
                     continue;
                 _pfnDatabaseList.Add(record);
-
-                //ulong startAddress = address + (uint)(i * 0x30); // assuming pfn records are always 48 bytes long!
-                //MMPFN entry = new MMPFN(_dataProvider.ReadMemoryBlock(startAddress, 0x30), 0);
-                //PfnRecord record = entry.PfnRecord;
-                //ulong containingPage = record.U4.PteFrame;
-                //record.PtePhysicalLocation = (containingPage << 12) | record.PteAddress & 0xfff;
-                //record.PhysicalAddress = (ulong)(i * 0x1000);
-                //if (record.PteAddress == 0)
-                //    continue;
-                //_pfnDatabaseList.Add(record);
             }
             PfnDatabaseMap map = new PfnDatabaseMap();
             map.PfnDatabaseRecords = _pfnDatabaseList;

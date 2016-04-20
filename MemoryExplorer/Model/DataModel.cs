@@ -8,6 +8,7 @@ using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -15,6 +16,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Forms;
 
 namespace MemoryExplorer.Model
 {
@@ -50,11 +53,25 @@ namespace MemoryExplorer.Model
         private ulong _currentHexViewerContentAddress = 0;
         private string _currentDetailsViewModelHint = "";
         private PfnDatabase _pfnDatabase = null;
+        private List<string> _debugTracer = new List<string>();
+        private TabItem _rootDetailsSelectedTab = null;
+
 
         public event PropertyChangedEventHandler PropertyChanged;
 
         #endregion
         #region access
+        public TabItem RootDetailsSelectedTab
+        {
+            get { return _rootDetailsSelectedTab; }
+            set { _rootDetailsSelectedTab = value; }
+        }
+
+        public List<string> DebugTracer
+        {
+            get { return _debugTracer; }
+            set { SetProperty(ref _debugTracer, value); }
+        }
         public string CurrentDetailsViewModelHint
         {
             get { return _currentDetailsViewModelHint; }
@@ -148,7 +165,7 @@ namespace MemoryExplorer.Model
                         _mru.Add(item);
                 }                   
             }
-           
+
             // some temporary test data
             //RootArtifact ba = new RootArtifact();
             //ba.Name = "Live Capture";
@@ -169,10 +186,16 @@ namespace MemoryExplorer.Model
                 {
                     _driverManager = new DriverManager();
                     bool result = _driverManager.LoadDriver();
+                    AddDebugMessage("Loaded Driver: " + result.ToString());
+                    if(!result)
+                    {
+                        System.Windows.Forms.MessageBox.Show("Unable to perform live analysis.\nThere was a proble loading the driver", "DriverProblem", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return false;
+                    }
                 }
                 catch(Exception ex)
                 {
-                    MessageBox.Show("Error: Loading Driver. (DataModel:NewLiveInvestigation): " + ex.Message, "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    System.Windows.MessageBox.Show("Error: Loading Driver. (DataModel:NewLiveInvestigation): " + ex.Message, "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return false;
                 }
             }
@@ -200,6 +223,7 @@ namespace MemoryExplorer.Model
             MemoryImageFilename = possibleFilename;
             _dataProvider = new ImageDataProvider(this, _cacheLocation);
             UpdateDetails(_rootArtifact = AddArtifact(ArtifactType.Root, fi.Name, true));
+            AddDebugMessage("New Image Loaded: " + possibleFilename);
             UpdateMru(MemoryImageFilename);
             DecrementActiveJobs();
             InitialSurvey();
@@ -333,7 +357,18 @@ namespace MemoryExplorer.Model
             _objectTypeList.Add(record);
             NotifyPropertyChange("ObjectTypes"); // this forces the set property / INotifyPropertyCHange
         }
-
+        public void AddDebugMessage(string message)
+        {
+#if DEBUG
+            DateTime CurrentTime = DateTime.Now;
+            string Timestamp = CurrentTime.ToString() + " - ";
+            //string Timestamp = CurrentTime.ToString("yyyyMMddHHmmss - ", DateTimeFormatInfo.InvariantInfo);
+            _debugTracer.Add(Timestamp + message);
+            NotifyPropertyChange("DebugTracer"); // this forces the set property / INotifyPropertyCHange
+#else
+            return;
+#endif
+        }
         #region PROCESSES
         private void FlushProcesses()
         {
@@ -367,6 +402,7 @@ namespace MemoryExplorer.Model
             _architecture = "";
             _objectTypeList.Clear();
             _pfnDatabaseBaseAddress = 0;
+            AddDebugMessage("BIG CLEANUP CALLED");
         }
         private void FlushArtifactsList()
         {
@@ -375,7 +411,7 @@ namespace MemoryExplorer.Model
         #endregion
         private string GetImageFile()
         {
-            OpenFileDialog dialog = new OpenFileDialog();
+            Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
             dialog.Filter = "Image Files (vmem)|*.vmem|All FIles (*.*)|*.*";
             bool? clicked = dialog.ShowDialog();
             if(clicked == true)

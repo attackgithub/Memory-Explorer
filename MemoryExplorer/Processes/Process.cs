@@ -11,6 +11,16 @@ namespace MemoryExplorer.Processes
     {
         public AddressBase AddressSpace;
         public ulong Pid;
+        public ulong ParentPid;
         public string ProcessName;
+        public bool FoundByMethod1 = false; // active process head
+        public bool FoundByMethod2 = false; // active process head
+        public bool FoundByMethod3 = false; // active process head
+        public bool FoundByMethod4 = false; // active process head
+        public ulong Dtb;
+        public ulong Session;
+        public uint ActiveThreads;
+        public DateTime StartTime;
+        public DateTime ExitTime;
     }
 }

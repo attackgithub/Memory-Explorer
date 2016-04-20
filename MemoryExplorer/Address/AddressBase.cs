@@ -40,6 +40,8 @@ namespace MemoryExplorer.Address
             UInt64 contiguousVOffset = 0;
             UInt64 contiguousPOffset = 0;
             UInt32 totalLength = 0;
+            if (_translationLookasideBuffer == null)
+                return null;
             uint lastFlag = _translationLookasideBuffer[0].Flags;
             foreach (AddressRecord ar in _translationLookasideBuffer)
             {

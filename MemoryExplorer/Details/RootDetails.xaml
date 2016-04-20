@@ -6,17 +6,25 @@
              xmlns:local="clr-namespace:MemoryExplorer.Details"
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300">
+    <UserControl.DataContext>
+        <local:RootDetailsViewModel />
+    </UserControl.DataContext>
     <Grid Background="#FF0EB8B0">
         <TabControl>
-            <TabItem Header="Information">
+            <TabItem Header="Information" IsSelected="{Binding InfoSelected, Mode=TwoWay}">
                 <local:InformationDetails />
             </TabItem>
-            <TabItem Header="Object List">
+            <TabItem Header="Object List" IsSelected="{Binding ObjectListSelected, Mode=TwoWay}">
                 <local:ObjectTypes />
             </TabItem>
-            <TabItem Header="Hex Viewer">
+            <TabItem Header="Hex Viewer" IsSelected="{Binding HexSelected, Mode=TwoWay}"  >
                 <local:HexViewer />
+            </TabItem>
+            <TabItem Header="Debug" Visibility="{Binding DebugVisible}" IsSelected="{Binding DebugSelected, Mode=TwoWay}" >
+                <local:DebugViewer />
             </TabItem>
         </TabControl>
     </Grid>
 </UserControl>
+
+<!--IsSelected="{Binding Selected, Mode=TwoWay}"-->
