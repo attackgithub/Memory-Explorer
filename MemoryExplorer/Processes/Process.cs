@@ -22,5 +22,8 @@ namespace MemoryExplorer.Processes
         public uint ActiveThreads;
         public DateTime StartTime;
         public DateTime ExitTime;
+        public ulong ObjectTableAddress;
+        public ulong PhysicalAddress;
+        public ulong VirtualAddress;
     }
 }

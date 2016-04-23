@@ -57,37 +57,37 @@ namespace MemoryExplorer.Model
                     return version;
             }
         }
-        private List<LIST_ENTRY> FindAllLists(DataProviderBase dataProvider, LIST_ENTRY source)
-        {
-            List<LIST_ENTRY> results = new List<LIST_ENTRY>();
-            List<ulong> seen = new List<ulong>();
-            List<LIST_ENTRY> stack = new List<LIST_ENTRY>();
-            AddressBase addressSpace = dataProvider.ActiveAddressSpace;
-            stack.Add(source);
-            while (stack.Count > 0)
-            {
-                LIST_ENTRY item = stack[0];
-                stack.RemoveAt(0);
-                if (!seen.Contains(item.PhysicalAddress))
-                {
-                    seen.Add(item.PhysicalAddress);
-                    results.Add(item);
-                    ulong Blink = item.Blink;
-                    if (Blink != 0)
-                    {
-                        ulong refr = addressSpace.vtop(Blink);
-                        stack.Add(new LIST_ENTRY(dataProvider, item.Blink));
-                    }
-                    ulong Flink = item.Flink;
-                    if (Flink != 0)
-                    {
-                        ulong refr = addressSpace.vtop(Flink);
-                        stack.Add(new LIST_ENTRY(dataProvider, item.Flink));
-                    }
-                }
-            }
-            return results;
-        }
+        //private List<LIST_ENTRY> FindAllLists(DataProviderBase dataProvider, LIST_ENTRY source)
+        //{
+        //    List<LIST_ENTRY> results = new List<LIST_ENTRY>();
+        //    List<ulong> seen = new List<ulong>();
+        //    List<LIST_ENTRY> stack = new List<LIST_ENTRY>();
+        //    AddressBase addressSpace = dataProvider.ActiveAddressSpace;
+        //    stack.Add(source);
+        //    while (stack.Count > 0)
+        //    {
+        //        LIST_ENTRY item = stack[0];
+        //        stack.RemoveAt(0);
+        //        if (!seen.Contains(item.PhysicalAddress))
+        //        {
+        //            seen.Add(item.PhysicalAddress);
+        //            results.Add(item);
+        //            ulong Blink = item.Blink;
+        //            if (Blink != 0)
+        //            {
+        //                ulong refr = addressSpace.vtop(Blink);
+        //                stack.Add(new LIST_ENTRY(dataProvider, item.Blink));
+        //            }
+        //            ulong Flink = item.Flink;
+        //            if (Flink != 0)
+        //            {
+        //                ulong refr = addressSpace.vtop(Flink);
+        //                stack.Add(new LIST_ENTRY(dataProvider, item.Flink));
+        //            }
+        //        }
+        //    }
+        //    return results;
+        //}
         private ProcessInfo GetProcessInfo(uint pid, string name)
         {
             foreach (ProcessInfo p in _processList)

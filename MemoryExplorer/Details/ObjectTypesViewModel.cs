@@ -15,7 +15,7 @@ namespace MemoryExplorer.Details
         {
             get
             {
-                if (_dataModel == null)
+                if (_dataModel == null || _dataModel.ObjectTypeList == null)
                     return null;
                 if (_dataModel.ObjectTypeList.Count == 0)
                     return null;

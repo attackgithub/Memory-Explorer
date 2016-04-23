@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Profiles;
 using System;
 using System.Collections.Generic;
@@ -43,12 +44,13 @@ namespace MemoryExplorer
         protected Profile _profile;
         protected string _imageFile;
         protected ulong _physicalAddress;
+        protected ulong _virtualAddress;
         protected bool _is64;
         protected byte[] _buffer = null;
         protected List<Structure> _structure;
         protected long _structureSize = -1;
         protected DataProviderBase _dataProvider;
-        //protected ObjectHeader _header = null;
+        protected ObjectHeader _header = null;
 
         protected Structure GetStructureMember(string member)
         {
@@ -105,6 +107,9 @@ namespace MemoryExplorer
             return sBuilder.ToString();
         }
         public long Size { get { return _structureSize; } }
+
+        public ulong VirtualAddress { get { return _virtualAddress; } }
+        public ulong PhysicalAddress { get { return _physicalAddress; } }
 
         public uint ReadUInt32(int offset)
         {

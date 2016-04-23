@@ -48,7 +48,7 @@ namespace MemoryExplorer.Model
         private AddressBase _kernelAddressSpace = null;
         private ulong _kernelBaseAddress = 0;
         private ulong _pfnDatabaseBaseAddress = 0;
-        private List<ObjectTypeRecord> _objectTypeList = new List<ObjectTypeRecord>();
+        //private List<ObjectTypeRecord> _objectTypeList = new List<ObjectTypeRecord>();
         private byte[] _currentHexViewerContent = null;
         private ulong _currentHexViewerContentAddress = 0;
         private string _currentDetailsViewModelHint = "";
@@ -90,8 +90,8 @@ namespace MemoryExplorer.Model
         }
         public List<ObjectTypeRecord> ObjectTypeList
         {
-            get { return _objectTypeList; }
-            set { SetProperty(ref _objectTypeList, value); }
+            get { if (_profile == null) return null;  return _profile.ObjectTypeList; }
+            //set { _profile.ObjectTypeList = value; NotifyPropertyChange("ObjectTypes"); }
         }
         public string CacheLocation { get { return _cacheLocation; } }
         public List<string> Mru
@@ -152,6 +152,8 @@ namespace MemoryExplorer.Model
             get { return _artifacts; }
             set { SetProperty(ref _artifacts, value); }
         }
+
+        public List<ProcessInfo> ProcessList { get { return _processList; } }
         #endregion
         public DataModel(bool IsAdmin)
         {
@@ -348,13 +350,39 @@ namespace MemoryExplorer.Model
             artifact.IsExpanded = false;
             artifact.IsSelected = selected;
             _artifacts.Add(artifact);
+            //OrderProcessArtifacts();
             NotifyPropertyChange("TreeItems"); // this forces the set property / INotifyPropertyCHange
+            NotifyPropertyChange("Processes"); 
             return artifact;
         }
-        
+        private void OrderProcessArtifacts()
+        {
+            Dictionary<ulong, ProcessArtifact> paList = new Dictionary<ulong, ProcessArtifact>();
+            List<ProcessArtifact> processList = new List<ProcessArtifact>();
+
+            foreach (ArtifactBase artifact in _artifacts)
+            {
+                ProcessArtifact pa = artifact as ProcessArtifact;
+                if (pa == null || pa.LinkedProcess == null)
+                    continue;
+                paList.Add(pa.LinkedProcess.Pid, pa);
+                processList.Add(pa);
+            }
+            // check for parent
+            ProcessArtifact parent;
+            foreach (ProcessArtifact pa in processList)
+            {
+                if (paList.TryGetValue(pa.LinkedProcess.ParentPid,out parent))
+                {
+                    if(pa.LinkedProcess.ParentPid != 0)
+                        pa.Parent = parent;
+                }
+            }
+            // check for children
+        }
         private void AddObjectType(ObjectTypeRecord record)
         {
-            _objectTypeList.Add(record);
+            _profile.ObjectTypeList.Add(record);
             NotifyPropertyChange("ObjectTypes"); // this forces the set property / INotifyPropertyCHange
         }
         public void AddDebugMessage(string message)
@@ -394,13 +422,15 @@ namespace MemoryExplorer.Model
             FlushArtifactsList();
             _activeArtifact = null;
             _imageMd5 = "";
+            if(_profile != null && _profile.ObjectTypeList != null)
+                _profile.ObjectTypeList.Clear();
             _cacheLocation = "";
             _profile = null;
             _kernelDtb = 0;
             _infoDictionary.Clear();
             _kernelBaseAddress = 0;
             _architecture = "";
-            _objectTypeList.Clear();
+            _processList.Clear();
             _pfnDatabaseBaseAddress = 0;
             AddDebugMessage("BIG CLEANUP CALLED");
         }

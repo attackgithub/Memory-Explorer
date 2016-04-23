@@ -6,7 +6,7 @@ using MemoryExplorer.Scanners;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,7 +29,7 @@ namespace MemoryExplorer.Model
                 return;
 
             IncrementActiveJobs("Finding Kernel DTB");
-            await FindKernelDtb();
+            ulong eppa = await FindKernelDtb();
             DecrementActiveJobs();
 
             if (_kernelDtb == 0)
@@ -42,8 +42,9 @@ namespace MemoryExplorer.Model
             {
                 ProcessInfo p = new ProcessInfo();
                 p.AddressSpace = _kernelAddressSpace;
-                p.ProcessName = "Idle";
+                p.ProcessName = "System Idle Process";
                 p.Pid = 0;
+                p.PhysicalAddress = eppa;
                 p.ParentPid = 0;
                 p.Dtb = _kernelDtb;
                 AddProcess(p);
@@ -70,8 +71,16 @@ namespace MemoryExplorer.Model
             IncrementActiveJobs("Process List One");
             await PsList_Method1();
             DecrementActiveJobs();
+            OrderProcessArtifacts();
+
+            IncrementActiveJobs("Process List Two");
+            await PsList_Method2();
+            DecrementActiveJobs();
+            OrderProcessArtifacts();
+            NotifyPropertyChange("Processes");
 
         }
+        
         async private Task GetInformation()
         {
             await Task.Run(() => 
@@ -120,101 +129,169 @@ namespace MemoryExplorer.Model
         {
             await Task.Run(() => 
             {
-                StringSearch mySearch = new StringSearch(_dataProvider);
-                mySearch.AddNeedle("RSDS");
-                //Dictionary<string, List<ulong>> results = mySearch.Scan();
-                foreach (var answer in mySearch.Scan())
+                if (_dataProvider.IsLive)
                 {
                     try
                     {
-                        List<ulong> hitList = answer["RSDS"];
-                        foreach (ulong hit in hitList)
+                        // get the system folder
+                        string systemDirectory = Environment.SystemDirectory;
+                        string kernelLocation = systemDirectory + "\\ntoskrnl.exe";
+                        int matches = 0;
+                        using (FileStream fs = new FileStream(kernelLocation, FileMode.Open, FileAccess.Read))
                         {
-                            try
+                            while (true)
                             {
-                                RSDS rsds = new RSDS(_dataProvider, hit);
-                                if (rsds.Signature == "RSDS" && (rsds.Filename == "ntkrnlpa.pdb" || rsds.Filename == "ntkrnlmp.pdb" || rsds.Filename == "ntkrpamp.pdb" || rsds.Filename == "ntoskrnl.pdb"))
+                                byte b = (byte)fs.ReadByte();
+                                if (matches == 0 && b == 82) // R
+                                    matches = 1;
+                                else if (matches == 1 && b == 83) // S
+                                    matches = 2;
+                                else if (matches == 2 && b == 68) // D
+                                    matches = 3;
+                                else if (matches == 3 && b == 83) // S
                                 {
-                                    ProfileName = rsds.GuidAge + ".gz";
-                                    AddToInfoDictionary("ProfileName", ProfileName);
-                                    _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache"); // TO DO - make this a user option when you get around to writing the settings dialog
-                                    Architecture = _profile.Architecture;
-                                    AddToInfoDictionary("Architecture", Architecture);
-                                    if (_profile.Architecture == "I386")
-                                        _kiUserSharedData = 0xFFDF0000;
-                                    else
-                                        _kiUserSharedData = 0xFFFFF78000000000;
-                                    AddToInfoDictionary("KiUserSharedData", "0x" + _kiUserSharedData.ToString("X"));
-                                    return;
+                                    byte[] buffer = new byte[16];
+                                    int result = fs.Read(buffer, 0, 16);
+                                    Guid g = new Guid(buffer);
+                                    buffer = new byte[4];
+                                    result = fs.Read(buffer, 0, 4);
+                                    uint age = BitConverter.ToUInt32(buffer, 0);
+                                    buffer = new byte[12];
+                                    result = fs.Read(buffer, 0, 12);
+                                    string name = Encoding.Default.GetString(buffer);
+                                    if (name == "ntkrnlpa.pdb" || name == "ntkrnlmp.pdb" || name == "ntkrpamp.pdb" || name == "ntoskrnl.pdb")
+                                    {
+                                        string GuidAge = (g.ToString("N") + age.ToString()).ToUpper();
+                                        ProfileName = GuidAge + ".gz";
+                                        AddToInfoDictionary("ProfileName", ProfileName);
+                                        _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache"); // TO DO - make this a user option when you get around to writing the settings dialog
+                                        Architecture = _profile.Architecture;
+                                        Architecture = _profile.Architecture;
+                                        AddToInfoDictionary("Architecture", Architecture);
+                                        if (_profile.Architecture == "I386")
+                                            _kiUserSharedData = 0xFFDF0000;
+                                        else
+                                            _kiUserSharedData = 0xFFFFF78000000000;
+                                        AddToInfoDictionary("KiUserSharedData", "0x" + _kiUserSharedData.ToString("X"));
+                                        return;
+                                    }
+                                    matches = 0;                                    
                                 }
-                            }
-                            catch (Exception)
-                            {
-                                continue;
+                                else
+                                    matches = 0;
                             }
                         }
                     }
                     catch (Exception)
                     {
                         return;
-                    }                    
+                    }
+                }
+                else
+                {
+                    StringSearch mySearch = new StringSearch(_dataProvider);
+                    mySearch.AddNeedle("RSDS");
+                    //Dictionary<string, List<ulong>> results = mySearch.Scan();
+                    foreach (var answer in mySearch.Scan())
+                    {
+                        try
+                        {
+                            List<ulong> hitList = answer["RSDS"];
+                            foreach (ulong hit in hitList)
+                            {
+                                try
+                                {
+                                    RSDS rsds = new RSDS(_dataProvider, hit);
+                                    if (rsds.Signature == "RSDS" && (rsds.Filename == "ntkrnlpa.pdb" || rsds.Filename == "ntkrnlmp.pdb" || rsds.Filename == "ntkrpamp.pdb" || rsds.Filename == "ntoskrnl.pdb"))
+                                    {
+                                        ProfileName = rsds.GuidAge + ".gz";
+                                        AddToInfoDictionary("ProfileName", ProfileName);
+                                        _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache"); // TO DO - make this a user option when you get around to writing the settings dialog
+                                        Architecture = _profile.Architecture;
+                                        AddToInfoDictionary("Architecture", Architecture);
+                                        if (_profile.Architecture == "I386")
+                                            _kiUserSharedData = 0xFFDF0000;
+                                        else
+                                            _kiUserSharedData = 0xFFFFF78000000000;
+                                        AddToInfoDictionary("KiUserSharedData", "0x" + _kiUserSharedData.ToString("X"));
+                                        return;
+                                    }
+                                }
+                                catch (Exception)
+                                {
+                                    continue;
+                                }
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            return;
+                        }
+                    }
                 }
             });
         }
-        async private Task FindKernelDtb()
+        async private Task<ulong> FindKernelDtb()
         {
+            ulong physicalAddress = 0;
+            bool escape = false;
             await Task.Run(() =>
             {
                 // check if we already have it (from the live image)
-                if (_kernelDtb != 0)
-                    return;
-                ulong filenameOffset = _profile.GetOffset("_EPROCESS", "ImageFileName");
-                //ulong dtbOffset = _profile.GetOffset("_EPROCESS", "Pcb.DirectoryTableBase");
-                //int dtbSize = _profile.GetSize("_EPROCESS", "Pcb.DirectoryTableBase");
-                //long size = _profile.GetStructureSize("_EPROCESS");
-
-                StringSearch mySearch = new StringSearch(_dataProvider);
-                mySearch.AddNeedle("Idle\x00\x00\x00\x00\x00\x00\x00");
-                //Dictionary<string, List<ulong>> results = mySearch.Scan();
-                foreach (var answer in mySearch.Scan())
+                if (_kernelDtb == 0)
                 {
-                    try
+                    ulong filenameOffset = _profile.GetOffset("_EPROCESS", "ImageFileName");
+                    //ulong dtbOffset = _profile.GetOffset("_EPROCESS", "Pcb.DirectoryTableBase");
+                    //int dtbSize = _profile.GetSize("_EPROCESS", "Pcb.DirectoryTableBase");
+                    //long size = _profile.GetStructureSize("_EPROCESS");
+
+                    StringSearch mySearch = new StringSearch(_dataProvider);
+                    mySearch.AddNeedle("Idle\x00\x00\x00\x00\x00\x00\x00");
+                    //Dictionary<string, List<ulong>> results = mySearch.Scan();
+                    foreach (var answer in mySearch.Scan())
                     {
-                        List<ulong> hitList = answer.First().Value;
-                        foreach (ulong hit in hitList)
+                        if (escape)
+                            break;
+                        try
                         {
-                            try
+                            List<ulong> hitList = answer.First().Value;
+                            foreach (ulong hit in hitList)
                             {
-                                EProcess ep = new EProcess(_profile, _dataProvider, 0, hit - filenameOffset);
-                                _kernelDtb = ep.DTB;
-                                if(_kernelDtb > _dataProvider.ImageLength || _kernelDtb == 0)
+                                try
                                 {
-                                    _kernelDtb = 0;
+                                    EProcess ep = new EProcess(_profile, _dataProvider, 0, hit - filenameOffset);
+                                    _kernelDtb = ep.DTB;
+                                    if (_kernelDtb > _dataProvider.ImageLength || _kernelDtb == 0)
+                                    {
+                                        _kernelDtb = 0;
+                                        continue;
+                                    }
+                                    if (ep.Pid != 0 || ep.Ppid != 0)
+                                    {
+                                        _kernelDtb = 0;
+                                        continue;
+                                    }
+                                    AddToInfoDictionary("Directory Table Base", "0x" + _kernelDtb.ToString("X08") + " (" + _kernelDtb.ToString() + ")");
+                                    AddToInfoDictionary("PID", ep.Pid.ToString());
+                                    AddToInfoDictionary("Parent PID", ep.Ppid.ToString());
+                                    physicalAddress = (ulong)ep.PhysicalAddress;
+                                    escape = true;
+                                    break;
+                                }
+                                catch (Exception ex)
+                                {
                                     continue;
                                 }
-                                if(ep.Pid != 0 || ep.Ppid != 0)
-                                {
-                                    _kernelDtb = 0;
-                                    continue;
-                                }
-                                AddToInfoDictionary("Directory Table Base", "0x" + _kernelDtb.ToString("X08") + " (" + _kernelDtb.ToString() + ")");
-                                AddToInfoDictionary("PID", ep.Pid.ToString());
-                                AddToInfoDictionary("Parent PID", ep.Ppid.ToString());
-                                return;
-                            }
-                            catch (Exception ex)
-                            {
-                                continue;
                             }
                         }
+                        catch (Exception)
+                        {
 
+                        }
                     }
-                    catch (Exception)
-                    {
-                        return;
-                    }
-                }
+                }                                                 
             });
+            return physicalAddress;
         }
         async private Task<AddressBase> LoadKernelAddressSpace()
         {
@@ -365,7 +442,12 @@ namespace MemoryExplorer.Model
                 {
                     ObjectTypes objectTypes = new ObjectTypes(_dataProvider, _profile);
                     if (objectTypes.Records != null && objectTypes.Records.Count > 0)
-                        ObjectTypeList = objectTypes.Records;
+                    {
+                        foreach (var record in objectTypes.Records)
+                        {
+                            AddObjectType(record);
+                        }
+                    }
                     return;
                 }
                 catch (Exception)
@@ -396,54 +478,7 @@ namespace MemoryExplorer.Model
                 }                
             });
         }
-        async private Task PsList_Method1()
-        {
-            await Task.Run(() =>
-            {
-                try
-                {
-                    uint processHeadOffset = (uint)_profile.GetConstant("PsActiveProcessHead");
-                    ulong vAddr = _kernelBaseAddress + processHeadOffset;
-                    _dataProvider.ActiveAddressSpace = _kernelAddressSpace;
-                    LIST_ENTRY le = new LIST_ENTRY(_dataProvider, vAddr);
-                    ulong apl = (ulong)_profile.GetOffset("_EPROCESS", "ActiveProcessLinks");
-                    List<LIST_ENTRY> lists = FindAllLists(_dataProvider, le);
-                    foreach (LIST_ENTRY entry in lists)
-                    {
-                        if (entry.VirtualAddress == vAddr)
-                            continue;
-
-                        EProcess ep = new EProcess(_profile, _dataProvider, entry.VirtualAddress - apl);
-                        string name = ep.ImageFileName;                        
-                        uint pid = ep.Pid;
-                        ProcessInfo p = GetProcessInfo(pid, name);
-                        if (p == null )
-                        {
-                            p = new ProcessInfo();
-                            p.AddressSpace = _kernelAddressSpace;
-                            p.ProcessName = name;
-                            p.Pid = pid;
-                            p.Dtb = ep.DTB;
-                            p.ParentPid = ep.Ppid;
-                            p.ActiveThreads = ep.ActiveThreads;
-                            p.Session = ep.Session;
-                            p.StartTime = ep.StartTime;
-                            p.ExitTime = ep.ExitTime;
-                            p.FoundByMethod1 = true;
-                            AddProcess(p);
-                        }
-                        else
-                        {
-                            p.FoundByMethod1 = true;
-                        }
-                    }
-                }
-                catch (Exception)
-                {
-                    throw;
-                }
-            });
-        }
+        
         public void Dispose()
         {
             BigCleanUp();

@@ -20,6 +20,9 @@
             <TabItem Header="Hex Viewer" IsSelected="{Binding HexSelected, Mode=TwoWay}"  >
                 <local:HexViewer />
             </TabItem>
+            <TabItem Header="PSList" IsSelected="{Binding PsListSelected, Mode=TwoWay}"  >
+                <local:ProcessViewer />
+            </TabItem>
             <TabItem Header="Debug" Visibility="{Binding DebugVisible}" IsSelected="{Binding DebugSelected, Mode=TwoWay}" >
                 <local:DebugViewer />
             </TabItem>

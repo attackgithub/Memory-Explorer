@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Address;
+using MemoryExplorer.ModelObjects;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -23,7 +24,13 @@ namespace MemoryExplorer.Profiles
         private Dictionary<string, List<Structure>> _entriesDictionary = new Dictionary<string, List<Structure>>();
         private AddressBase _kernelAddressSpace = null;
         private ulong _kernelBaseAddress = 0;
+        private List<ObjectTypeRecord> _objectTypeList = new List<ObjectTypeRecord>();
 
+        public List<ObjectTypeRecord> ObjectTypeList
+        {
+            get { return _objectTypeList; }
+            set { _objectTypeList = value; }
+        }
         public ulong KernelBaseAddress
         {
             get { return _kernelBaseAddress; }

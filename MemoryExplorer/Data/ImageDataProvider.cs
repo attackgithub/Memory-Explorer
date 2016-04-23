@@ -50,6 +50,11 @@ namespace MemoryExplorer.Data
             info.Add("maximumPhysicalAddress", ImageLength - 1);
             return info;
         }
+        /// <summary>
+        /// Reads PHYSICAL Memory page
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
         protected override byte[] ReadMemoryPage(ulong address)
         {            
             if(address > ImageLength - 4096)
@@ -73,6 +78,12 @@ namespace MemoryExplorer.Data
                 return null;
             }
         }
+        /// <summary>
+        /// Reads PHYSICAL memory pages
+        /// </summary>
+        /// <param name="startAddress"></param>
+        /// <param name="pageCount"></param>
+        /// <returns></returns>
         public override byte[] ReadMemory(ulong startAddress, uint pageCount = 1)
         {
             try

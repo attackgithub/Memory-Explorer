@@ -8,7 +8,7 @@
         xmlns:dt="clr-namespace:MemoryExplorer.Details"
         xmlns:tr="clr-namespace:MemoryExplorer.Tree"
         mc:Ignorable="d"
-        Title="liveforensics - Memory Explorer" Height="760" Width="1024" WindowStartupLocation="CenterScreen">
+        Title="liveforensics - Memory Explorer" Height="760" Width="1024" WindowStartupLocation="CenterScreen" WindowState="Maximized">
     <Window.DataContext>
         <local:MainWindowViewModel />
     </Window.DataContext>
@@ -40,9 +40,9 @@
         </Grid>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="33*" MinWidth="100" />
+                <ColumnDefinition Width="20*" MinWidth="100" />
                 <ColumnDefinition Width="5" />
-                <ColumnDefinition Width="67*" MinWidth="100" />
+                <ColumnDefinition Width="80*" MinWidth="100" />
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="0">
                 <tr:MxTree />

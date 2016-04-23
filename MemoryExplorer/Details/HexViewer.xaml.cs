@@ -60,7 +60,7 @@ namespace MemoryExplorer.Details
         private void HexViewModelPropertyChangedEventHandler(object sender, PropertyChangedEventArgs e)
         {
             //MainWindowViewModel mwvm = this.DataContext as MainWindowViewModel;
-            Debug.WriteLine("Event: " + e.PropertyName);
+            //Debug.WriteLine("Event: " + e.PropertyName);
             if (e.PropertyName == "CurrentHexViewerContent")
             {
                 _hexBoxViewer.LineInfoOffset = _hvvm.ActiveStartAddress;

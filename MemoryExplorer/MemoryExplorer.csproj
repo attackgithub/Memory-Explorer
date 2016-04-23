@@ -126,6 +126,11 @@
       <DependentUpon>ObjectTypes.xaml</DependentUpon>
     </Compile>
     <Compile Include="Details\ObjectTypesViewModel.cs" />
+    <Compile Include="Details\ProcessViewer.xaml.cs">
+      <DependentUpon>ProcessViewer.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Details\ProcessViewerViewModel.cs" />
+    <Compile Include="Details\PsListResult.cs" />
     <Compile Include="Details\RootDetails.xaml.cs">
       <DependentUpon>RootDetails.xaml</DependentUpon>
     </Compile>
@@ -152,13 +157,19 @@
     <Compile Include="HexView\NativeMethods.cs" />
     <Compile Include="HexView\Utils.cs" />
     <Compile Include="Memory\MemoryRange.cs" />
+    <Compile Include="ModelObjects\HandleTable.cs" />
+    <Compile Include="ModelObjects\HandleTableEntry.cs" />
+    <Compile Include="ModelObjects\HeaderHandleInfo.cs" />
+    <Compile Include="ModelObjects\HeaderNameInfo.cs" />
     <Compile Include="ModelObjects\KUserSharedData.cs" />
     <Compile Include="ModelObjects\ListEntry.cs" />
+    <Compile Include="ModelObjects\ObjectHeader.cs" />
     <Compile Include="ModelObjects\ObjectTypes.cs" />
     <Compile Include="ModelObjects\PfnDatabase.cs" />
     <Compile Include="ModelObjects\UnicodeString.cs" />
     <Compile Include="Model\BusinessLogic.cs" />
     <Compile Include="Model\Common.cs" />
+    <Compile Include="Model\ProcessLists.cs" />
     <Compile Include="Processes\EProcess.cs" />
     <Compile Include="Processes\Process.cs" />
     <Compile Include="Profiles\PeHeader.cs" />
@@ -167,6 +178,9 @@
     <Compile Include="RelayCommand.cs" />
     <Compile Include="Scanners\StringSearch.cs" />
     <Compile Include="StructureBase.cs" />
+    <Compile Include="Tools\PsList1.cs" />
+    <Compile Include="Tools\PsList2.cs" />
+    <Compile Include="Tools\ToolBase.cs" />
     <Compile Include="Tree\MxTree.xaml.cs">
       <DependentUpon>MxTree.xaml</DependentUpon>
     </Compile>
@@ -193,6 +207,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Details\ObjectTypes.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Details\ProcessViewer.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

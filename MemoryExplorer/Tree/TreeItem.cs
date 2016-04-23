@@ -67,7 +67,7 @@ namespace MemoryExplorer.Tree
                 if(a == null)
                     return _artifactItem.Name;
                 ProcessInfo p = a.LinkedProcess;
-                return p.ProcessName + " (" + p.Pid.ToString() + ")";
+                return p.ProcessName + " [" + p.Pid.ToString() + "]";
             }
         }
 

@@ -31,7 +31,7 @@ namespace MemoryExplorer
         }
         private void WtfPropertyChangedEventHandler(object sender, PropertyChangedEventArgs e)
         {
-            Debug.WriteLine("Event: " + e.PropertyName);
+            //Debug.WriteLine("Event: " + e.PropertyName);
             if (e.PropertyName == "CurrentDetailsViewModel")
             {
                 switch(_dataModel.CurrentDetailsViewModelHint)
