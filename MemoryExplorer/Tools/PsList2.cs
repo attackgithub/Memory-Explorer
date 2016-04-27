@@ -123,10 +123,10 @@ namespace MemoryExplorer.Tools
         }
         private HashSet<ulong> TrySave(HashSet<ulong> results)
         {
-            //OffsetMap map = new OffsetMap();
-            //map.OffsetRecords = results;
-            //if (!_dataProvider.IsLive)
-            //    PersistOffsetMap(map, _dataProvider.CacheFolder + "\\pslist_CSRSS");
+            OffsetMap map = new OffsetMap();
+            map.OffsetRecords = results;
+            if (!_dataProvider.IsLive)
+                PersistOffsetMap(map, _dataProvider.CacheFolder + "\\pslist_CSRSS");
             return results;
         }
     }

@@ -42,8 +42,26 @@
                 <GridViewColumn Header="Start Time"  Width="140" DisplayMemberBinding="{Binding StartTime}"/>
                 <GridViewColumn Header="Exit Time"  Width="140" DisplayMemberBinding="{Binding ExitTime}"/>
                 <GridViewColumn Header="Session"  Width="140" DisplayMemberBinding="{Binding Session}"/>
-                <GridViewColumn Header="M1"  Width="25" DisplayMemberBinding="{Binding M1}"/>
-                <GridViewColumn Header="M2"  Width="25" DisplayMemberBinding="{Binding M2}"/>
+                <GridViewColumn Width="25" DisplayMemberBinding="{Binding M1}">
+                    <GridViewColumn.Header>
+                        <TextBlock Text="M1" ToolTip="Process List Generated using PsActiveProcessHead"/>
+                    </GridViewColumn.Header>
+                </GridViewColumn>
+                <GridViewColumn Width="25" DisplayMemberBinding="{Binding M2}">
+                    <GridViewColumn.Header>
+                        <TextBlock Text="M2" ToolTip="Process List Generated using CSRSS"/>
+                    </GridViewColumn.Header>
+                </GridViewColumn>
+                <GridViewColumn Width="25" DisplayMemberBinding="{Binding M3}">
+                    <GridViewColumn.Header>
+                        <TextBlock Text="M3" ToolTip="Process List Generated using PspCidTable"/>
+                    </GridViewColumn.Header>
+                </GridViewColumn>
+                <GridViewColumn Width="25" DisplayMemberBinding="{Binding M4}">
+                    <GridViewColumn.Header>
+                        <TextBlock Text="M4" ToolTip="Process List Generated using Sessions"/>
+                    </GridViewColumn.Header>
+                </GridViewColumn>
                 <GridViewColumn Header="EProc VA"  Width="120">
                     <GridViewColumn.CellTemplate>
                         <DataTemplate>

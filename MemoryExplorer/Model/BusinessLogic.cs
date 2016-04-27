@@ -77,10 +77,14 @@ namespace MemoryExplorer.Model
             await PsList_Method2();
             DecrementActiveJobs();
             OrderProcessArtifacts();
-            NotifyPropertyChange("Processes");
+
+            IncrementActiveJobs("Process List Three");
+            await PsList_Method3();
+            DecrementActiveJobs();
+            OrderProcessArtifacts();
 
         }
-        
+
         async private Task GetInformation()
         {
             await Task.Run(() => 

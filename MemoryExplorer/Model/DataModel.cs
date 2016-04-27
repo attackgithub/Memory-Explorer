@@ -350,7 +350,6 @@ namespace MemoryExplorer.Model
             artifact.IsExpanded = false;
             artifact.IsSelected = selected;
             _artifacts.Add(artifact);
-            //OrderProcessArtifacts();
             NotifyPropertyChange("TreeItems"); // this forces the set property / INotifyPropertyCHange
             NotifyPropertyChange("Processes"); 
             return artifact;
@@ -378,7 +377,8 @@ namespace MemoryExplorer.Model
                         pa.Parent = parent;
                 }
             }
-            // check for children
+            // do I need to check for children now?
+            NotifyPropertyChange("Processes");
         }
         private void AddObjectType(ObjectTypeRecord record)
         {

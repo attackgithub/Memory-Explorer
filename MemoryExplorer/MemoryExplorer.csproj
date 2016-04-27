@@ -180,6 +180,7 @@
     <Compile Include="StructureBase.cs" />
     <Compile Include="Tools\PsList1.cs" />
     <Compile Include="Tools\PsList2.cs" />
+    <Compile Include="Tools\PsList3.cs" />
     <Compile Include="Tools\ToolBase.cs" />
     <Compile Include="Tree\MxTree.xaml.cs">
       <DependentUpon>MxTree.xaml</DependentUpon>
