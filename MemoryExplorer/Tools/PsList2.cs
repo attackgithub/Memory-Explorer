@@ -62,9 +62,6 @@ namespace MemoryExplorer.Tools
                                 try
                                 {
                                     ObjectHeader header = new ObjectHeader(_profile, _dataProvider, e.ObjectPointer);
-                                    //Debug.WriteLine(e.ObjectPointer.ToString("X8"));
-                                    if (e.ObjectPointer == 0xE0019B4EC010)
-                                        Debug.WriteLine("eee");
                                     string objectName = GetObjectName(e.TypeInfo);
                                     if (objectName == "Process")
                                         results.Add(e.ObjectPointer + (ulong)header.Size);
@@ -123,6 +120,10 @@ namespace MemoryExplorer.Tools
         }
         private HashSet<ulong> TrySave(HashSet<ulong> results)
         {
+            if (results.Count == 0)
+                return null;
+            if (_dataProvider.IsLive)
+                return results;
             OffsetMap map = new OffsetMap();
             map.OffsetRecords = results;
             if (!_dataProvider.IsLive)

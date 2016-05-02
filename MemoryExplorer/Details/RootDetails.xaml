@@ -23,6 +23,9 @@
             <TabItem Header="PSList" IsSelected="{Binding PsListSelected, Mode=TwoWay}"  >
                 <local:ProcessViewer />
             </TabItem>
+            <TabItem Header="Drivers" IsSelected="{Binding DriversSelected, Mode=TwoWay}"  >
+                <local:DriverViewer />
+            </TabItem>
             <TabItem Header="Debug" Visibility="{Binding DebugVisible}" IsSelected="{Binding DebugSelected, Mode=TwoWay}" >
                 <local:DebugViewer />
             </TabItem>

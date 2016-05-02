@@ -1,0 +1,64 @@
+﻿<UserControl x:Class="MemoryExplorer.Details.MainContent"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:MemoryExplorer.Details"
+             xmlns:tr="clr-namespace:MemoryExplorer.Tree"
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300">
+    <UserControl.DataContext>
+        <local:MainContentViewModel />
+    </UserControl.DataContext>
+    <UserControl.Resources>
+        <DataTemplate DataType="{x:Type local:Details1ViewModel}">
+            <local:Details1 />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type local:Details2ViewModel}">
+            <local:Details2 />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type local:RootDetailsViewModel}">
+            <local:RootDetails />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type tr:MxTreeViewModel}">
+            <tr:MxTree />
+        </DataTemplate>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="5"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="20*" MinWidth="100" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="80*" MinWidth="100" />
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Column="0">
+                <tr:MxTree />
+            </Grid>
+            <ContentControl Grid.Column="2" Content="{Binding CurrentDetailsViewModel}" />
+            <GridSplitter  Grid.Column="1" Width="3" HorizontalAlignment="Stretch"/>
+        </Grid>
+        <GridSplitter Grid.Row="1" Height="3" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="50*" MinWidth="100" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="50*" MinWidth="100" />
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Column="0">
+                <local:InfoHexViewer />
+            </Grid>
+            <GridSplitter  Grid.Column="1" Width="3" HorizontalAlignment="Stretch"/>
+            <Grid Grid.Column="2">
+                <local:Details2 />
+            </Grid>
+        </Grid>
+        
+    </Grid>
+</UserControl>
+
+    

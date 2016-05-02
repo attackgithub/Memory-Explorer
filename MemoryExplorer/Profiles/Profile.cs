@@ -25,6 +25,7 @@ namespace MemoryExplorer.Profiles
         private AddressBase _kernelAddressSpace = null;
         private ulong _kernelBaseAddress = 0;
         private List<ObjectTypeRecord> _objectTypeList = new List<ObjectTypeRecord>();
+        private ulong _poolAlign = 0;
 
         public List<ObjectTypeRecord> ObjectTypeList
         {
@@ -41,8 +42,15 @@ namespace MemoryExplorer.Profiles
             get { return _kernelAddressSpace; }
             set { _kernelAddressSpace = value; }
         }
+        public ulong PoolAlign
+        {
+            get { return _poolAlign; }
+            set { _poolAlign = value; }
+        }
         public string Architecture { get { return _architecture; } }
         public bool FileActive { get { return _fileActive; } }
+
+        
 
         public Profile(string sourceFile, string cacheRoot)
         {

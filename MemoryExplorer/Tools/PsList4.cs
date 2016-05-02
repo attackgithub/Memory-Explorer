@@ -10,11 +10,11 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace MemoryExplorer.Tools
-{
-    public class PsList3 : ToolBase
+{    
+    public class PsList4 : ToolBase
     {
         /// <summary>
-        /// Method 3 - PspCidTable
+        /// Method 4 - pslist_Sessions
         /// </summary>
         /// <prerequisites>
         /// Active Profile
@@ -29,7 +29,7 @@ namespace MemoryExplorer.Tools
         /// <param name="dataProvider"></param>
         /// <param name="processList"></param>
         List<ProcessInfo> _processList;
-        public PsList3(Profile profile, DataProviderBase dataProvider, List<ProcessInfo> processList = null) : base(profile, dataProvider)
+        public PsList4(Profile profile, DataProviderBase dataProvider, List<ProcessInfo> processList = null) : base(profile, dataProvider)
         {
             _processList = processList;
             // check pre-reqs
@@ -39,7 +39,7 @@ namespace MemoryExplorer.Tools
         public HashSet<ulong> Run()
         {
             // first let's see if it already exists
-            FileInfo cachedFile = new FileInfo(_dataProvider.CacheFolder + "\\pslist_PspCidTable.gz");
+            FileInfo cachedFile = new FileInfo(_dataProvider.CacheFolder + "\\pslist_Sessions.gz");
             if (cachedFile.Exists && !_dataProvider.IsLive)
             {
                 OffsetMap cachedMap = RetrieveOffsetMap(cachedFile);
@@ -47,41 +47,38 @@ namespace MemoryExplorer.Tools
                     return cachedMap.OffsetRecords;
             }
             HashSet<ulong> results = new HashSet<ulong>();
-            uint tableOffset = (uint)_profile.GetConstant("PspCidTable");
-            ulong vAddr = _profile.KernelBaseAddress + tableOffset;
-            ulong tableAddress = 0;
-            if (_isx64)
+            HashSet<ulong> sessionList = new HashSet<ulong>(); // a list of pointers to _MM_SESSION_SPAVE objects
+            if (_processList != null)
             {
-                var v = _dataProvider.ReadUInt64(vAddr);
-                if (v == null)
-                    return null;
-                tableAddress = (ulong)v & 0xffffffffffff;
-            }
-            else
-            {
-                var v = _dataProvider.ReadUInt32(vAddr);
-                if (v == null)
-                    return null;
-                tableAddress = (ulong)v;
-            }
-            HandleTable ht = new HandleTable(_profile, _dataProvider, tableAddress);
-            List<HandleTableEntry> records = EnumerateHandles(ht.TableStartAddress, ht.Level);
-            ulong bodyOffset = (ulong)_profile.GetOffset("_OBJECT_HEADER", "Body");
-            foreach (HandleTableEntry e in records)
-            {
-                try
+                foreach (ProcessInfo info in _processList)
                 {
-                    vAddr = e.ObjectPointer - bodyOffset;
-                    ObjectHeader header = new ObjectHeader(_profile, _dataProvider, vAddr);
-                    string objectName = GetObjectName(header.TypeInfo);
-                    if (objectName == "Process")
-                        results.Add(e.ObjectPointer);
-                }
-                catch (Exception)
-                {
-                    continue;
+                    if (info.Session != 0)
+                        sessionList.Add(info.Session);
                 }
             }
+            ulong sOffset = (ulong)_profile.GetOffset("_EPROCESS", "SessionProcessLinks");
+            ulong plOffset = (ulong)_profile.GetOffset("_MM_SESSION_SPACE", "ProcessList");
+            foreach (ulong item in sessionList)
+            {
+                SessionSpace ss = new SessionSpace(_profile, _dataProvider, item);
+                LIST_ENTRY sle = ss.ProcessList;
+                List<LIST_ENTRY> procLists = FindAllLists(_dataProvider, sle);
+                HashSet<ulong> tempList = new HashSet<ulong>();
+                foreach (LIST_ENTRY entry in procLists)
+                {
+                    tempList.Add(entry.Blink);
+                    tempList.Add(entry.Flink);
+                }
+                foreach (ulong ul in tempList)
+                {
+                    if (ul - plOffset == item)
+                        continue;
+                    if (ul == 0)
+                        continue;
+                    results.Add(ul - sOffset);
+                }
+            }
+
             return TrySave(results);
         }
         private HashSet<ulong> TrySave(HashSet<ulong> results)
@@ -93,7 +90,7 @@ namespace MemoryExplorer.Tools
             OffsetMap map = new OffsetMap();
             map.OffsetRecords = results;
             if (!_dataProvider.IsLive)
-                PersistOffsetMap(map, _dataProvider.CacheFolder + "\\pslist_PspCidTable");
+                PersistOffsetMap(map, _dataProvider.CacheFolder + "\\pslist_Sessions");
             return results;
         }
     }

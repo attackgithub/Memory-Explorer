@@ -57,11 +57,20 @@ namespace MemoryExplorer.Tools
                     continue;
                 results.Add(entry.VirtualAddress - apl);
             }
-            OffsetMap map = new OffsetMap();            
+            
+            return TrySave(results);
+        }
+        private HashSet<ulong> TrySave(HashSet<ulong> results)
+        {
+            if (results.Count == 0)
+                return null;
+            if (_dataProvider.IsLive)
+                return results;
+            OffsetMap map = new OffsetMap();
             map.OffsetRecords = results;
             if (!_dataProvider.IsLive)
                 PersistOffsetMap(map, _dataProvider.CacheFolder + "\\pslist_PsActiveProcessHead");
             return results;
-        }        
+        }
     }
 }

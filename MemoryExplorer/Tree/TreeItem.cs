@@ -31,10 +31,13 @@ namespace MemoryExplorer.Tree
                 IEnumerable<TreeItem> retval = null;
                 try
                 {
-                    retval =
+                    lock(_dataModel.AccessLock)
+                    {
+                        retval =
                         from item in _dataSource.Artifacts
                         where item.Parent == _artifactItem
                         select new TreeItem(item, _dataSource);
+                    }                    
                 }
                 catch { }
                 return retval;
@@ -64,7 +67,7 @@ namespace MemoryExplorer.Tree
             get
             {
                 ProcessArtifact a = _artifactItem as ProcessArtifact;
-                if(a == null)
+                if(a == null || a.LinkedProcess == null)
                     return _artifactItem.Name;
                 ProcessInfo p = a.LinkedProcess;
                 return p.ProcessName + " [" + p.Pid.ToString() + "]";

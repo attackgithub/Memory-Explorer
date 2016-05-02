@@ -106,6 +106,23 @@ namespace MemoryExplorer
             // Return the hexadecimal string.
             return sBuilder.ToString();
         }
+        public static ulong GetMask(uint startBit, uint endBit)
+        {
+            ulong result = 0x1;
+            int realEndBit = (int)endBit - 1;
+            var start = result << (int)startBit;
+            var end = result << realEndBit;
+
+            result = 0;
+            uint multiplier = 1;
+            while (multiplier <= end)
+            {
+                if (multiplier >= start && multiplier <= end)
+                    result += multiplier;
+                multiplier *= 2;
+            }
+            return result;
+        }
         public long Size { get { return _structureSize; } }
 
         public ulong VirtualAddress { get { return _virtualAddress; } }

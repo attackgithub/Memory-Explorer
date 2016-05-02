@@ -20,30 +20,38 @@ namespace MemoryExplorer.ModelObjects
         public string Name { get { return _name; } }
 
         // this will fail if the string runs off the end of the page
-        public UnicodeString(Profile profile, DataProviderBase dataProvider, ulong offset)
+        public UnicodeString(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0)
         {
             _profile = profile;
             _dataProvider = dataProvider;
-            _physicalAddress = offset;
+            _physicalAddress = physicalAddress;
+            _virtualAddress = virtualAddress;
             _is64 = (_profile.Architecture == "AMD64");
             _addressSpace = _profile.KernelAddressSpace;
-            int structureSize = (int)_profile.GetStructureSize("_UNICODE_STRING");
-            if (structureSize == -1)
+            _structureSize = (int)_profile.GetStructureSize("_UNICODE_STRING");
+            if (_structureSize == -1)
                 throw new ArgumentException("Error - Profile didn't contain a definition for _OBJECT_TYPE");
-            _buffer = _dataProvider.ReadMemory(_physicalAddress & 0xfffffffff000, 1);
+            AddressBase addressSpace = dataProvider.ActiveAddressSpace;
+            if (virtualAddress == 0)
+                _buffer = _dataProvider.ReadPhysicalMemory(_physicalAddress, (uint)_structureSize);
+            else
+            {
+                _physicalAddress = addressSpace.vtop(_virtualAddress);
+                _buffer = _dataProvider.ReadMemoryBlock(_virtualAddress, (uint)_structureSize);
+            }
             _structure = _profile.GetEntries("_UNICODE_STRING");
             Structure s = GetStructureMember("Length");
-            int realOffset = (int)s.Offset + (int)(_physicalAddress & 0xfff);
-            _length = BitConverter.ToUInt16(_buffer, realOffset);
+            //int realOffset = (int)s.Offset + (int)(_physicalAddress & 0xfff);
+            _length = BitConverter.ToUInt16(_buffer, (int)s.Offset);
             s = GetStructureMember("MaximumLength");
-            realOffset = (int)s.Offset + (int)(_physicalAddress & 0xfff);
-            _maximumLength = BitConverter.ToUInt16(_buffer, realOffset);
+            //realOffset = (int)s.Offset + (int)(_physicalAddress & 0xfff);
+            _maximumLength = BitConverter.ToUInt16(_buffer, (int)s.Offset);
             s = GetStructureMember("Buffer");
-            realOffset = (int)s.Offset + (int)(_physicalAddress & 0xfff);
+            //realOffset = (int)s.Offset + (int)(_physicalAddress & 0xfff);
             if(_is64)
-                _pointerBuffer = BitConverter.ToUInt64(_buffer, realOffset) & 0xffffffffffff;
+                _pointerBuffer = BitConverter.ToUInt64(_buffer, (int)s.Offset) & 0xffffffffffff;
             else
-                _pointerBuffer = BitConverter.ToUInt32(_buffer, realOffset) & 0xffffffff;
+                _pointerBuffer = BitConverter.ToUInt32(_buffer, (int)s.Offset) & 0xffffffff;
             ulong pAddress = _addressSpace.vtop(_pointerBuffer);            
             if (pAddress != 0)
             {

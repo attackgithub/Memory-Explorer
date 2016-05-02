@@ -51,8 +51,12 @@ namespace MemoryExplorer.Data
         }
         public byte[] ReadPhysicalMemory(ulong startAddress, uint byteCount)
         {
+            uint pages = 1;
+            uint test = (uint)(startAddress - (startAddress & 0xfffffffff000)) + byteCount;
+            if (test > 0x1000)
+                pages = 2;
             byte[] buffer = new byte[byteCount];
-            byte[] pageBuffer = ReadMemory(startAddress & 0xfffffffff000, 1);
+            byte[] pageBuffer = ReadMemory(startAddress & 0xfffffffff000, pages);
             if (pageBuffer == null)
                 return null;
             uint realOffset = (uint)(startAddress - (startAddress & 0xfffffffff000));

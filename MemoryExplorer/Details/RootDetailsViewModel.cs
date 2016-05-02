@@ -14,6 +14,7 @@ namespace MemoryExplorer.Details
         bool _objectListSelected;
         bool _hexSelected;
         bool _debugSelected;
+        bool _driversSelected;
         public Visibility DebugVisible
         {
             get
@@ -30,6 +31,7 @@ namespace MemoryExplorer.Details
         public bool ObjectListSelected { get { return _objectListSelected; } set { _objectListSelected = value; } }
         public bool HexSelected { get { return _hexSelected; } set { _hexSelected = value; } }
         public bool DebugSelected { get { return _debugSelected; } set { _debugSelected = value; } }
+        public bool DriversSelected { get { return _driversSelected; } set { _driversSelected = value; } }
 
     }
 

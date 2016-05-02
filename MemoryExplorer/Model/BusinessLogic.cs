@@ -3,9 +3,11 @@ using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Processes;
 using MemoryExplorer.Profiles;
 using MemoryExplorer.Scanners;
+using MemoryExplorer.Tools;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -83,6 +85,14 @@ namespace MemoryExplorer.Model
             DecrementActiveJobs();
             OrderProcessArtifacts();
 
+            IncrementActiveJobs("Process List Four");
+            await PsList_Method4();
+            DecrementActiveJobs();
+            OrderProcessArtifacts();
+
+            IncrementActiveJobs("Driver Scan");
+            await ScanForDrivers();
+            DecrementActiveJobs();
         }
 
         async private Task GetInformation()
@@ -173,9 +183,15 @@ namespace MemoryExplorer.Model
                                         Architecture = _profile.Architecture;
                                         AddToInfoDictionary("Architecture", Architecture);
                                         if (_profile.Architecture == "I386")
+                                        {
                                             _kiUserSharedData = 0xFFDF0000;
+                                            _profile.PoolAlign = 8;
+                                        }
                                         else
+                                        {
                                             _kiUserSharedData = 0xFFFFF78000000000;
+                                            _profile.PoolAlign = 16;
+                                        }
                                         AddToInfoDictionary("KiUserSharedData", "0x" + _kiUserSharedData.ToString("X"));
                                         return;
                                     }
@@ -208,15 +224,23 @@ namespace MemoryExplorer.Model
                                     RSDS rsds = new RSDS(_dataProvider, hit);
                                     if (rsds.Signature == "RSDS" && (rsds.Filename == "ntkrnlpa.pdb" || rsds.Filename == "ntkrnlmp.pdb" || rsds.Filename == "ntkrpamp.pdb" || rsds.Filename == "ntoskrnl.pdb"))
                                     {
+                                        AddToInfoDictionary("Debug Symbols (RSDS): ", "0x" + hit.ToString("X08") + " (p)");
+                                        AddToInfoDictionary("Debug Symbols Filename: ", rsds.Filename);
                                         ProfileName = rsds.GuidAge + ".gz";
                                         AddToInfoDictionary("ProfileName", ProfileName);
                                         _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache"); // TO DO - make this a user option when you get around to writing the settings dialog
                                         Architecture = _profile.Architecture;
                                         AddToInfoDictionary("Architecture", Architecture);
                                         if (_profile.Architecture == "I386")
+                                        {
                                             _kiUserSharedData = 0xFFDF0000;
+                                            _profile.PoolAlign = 8;
+                                        }
                                         else
+                                        {
                                             _kiUserSharedData = 0xFFFFF78000000000;
+                                            _profile.PoolAlign = 16;
+                                        }
                                         AddToInfoDictionary("KiUserSharedData", "0x" + _kiUserSharedData.ToString("X"));
                                         return;
                                     }
@@ -474,12 +498,42 @@ namespace MemoryExplorer.Model
                         return;
                     _pfnDatabaseBaseAddress = (ulong)pfnPAddr;
                     AddToInfoDictionary("PFN Database Address", _pfnDatabaseBaseAddress.ToString("X08"));
+                    CurrentInfoHexViewerContentAddress = _pfnDatabaseBaseAddress;
+                    CurrentInfoHexViewerContent = _dataProvider.ReadMemoryBlock(_pfnDatabaseBaseAddress, 4096);                                        
                     _pfnDatabase = new PfnDatabase(_dataProvider, _profile, _pfnDatabaseBaseAddress);
                 }
                 catch
                 {
                     return;
                 }                
+            });
+        }
+        async private Task ScanForDrivers()
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    DriverScan dScan = new DriverScan(_profile, _dataProvider);
+                    DriverList = dScan.Run();
+                    foreach (var item in _driverList)
+                    {
+                        Debug.WriteLine("  0x" + item.PhysicalAddress.ToString("x12").PadRight(14) +
+                            item.DriverName.PadRight(30) +
+                            item.Name.PadRight(22) +
+                            item.DriverExtension.ServiceKeyName.PadRight(27) +
+                            "0x" + item.DriverSize.ToString("x").PadRight(10) +
+                            "0x" + item.DriverStartPointer.ToString("x12").PadRight(19) +
+                            item.HandleCount.ToString().PadLeft(4) +
+                            item.PointerCount.ToString().PadLeft(6)
+                            );
+                    }
+                    NotifyPropertyChange("Drivers");
+                }
+                catch (Exception)
+                {
+                    return;
+                }
             });
         }
         

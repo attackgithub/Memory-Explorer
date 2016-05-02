@@ -153,5 +153,52 @@ namespace MemoryExplorer.Model
                 }
             });
         }
+        async private Task PsList_Method4()
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    PsList4 psList = new PsList4(_profile, _dataProvider, _processList);
+                    HashSet<ulong> results = psList.Run();
+                    foreach (ulong address in results)
+                    {
+                        EProcess ep = new EProcess(_profile, _dataProvider, address);
+                        string name = ep.ImageFileName;
+                        uint pid = ep.Pid;
+                        if (pid == 0 || name == "")
+                            continue;
+                        ProcessInfo p = GetProcessInfo(pid, name);
+                        if (p == null)
+                        {
+                            p = new ProcessInfo();
+                            p.AddressSpace = _kernelAddressSpace;
+                            p.ProcessName = name;
+                            p.Pid = pid;
+                            p.Dtb = ep.DTB;
+                            p.ParentPid = ep.Ppid;
+                            p.ActiveThreads = ep.ActiveThreads;
+                            p.Session = ep.Session;
+                            p.StartTime = ep.StartTime;
+                            p.ExitTime = ep.ExitTime;
+                            p.ObjectTableAddress = ep.ObjectTable;
+                            p.FoundByMethod4 = true;
+                            p.PhysicalAddress = ep.PhysicalAddress;
+                            p.VirtualAddress = ep.VirtualAddress;
+                            AddProcess(p);
+                        }
+                        else
+                        {
+                            p.FoundByMethod4 = true;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                    return;
+                }
+            });
+        }
     }
 }

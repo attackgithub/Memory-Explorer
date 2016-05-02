@@ -21,10 +21,13 @@ namespace MemoryExplorer.Tree
                 IEnumerable<TreeItem> retval = null;
                 try
                 {
-                    retval =
+                    lock(_dataModel.AccessLock)
+                    {
+                        retval =
                     from item in _dataModel.Artifacts
                     where item.Parent == null
                     select new TreeItem(item, _dataModel);
+                    }                    
                 }
                 catch { }
                 return retval;

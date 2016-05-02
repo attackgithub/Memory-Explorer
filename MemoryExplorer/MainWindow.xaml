@@ -12,7 +12,7 @@
     <Window.DataContext>
         <local:MainWindowViewModel />
     </Window.DataContext>
-    <Window.Resources>
+    <!--<Window.Resources>
         <DataTemplate DataType="{x:Type dt:Details1ViewModel}">
             <dt:Details1 />
         </DataTemplate>
@@ -25,20 +25,22 @@
         <DataTemplate DataType="{x:Type tr:MxTreeViewModel}">
             <tr:MxTree />
         </DataTemplate>
-    </Window.Resources>
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-        <Grid Grid.Row="0">
-            <ms:MainMenu />
+    </Window.Resources>-->
+    <DockPanel>
+        <Grid DockPanel.Dock="Top">
+            <ms:MainMenu/>
         </Grid>
-        <Grid Grid.Row="2">
+        <Grid DockPanel.Dock="Bottom">
             <ms:MxStatusBar />
         </Grid>
-        <Grid Grid.Row="1">
+        <dt:MainContent />
+    </DockPanel>
+</Window>
+
+
+<!--<Grid>
+    <DockPanel>
+        <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="20*" MinWidth="100" />
                 <ColumnDefinition Width="5" />
@@ -50,5 +52,9 @@
             <ContentControl Grid.Column="2" Content="{Binding CurrentDetailsViewModel}" />
             <GridSplitter  Grid.Column="1" Width="3" HorizontalAlignment="Stretch"/>
         </Grid>
-    </Grid>
-</Window>
+        <GridSplitter DockPanel.Dock="Bottom" Height="8" Background="DarkSlateBlue" HorizontalAlignment="Stretch" VerticalAlignment="Center" Visibility="{Binding InfoPaneActive}"/>
+        <Grid DockPanel.Dock="Bottom" Visibility="{Binding InfoPaneActive}">
+            <TextBlock Text="hello" />
+        </Grid>
+    </DockPanel>
+</Grid>-->

@@ -14,6 +14,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,6 +25,7 @@ namespace MemoryExplorer.Model
     public partial class DataModel : INotifyPropertyChanged
     {
         #region globals
+        public object AccessLock = new object();
         private bool _runningAsAdmin = false;
         private bool _liveCapture = false;
         private bool _interpreterWindowIsActive = false;
@@ -51,10 +53,13 @@ namespace MemoryExplorer.Model
         //private List<ObjectTypeRecord> _objectTypeList = new List<ObjectTypeRecord>();
         private byte[] _currentHexViewerContent = null;
         private ulong _currentHexViewerContentAddress = 0;
+        private byte[] _currentInfoHexViewerContent = null;
+        private ulong _currentInfoHexViewerContentAddress = 0;
         private string _currentDetailsViewModelHint = "";
         private PfnDatabase _pfnDatabase = null;
         private List<string> _debugTracer = new List<string>();
         private TabItem _rootDetailsSelectedTab = null;
+        private List<DriverObject> _driverList = null;
 
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -77,7 +82,16 @@ namespace MemoryExplorer.Model
             get { return _currentDetailsViewModelHint; }
             set { _currentDetailsViewModelHint = value; }
         }
-        
+        public ulong CurrentInfoHexViewerContentAddress
+        {
+            get { return _currentInfoHexViewerContentAddress; }
+            set { _currentInfoHexViewerContentAddress = value; }
+        }
+        public byte[] CurrentInfoHexViewerContent
+        {
+            get { return _currentInfoHexViewerContent; }
+            set { SetProperty(ref _currentInfoHexViewerContent, value); }
+        }
         public ulong CurrentHexViewerContentAddress
         {
             get { return _currentHexViewerContentAddress; }
@@ -154,6 +168,8 @@ namespace MemoryExplorer.Model
         }
 
         public List<ProcessInfo> ProcessList { get { return _processList; } }
+        public List<DriverObject> DriverList { get { return _driverList; } set { SetProperty(ref _driverList, value); } }
+
         #endregion
         public DataModel(bool IsAdmin)
         {
@@ -161,23 +177,13 @@ namespace MemoryExplorer.Model
             var mru = Properties.Settings.Default.MRU;
             if(mru != null)
             {
+                AddDebugMessage("Reading MRU List Entries: " + mru.Count.ToString());
                 foreach (string item in mru)
                 {
                     if(item != "empty")
                         _mru.Add(item);
                 }                   
-            }
-
-            // some temporary test data
-            //RootArtifact ba = new RootArtifact();
-            //ba.Name = "Live Capture";
-            //ba.Parent = null;
-            //ba.IsExpanded = true;
-            //_artifacts.Add(ba);
-            //ProcessArtifact pa = new ProcessArtifact();
-            //pa.Name = "system.exe (12)";
-            //pa.Parent = ba;
-            //_artifacts.Add(pa);
+            }            
         }
         public bool NewLiveInvestigation()
         {
@@ -206,6 +212,7 @@ namespace MemoryExplorer.Model
             _dataProvider = new LiveDataProvider(this);            
             UpdateDetails(_rootArtifact = AddArtifact(ArtifactType.Root, "Live Capture", true));
             InitialSurvey();
+            ProcessProcesses();
             return true;
         }
         public bool NewImageInvestigation(string possibleFilename)
@@ -213,7 +220,7 @@ namespace MemoryExplorer.Model
             FileInfo fi = new FileInfo(possibleFilename);
             if (!fi.Exists)
                 return false;
-            IncrementActiveJobs();
+            IncrementActiveJobs("Initialising");
             BigCleanUp();
             _imageMd5 = GetMD5HashFromFile(possibleFilename);
             _cacheLocation = fi.Directory.FullName + "\\[" + fi.Name + "]" + _imageMd5;
@@ -229,6 +236,7 @@ namespace MemoryExplorer.Model
             UpdateMru(MemoryImageFilename);
             DecrementActiveJobs();
             InitialSurvey();
+            ProcessProcesses();
             return true;
         }
         public bool NewImageInvestigation()
@@ -264,6 +272,7 @@ namespace MemoryExplorer.Model
         }
         public void UpdateMru(string newEntry)
         {
+            AddDebugMessage("MRU Update: " + newEntry);
             if (_mru.Contains(newEntry))
             {
                 // it already exists, so move it to the top of the list
@@ -300,23 +309,26 @@ namespace MemoryExplorer.Model
         {
             if (value == null)
                 return;
-            string testValue;
-            int suffix = 1;
-            bool trying = true;
-            string alternativeKey = key;
-            while(trying)
+            lock(AccessLock)
             {
-                trying = InfoDictionary.TryGetValue(alternativeKey, out testValue);
-                if (trying)
-                    alternativeKey = key + (suffix++).ToString();
-            }
-            Dictionary<string, string> _tempInfo = new Dictionary<string, string>();
-            foreach (var item in InfoDictionary)
-            {
-                _tempInfo.Add(item.Key, item.Value);
-            }
-            _tempInfo.Add(alternativeKey, value);
-            InfoDictionary = _tempInfo;
+                string testValue;
+                int suffix = 1;
+                bool trying = true;
+                string alternativeKey = key;
+                while (trying)
+                {
+                    trying = InfoDictionary.TryGetValue(alternativeKey, out testValue);
+                    if (trying)
+                        alternativeKey = key + (suffix++).ToString();
+                }
+                Dictionary<string, string> _tempInfo = new Dictionary<string, string>();
+                foreach (var item in InfoDictionary)
+                {
+                    _tempInfo.Add(item.Key, item.Value);
+                }
+                _tempInfo.Add(alternativeKey, value);
+                InfoDictionary = _tempInfo;
+            }            
         }
         private string GetMD5HashFromFile(string filename)
         {
@@ -334,7 +346,7 @@ namespace MemoryExplorer.Model
         private ArtifactBase AddArtifact(ArtifactType type, string name, bool selected = false, ArtifactBase parent=null)
         {
             ArtifactBase artifact;
-            switch(type)
+            switch (type)
             {
                 case ArtifactType.Root:
                     artifact = new RootArtifact();
@@ -349,9 +361,12 @@ namespace MemoryExplorer.Model
             artifact.Parent = parent;
             artifact.IsExpanded = false;
             artifact.IsSelected = selected;
-            _artifacts.Add(artifact);
+            lock (AccessLock)
+            {                
+                _artifacts.Add(artifact);                
+            }
             NotifyPropertyChange("TreeItems"); // this forces the set property / INotifyPropertyCHange
-            NotifyPropertyChange("Processes"); 
+            NotifyPropertyChange("Processes");
             return artifact;
         }
         private void OrderProcessArtifacts()
@@ -458,7 +473,13 @@ namespace MemoryExplorer.Model
         }
         private void NotifyPropertyChange(string name)
         {
-            PropertyChanged(this, new PropertyChangedEventArgs(name));
+            //Thread.Sleep(10);
+            try
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(name));
+            }
+            catch { }
+            
         }
         #endregion
     }
