@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Address;
+using MemoryExplorer.Info;
 using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Processes;
 using MemoryExplorer.Profiles;
@@ -135,7 +136,10 @@ namespace MemoryExplorer.Model
                     else
                         friendlyKey = item.Key;
                     ulong friendlyValue = (ulong)item.Value;
-                    AddToInfoDictionary(friendlyKey, "0x" + friendlyValue.ToString("X08") + " (" + friendlyValue.ToString() + ")");
+                    InfoHelper helper = new InfoHelper();
+                    helper.Type = InfoHelperType.InfoDictionary;
+                    helper.Name = "0x" + friendlyValue.ToString("X08") + " (" + friendlyValue.ToString() + ")";
+                    AddToInfoDictionary(friendlyKey, helper);
                 }
             });
         }
@@ -177,11 +181,17 @@ namespace MemoryExplorer.Model
                                     {
                                         string GuidAge = (g.ToString("N") + age.ToString()).ToUpper();
                                         ProfileName = GuidAge + ".gz";
-                                        AddToInfoDictionary("ProfileName", ProfileName);
+                                        InfoHelper helper = new InfoHelper();
+                                        helper.Type = InfoHelperType.InfoDictionary;
+                                        helper.Name = ProfileName;
+                                        AddToInfoDictionary("ProfileName", helper);
                                         _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache"); // TO DO - make this a user option when you get around to writing the settings dialog
                                         Architecture = _profile.Architecture;
                                         Architecture = _profile.Architecture;
-                                        AddToInfoDictionary("Architecture", Architecture);
+                                        helper = new InfoHelper();
+                                        helper.Type = InfoHelperType.InfoDictionary;
+                                        helper.Name = Architecture;
+                                        AddToInfoDictionary("Architecture", helper);
                                         if (_profile.Architecture == "I386")
                                         {
                                             _kiUserSharedData = 0xFFDF0000;
@@ -192,7 +202,10 @@ namespace MemoryExplorer.Model
                                             _kiUserSharedData = 0xFFFFF78000000000;
                                             _profile.PoolAlign = 16;
                                         }
-                                        AddToInfoDictionary("KiUserSharedData", "0x" + _kiUserSharedData.ToString("X"));
+                                        helper = new InfoHelper();
+                                        helper.Type = InfoHelperType.InfoDictionary;
+                                        helper.Name = "0x" + _kiUserSharedData.ToString("X");
+                                        AddToInfoDictionary("KiUserSharedData", helper);
                                         return;
                                     }
                                     matches = 0;                                    
@@ -224,13 +237,27 @@ namespace MemoryExplorer.Model
                                     RSDS rsds = new RSDS(_dataProvider, hit);
                                     if (rsds.Signature == "RSDS" && (rsds.Filename == "ntkrnlpa.pdb" || rsds.Filename == "ntkrnlmp.pdb" || rsds.Filename == "ntkrpamp.pdb" || rsds.Filename == "ntoskrnl.pdb"))
                                     {
-                                        AddToInfoDictionary("Debug Symbols (RSDS): ", "0x" + hit.ToString("X08") + " (p)");
-                                        AddToInfoDictionary("Debug Symbols Filename: ", rsds.Filename);
+                                        InfoHelper helper = new InfoHelper();
+                                        helper.Type = InfoHelperType.InfoDictionary;
+                                        helper.Name = "0x" + hit.ToString("X08") + " (p)";
+                                        helper.PhysicalAddress = hit;
+                                        helper.BufferSize = 36;
+                                        AddToInfoDictionary("Debug Symbols (RSDS): ", helper);
+                                        helper = new InfoHelper();
+                                        helper.Type = InfoHelperType.InfoDictionary;
+                                        helper.Name = rsds.Filename;
+                                        AddToInfoDictionary("Debug Symbols Filename: ", helper);
                                         ProfileName = rsds.GuidAge + ".gz";
-                                        AddToInfoDictionary("ProfileName", ProfileName);
+                                        helper = new InfoHelper();
+                                        helper.Type = InfoHelperType.InfoDictionary;
+                                        helper.Name = ProfileName;
+                                        AddToInfoDictionary("ProfileName", helper);
                                         _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache"); // TO DO - make this a user option when you get around to writing the settings dialog
                                         Architecture = _profile.Architecture;
-                                        AddToInfoDictionary("Architecture", Architecture);
+                                        helper = new InfoHelper();
+                                        helper.Type = InfoHelperType.InfoDictionary;
+                                        helper.Name = Architecture;
+                                        AddToInfoDictionary("Architecture", helper);
                                         if (_profile.Architecture == "I386")
                                         {
                                             _kiUserSharedData = 0xFFDF0000;
@@ -241,7 +268,12 @@ namespace MemoryExplorer.Model
                                             _kiUserSharedData = 0xFFFFF78000000000;
                                             _profile.PoolAlign = 16;
                                         }
-                                        AddToInfoDictionary("KiUserSharedData", "0x" + _kiUserSharedData.ToString("X"));
+                                        helper = new InfoHelper();
+                                        helper.Type = InfoHelperType.InfoDictionary;
+                                        helper.Name = "0x" + _kiUserSharedData.ToString("X");
+                                        helper.VirtualAddress = _kiUserSharedData;
+                                        helper.BufferSize = 4096;
+                                        AddToInfoDictionary("KiUserSharedData", helper);
                                         return;
                                     }
                                 }
@@ -299,9 +331,18 @@ namespace MemoryExplorer.Model
                                         _kernelDtb = 0;
                                         continue;
                                     }
-                                    AddToInfoDictionary("Directory Table Base", "0x" + _kernelDtb.ToString("X08") + " (" + _kernelDtb.ToString() + ")");
-                                    AddToInfoDictionary("PID", ep.Pid.ToString());
-                                    AddToInfoDictionary("Parent PID", ep.Ppid.ToString());
+                                    InfoHelper helper = new InfoHelper();
+                                    helper.Type = InfoHelperType.InfoDictionary;
+                                    helper.Name = "0x" + _kernelDtb.ToString("X08") + " (" + _kernelDtb.ToString() + ")";
+                                    AddToInfoDictionary("Directory Table Base", helper);
+                                    helper = new InfoHelper();
+                                    helper.Type = InfoHelperType.InfoDictionary;
+                                    helper.Name = ep.Pid.ToString();
+                                    AddToInfoDictionary("PID", helper);
+                                    helper = new InfoHelper();
+                                    helper.Type = InfoHelperType.InfoDictionary;
+                                    helper.Name = ep.Ppid.ToString();
+                                    AddToInfoDictionary("Parent PID", helper);
                                     physicalAddress = (ulong)ep.PhysicalAddress;
                                     escape = true;
                                     break;
@@ -348,7 +389,10 @@ namespace MemoryExplorer.Model
                             return;
                         byte[] buffer2 = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
                         string build = ReadString(buffer2, (uint)(pAddr & 0xfff));
-                        AddToInfoDictionary("Build String", build);
+                        InfoHelper helper = new InfoHelper();
+                        helper.Type = InfoHelperType.InfoDictionary;
+                        helper.Name = build;
+                        AddToInfoDictionary("Build String", helper);
                         try
                         {
                             uint buildOffset2 = (uint)_profile.GetConstant("NtBuildLabEx");
@@ -357,7 +401,10 @@ namespace MemoryExplorer.Model
                                 return;
                             buffer2 = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
                             build = ReadString(buffer2, (uint)(pAddr & 0xfff));
-                            AddToInfoDictionary("Build String Ex", build);
+                            helper = new InfoHelper();
+                            helper.Type = InfoHelperType.InfoDictionary;
+                            helper.Name = build;
+                            AddToInfoDictionary("Build String Ex", helper);
                         }
                         catch { }                        
                         return;
@@ -398,11 +445,19 @@ namespace MemoryExplorer.Model
                                             if (pAddr == 0)
                                                 continue;
                                             buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
-                                            CurrentHexViewerContentAddress = pAddr & 0xfffffffff000;
-                                            CurrentHexViewerContent = buffer;
+                                            //CurrentHexViewerContentAddress = pAddr & 0xfffffffff000;
+                                            //CurrentHexViewerContent = buffer;
                                             string build = ReadString(buffer, (uint)(pAddr & 0xfff));
-                                            AddToInfoDictionary("Kernel Base Address", "0x" + _kernelBaseAddress.ToString("X08"));
-                                            AddToInfoDictionary("Build String", build);
+                                            InfoHelper helper = new InfoHelper();
+                                            helper.Type = InfoHelperType.InfoDictionary;
+                                            helper.Name = "0x" + _kernelBaseAddress.ToString("X08");
+                                            helper.VirtualAddress = _kernelBaseAddress;
+                                            helper.BufferSize = 4096;
+                                            AddToInfoDictionary("Kernel Base Address", helper);
+                                            helper = new InfoHelper();
+                                            helper.Type = InfoHelperType.InfoDictionary;
+                                            helper.Name = build;
+                                            AddToInfoDictionary("Build String", helper);
                                             try
                                             {
                                                 uint buildOffset2 = (uint)_profile.GetConstant("NtBuildLabEx");
@@ -411,7 +466,10 @@ namespace MemoryExplorer.Model
                                                     continue;
                                                 buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
                                                 build = ReadString(buffer, (uint)(pAddr & 0xfff));
-                                                AddToInfoDictionary("Build String Ex", build);
+                                                helper = new InfoHelper();
+                                                helper.Type = InfoHelperType.InfoDictionary;
+                                                helper.Name = build;
+                                                AddToInfoDictionary("Build String Ex", helper);
                                             }
                                             catch { }
                                             return;
@@ -443,14 +501,25 @@ namespace MemoryExplorer.Model
                     string version = kusd.Version;
                     version = VersionHelper(version);
 
-
-                    AddToInfoDictionary("Version", version);
+                    InfoHelper helper = new InfoHelper();
+                    helper.Type = InfoHelperType.InfoDictionary;
+                    helper.Name = version;
+                    AddToInfoDictionary("Version", helper);
                     var pageCount = kusd.Get("NumberOfPhysicalPages");
-                    AddToInfoDictionary("Physical Page Count", pageCount.ToString());
+                    helper = new InfoHelper();
+                    helper.Type = InfoHelperType.InfoDictionary;
+                    helper.Name = pageCount.ToString();
+                    AddToInfoDictionary("Physical Page Count", helper);
                     string rootDir = kusd.GetString("NtSystemRoot");
-                    AddToInfoDictionary("System Root", rootDir);
+                    helper = new InfoHelper();
+                    helper.Type = InfoHelperType.InfoDictionary;
+                    helper.Name = rootDir;
+                    AddToInfoDictionary("System Root", helper);
                     var procCount = kusd.Get("ActiveProcessorCount");
-                    AddToInfoDictionary("Active Processor Count", procCount.ToString());
+                    helper = new InfoHelper();
+                    helper.Type = InfoHelperType.InfoDictionary;
+                    helper.Name = procCount.ToString();
+                    AddToInfoDictionary("Active Processor Count", helper);
 
 
                     return;
@@ -497,9 +566,14 @@ namespace MemoryExplorer.Model
                     if (pfnPAddr == null)
                         return;
                     _pfnDatabaseBaseAddress = (ulong)pfnPAddr;
-                    AddToInfoDictionary("PFN Database Address", _pfnDatabaseBaseAddress.ToString("X08"));
-                    CurrentInfoHexViewerContentAddress = _pfnDatabaseBaseAddress;
-                    CurrentInfoHexViewerContent = _dataProvider.ReadMemoryBlock(_pfnDatabaseBaseAddress, 4096);                                        
+                    InfoHelper helper = new InfoHelper();
+                    helper.Type = InfoHelperType.InfoDictionary;
+                    helper.Name = _pfnDatabaseBaseAddress.ToString("X08");
+                    helper.VirtualAddress = _pfnDatabaseBaseAddress;
+                    helper.BufferSize = 4096; // just the first page, it's huge!
+                    AddToInfoDictionary("PFN Database Address", helper);
+                    //CurrentInfoHexViewerContentAddress = _pfnDatabaseBaseAddress;
+                    //CurrentInfoHexViewerContent = _dataProvider.ReadMemoryBlock(_pfnDatabaseBaseAddress, 4096);                                        
                     _pfnDatabase = new PfnDatabase(_dataProvider, _profile, _pfnDatabaseBaseAddress);
                 }
                 catch

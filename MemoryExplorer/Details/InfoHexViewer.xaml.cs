@@ -62,7 +62,10 @@ namespace MemoryExplorer.Details
             if (e.PropertyName == "CurrentInfoHexViewerContent")
             {
                 _hexBoxViewer.LineInfoOffset = _hvvm.ActiveStartAddress;
-                _hexBoxViewer.ByteProvider = new DynamicByteProvider(_hvvm.DataProvider);
+                if (null == _hvvm.DataProvider)
+                    _hexBoxViewer.ByteProvider = null;
+                else
+                    _hexBoxViewer.ByteProvider = new DynamicByteProvider(_hvvm.DataProvider);
             }
         }
 

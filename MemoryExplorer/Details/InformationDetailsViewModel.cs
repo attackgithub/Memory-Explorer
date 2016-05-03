@@ -8,10 +8,6 @@ namespace MemoryExplorer.Details
 {
     public class InformationDetailsViewModel : BindableBase
     {
-        public InformationDetailsViewModel()
-        {
-
-        }
         public IEnumerable<KvpResult> InfoDictionary
         {
             get
@@ -25,6 +21,7 @@ namespace MemoryExplorer.Details
                 return r;
             }
         }
+        
     }
     
 }

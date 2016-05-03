@@ -35,7 +35,7 @@ namespace MemoryExplorer.Tree
                     {
                         retval =
                         from item in _dataSource.Artifacts
-                        where item.Parent == _artifactItem
+                        where  _artifactItem == item.Parent
                         select new TreeItem(item, _dataSource);
                     }                    
                 }

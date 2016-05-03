@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MemoryExplorer.Info;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,9 +21,36 @@ namespace MemoryExplorer.Details
     /// </summary>
     public partial class InformationDetails : UserControl
     {
+        InformationDetailsViewModel _idvm = null;
         public InformationDetails()
         {
             InitializeComponent();
+            _idvm = this.DataContext as InformationDetailsViewModel;
+        }
+
+        private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var item = (sender as ListView).SelectedItem;
+            if (item != null)
+            {
+                int r = 0;
+            }
+        }
+
+        private void ListView_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            var item = (sender as ListView).SelectedItem;
+            if (item != null)
+            {
+                KvpResult kvp = item as KvpResult;
+                if(kvp != null)
+                {
+                    InfoHelper helper = kvp.Helper as InfoHelper;
+                    helper.Type = InfoHelperType.InfoDictionary;
+                    _idvm.NewSelection(helper);
+                }
+                    
+            }       
         }
     }
 }

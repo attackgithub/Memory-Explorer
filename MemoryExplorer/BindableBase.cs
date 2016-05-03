@@ -1,4 +1,5 @@
-﻿using MemoryExplorer.Model;
+﻿using MemoryExplorer.Info;
+using MemoryExplorer.Model;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
@@ -34,6 +35,9 @@ namespace MemoryExplorer
         {
             OnPropertyChanged(e.PropertyName);
         }
-
+        public void NewSelection(InfoHelper theSelection)
+        {
+            _dataModel.NewSelection(theSelection);
+        }
     }
 }

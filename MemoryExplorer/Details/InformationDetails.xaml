@@ -9,10 +9,15 @@
     <UserControl.DataContext>
         <local:InformationDetailsViewModel />
     </UserControl.DataContext>
-    <ListView Width="auto" Height="auto" ItemsSource="{Binding InfoDictionary}" Margin="0" AlternationCount="1" BorderBrush="{x:Null}">
+    <ListView Width="auto" Height="auto" ItemsSource="{Binding InfoDictionary}" Margin="0" AlternationCount="1" BorderBrush="{x:Null}" SelectionChanged="ListView_SelectionChanged" PreviewMouseLeftButtonUp="ListView_PreviewMouseLeftButtonUp">
+        <ListView.ItemContainerStyle>
+            <Style TargetType="ListViewItem">
+                <Setter Property="Tag" Value="{Binding Helper}" />
+            </Style>
+        </ListView.ItemContainerStyle>
         <ListView.View >
             <GridView >
-                <GridViewColumn Header="Name"  Width="180" DisplayMemberBinding="{Binding InfoKey}"/>
+                <GridViewColumn Header="Name"  Width="180" DisplayMemberBinding="{Binding InfoKey}" />
                 <GridViewColumn Header="Value"  Width="280" DisplayMemberBinding="{Binding InfoValue}"/>
             </GridView>
         </ListView.View>

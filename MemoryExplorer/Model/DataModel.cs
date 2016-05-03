@@ -1,6 +1,7 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Artifacts;
 using MemoryExplorer.Data;
+using MemoryExplorer.Info;
 using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Processes;
 using MemoryExplorer.Profiles;
@@ -41,7 +42,7 @@ namespace MemoryExplorer.Model
         private string _activityMessage = "Idle";
         private int _activeJobCount = 0;
         private string _architecture = "";
-        private Dictionary<string, string> _infoDictionary = new Dictionary<string, string>();
+        private Dictionary<string, InfoHelper> _infoDictionary = new Dictionary<string, InfoHelper>();
         private ulong _kiUserSharedData = 0;
         private ulong _kernelDtb = 0;
         private Profile _profile = null;
@@ -113,7 +114,7 @@ namespace MemoryExplorer.Model
             get { return _mru; }
             set { SetProperty(ref _mru, value); }
         }
-        public Dictionary<string, string> InfoDictionary
+        public Dictionary<string, InfoHelper> InfoDictionary
         {
             get { return _infoDictionary; }
             set { SetProperty(ref _infoDictionary, value); } }
@@ -305,13 +306,13 @@ namespace MemoryExplorer.Model
             if (_activeJobCount == 0)
                 ActivityMessage = "Idle";
         }
-        private void AddToInfoDictionary(string key, string value)
+        private void AddToInfoDictionary(string key, InfoHelper helper)
         {
-            if (value == null)
+            if (helper == null)
                 return;
             lock(AccessLock)
             {
-                string testValue;
+                InfoHelper testValue;
                 int suffix = 1;
                 bool trying = true;
                 string alternativeKey = key;
@@ -321,12 +322,12 @@ namespace MemoryExplorer.Model
                     if (trying)
                         alternativeKey = key + (suffix++).ToString();
                 }
-                Dictionary<string, string> _tempInfo = new Dictionary<string, string>();
+                Dictionary<string, InfoHelper> _tempInfo = new Dictionary<string, InfoHelper>();
                 foreach (var item in InfoDictionary)
                 {
                     _tempInfo.Add(item.Key, item.Value);
                 }
-                _tempInfo.Add(alternativeKey, value);
+                _tempInfo.Add(alternativeKey, helper);
                 InfoDictionary = _tempInfo;
             }            
         }

@@ -169,6 +169,7 @@
     <Compile Include="HexView\MemoryDataBlock.cs" />
     <Compile Include="HexView\NativeMethods.cs" />
     <Compile Include="HexView\Utils.cs" />
+    <Compile Include="Info\InfoHelper.cs" />
     <Compile Include="Memory\MemoryRange.cs" />
     <Compile Include="ModelObjects\DriverExtension.cs" />
     <Compile Include="ModelObjects\DriverObject.cs" />
@@ -334,9 +335,6 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Awicons-Vista-Artistic-Computer-search.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Nishad2m8-Hologram-Dock-My-computer.ico" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\Icons\badge.ico" />

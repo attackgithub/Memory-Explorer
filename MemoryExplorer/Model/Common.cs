@@ -1,5 +1,6 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Data;
+using MemoryExplorer.Info;
 using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Processes;
 using System;
@@ -55,6 +56,33 @@ namespace MemoryExplorer.Model
                     return "5.0 (Windows 2000)";
                 default:
                     return version;
+            }
+        }
+        public void NewSelection(InfoHelper helper)
+        {
+            switch(helper.Type)
+            {
+                case InfoHelperType.InfoDictionary:
+                    if(helper.PhysicalAddress != 0 && helper.BufferSize != 0)
+                    {
+                        CurrentInfoHexViewerContentAddress = helper.PhysicalAddress;
+                        CurrentInfoHexViewerContent = _dataProvider.ReadPhysicalMemory(helper.PhysicalAddress, helper.BufferSize);
+                        //NotifyPropertyChange("CurrentInfoHexViewerContent");
+                    }
+                    else if(helper.VirtualAddress != 0 && helper.BufferSize != 0)
+                    {
+                        CurrentInfoHexViewerContentAddress = helper.VirtualAddress;
+                        CurrentInfoHexViewerContent = _dataProvider.ReadMemoryBlock(helper.VirtualAddress, helper.BufferSize);
+                        //NotifyPropertyChange("CurrentInfoHexViewerContent");
+                    }
+                    else
+                    {
+                        CurrentInfoHexViewerContentAddress = 0;
+                        CurrentInfoHexViewerContent = null;
+                    }
+                    break;
+                default:
+                    break;
             }
         }
         //private List<LIST_ENTRY> FindAllLists(DataProviderBase dataProvider, LIST_ENTRY source)
