@@ -1,9 +1,5 @@
-﻿using MemoryExplorer.ModelObjects;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MemoryExplorer.Info;
+using MemoryExplorer.ModelObjects;
 
 namespace MemoryExplorer.Details
 {
@@ -19,7 +15,7 @@ namespace MemoryExplorer.Details
         private readonly string _driverStart;
         private readonly string _driverStartPhysicalAddress;
         private readonly string _driverExtension;
-
+        private readonly object _object = new object();
 
         public DriverResult(DriverObject driverObject)
         {
@@ -33,6 +29,13 @@ namespace MemoryExplorer.Details
             _driverStart = "0x" + driverObject.DriverStartPointer.ToString("X").ToLower();
             _driverStartPhysicalAddress = "0x" + driverObject.DriverStartPhysicalAddress.ToString("X").ToLower();
             _driverExtension = "0x" + driverObject.DriverExtensionVirtualAddress.ToString("X").ToLower();
+            InfoHelper helper = new InfoHelper();
+            helper.Type = InfoHelperType.DriverObject;
+            helper.PhysicalAddress = driverObject.PhysicalAddress;
+            helper.BufferSize = 1024; // need to get the actual driver object size
+            helper.Title = "Driver Object";
+            helper.TheObject = driverObject;
+            _object = helper;
         }
 
         public string Name { get { return _name; } }
@@ -46,6 +49,6 @@ namespace MemoryExplorer.Details
         public string DriverStartAddress { get { return _driverStart; } }
         public string DriverStartPhysicalAddress { get { return _driverStartPhysicalAddress; } }
         public string DriverExtensionAddress { get { return _driverExtension; } }
-
+        public object Helper { get { return _object; } }
     }
 }

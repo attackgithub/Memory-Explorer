@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MemoryExplorer.Info;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,9 +21,26 @@ namespace MemoryExplorer.Details
     /// </summary>
     public partial class ProcessViewer : UserControl
     {
+        ProcessViewerViewModel _pvvm = null;
         public ProcessViewer()
         {
             InitializeComponent();
+            _pvvm = this.DataContext as ProcessViewerViewModel;
+        }
+
+        private void ListView_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            var item = (sender as ListView).SelectedItem;
+            if (item != null)
+            {
+                PsListResult result = item as PsListResult;
+                if (result != null)
+                {
+                    InfoHelper helper = result.Helper as InfoHelper;
+                    _pvvm.NewSelection(helper);
+                }
+
+            }
         }
     }
 }

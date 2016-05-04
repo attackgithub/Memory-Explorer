@@ -34,6 +34,7 @@ namespace MemoryExplorer.Model
         private string _memoryImageFilename = "";
         private DriverManager _driverManager = null;
         private List<ArtifactBase> _artifacts = new List<ArtifactBase>();
+        private List<ProfileEntry> _profileEntries = new List<ProfileEntry>();
         private ArtifactBase _activeArtifact = null;
         private ArtifactBase _rootArtifact = null;
         private string _imageMd5 = "";
@@ -61,7 +62,8 @@ namespace MemoryExplorer.Model
         private List<string> _debugTracer = new List<string>();
         private TabItem _rootDetailsSelectedTab = null;
         private List<DriverObject> _driverList = null;
-
+        private string _tellMeAboutTitle = "Nothing to see here";
+        private uint _eprocessSize = 0;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -72,7 +74,11 @@ namespace MemoryExplorer.Model
             get { return _rootDetailsSelectedTab; }
             set { _rootDetailsSelectedTab = value; }
         }
-
+        public string TellMeAboutTitle
+        {
+            get { return _tellMeAboutTitle; }
+            set { SetProperty(ref _tellMeAboutTitle, value); }
+        }
         public List<string> DebugTracer
         {
             get { return _debugTracer; }
@@ -167,7 +173,11 @@ namespace MemoryExplorer.Model
             get { return _artifacts; }
             set { SetProperty(ref _artifacts, value); }
         }
-
+        public List<ProfileEntry> ProfileEntries
+        {
+            get { return _profileEntries; }
+            set { SetProperty(ref _profileEntries, value); }
+        }
         public List<ProcessInfo> ProcessList { get { return _processList; } }
         public List<DriverObject> DriverList { get { return _driverList; } set { SetProperty(ref _driverList, value); } }
 
@@ -184,7 +194,8 @@ namespace MemoryExplorer.Model
                     if(item != "empty")
                         _mru.Add(item);
                 }                   
-            }            
+            }
+            
         }
         public bool NewLiveInvestigation()
         {

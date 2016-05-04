@@ -31,6 +31,9 @@ namespace MemoryExplorer.Model
             if (_profile == null)
                 return;
 
+            _eprocessSize = (uint)_profile.GetStructureSize("_EPROCESS");
+            PopulateInfoTree("_EPROCESS");
+
             IncrementActiveJobs("Finding Kernel DTB");
             ulong eppa = await FindKernelDtb();
             DecrementActiveJobs();
@@ -96,6 +99,8 @@ namespace MemoryExplorer.Model
             DecrementActiveJobs();
         }
 
+        
+
         async private Task GetInformation()
         {
             await Task.Run(() => 
@@ -138,6 +143,7 @@ namespace MemoryExplorer.Model
                     ulong friendlyValue = (ulong)item.Value;
                     InfoHelper helper = new InfoHelper();
                     helper.Type = InfoHelperType.InfoDictionary;
+                    helper.Title = friendlyKey;
                     helper.Name = "0x" + friendlyValue.ToString("X08") + " (" + friendlyValue.ToString() + ")";
                     AddToInfoDictionary(friendlyKey, helper);
                 }
@@ -184,6 +190,7 @@ namespace MemoryExplorer.Model
                                         InfoHelper helper = new InfoHelper();
                                         helper.Type = InfoHelperType.InfoDictionary;
                                         helper.Name = ProfileName;
+                                        helper.Title = "Profile Name";
                                         AddToInfoDictionary("ProfileName", helper);
                                         _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache"); // TO DO - make this a user option when you get around to writing the settings dialog
                                         Architecture = _profile.Architecture;
@@ -191,6 +198,7 @@ namespace MemoryExplorer.Model
                                         helper = new InfoHelper();
                                         helper.Type = InfoHelperType.InfoDictionary;
                                         helper.Name = Architecture;
+                                        helper.Title = "Architecture";
                                         AddToInfoDictionary("Architecture", helper);
                                         if (_profile.Architecture == "I386")
                                         {
@@ -205,6 +213,7 @@ namespace MemoryExplorer.Model
                                         helper = new InfoHelper();
                                         helper.Type = InfoHelperType.InfoDictionary;
                                         helper.Name = "0x" + _kiUserSharedData.ToString("X");
+                                        helper.Title = "KiUserSharedData";
                                         AddToInfoDictionary("KiUserSharedData", helper);
                                         return;
                                     }
@@ -242,21 +251,25 @@ namespace MemoryExplorer.Model
                                         helper.Name = "0x" + hit.ToString("X08") + " (p)";
                                         helper.PhysicalAddress = hit;
                                         helper.BufferSize = 36;
+                                        helper.Title = "Debug Symbols (RSDS)";
                                         AddToInfoDictionary("Debug Symbols (RSDS): ", helper);
                                         helper = new InfoHelper();
                                         helper.Type = InfoHelperType.InfoDictionary;
                                         helper.Name = rsds.Filename;
+                                        helper.Title = "Debug Symbols Filename";
                                         AddToInfoDictionary("Debug Symbols Filename: ", helper);
                                         ProfileName = rsds.GuidAge + ".gz";
                                         helper = new InfoHelper();
                                         helper.Type = InfoHelperType.InfoDictionary;
                                         helper.Name = ProfileName;
+                                        helper.Title = "Profile Name";
                                         AddToInfoDictionary("ProfileName", helper);
                                         _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache"); // TO DO - make this a user option when you get around to writing the settings dialog
                                         Architecture = _profile.Architecture;
                                         helper = new InfoHelper();
                                         helper.Type = InfoHelperType.InfoDictionary;
                                         helper.Name = Architecture;
+                                        helper.Title = "Architecture";
                                         AddToInfoDictionary("Architecture", helper);
                                         if (_profile.Architecture == "I386")
                                         {
@@ -271,6 +284,7 @@ namespace MemoryExplorer.Model
                                         helper = new InfoHelper();
                                         helper.Type = InfoHelperType.InfoDictionary;
                                         helper.Name = "0x" + _kiUserSharedData.ToString("X");
+                                        helper.Title = "KiUserSharedData";
                                         helper.VirtualAddress = _kiUserSharedData;
                                         helper.BufferSize = 4096;
                                         AddToInfoDictionary("KiUserSharedData", helper);
@@ -334,14 +348,17 @@ namespace MemoryExplorer.Model
                                     InfoHelper helper = new InfoHelper();
                                     helper.Type = InfoHelperType.InfoDictionary;
                                     helper.Name = "0x" + _kernelDtb.ToString("X08") + " (" + _kernelDtb.ToString() + ")";
+                                    helper.Title = "Directory Table Base";
                                     AddToInfoDictionary("Directory Table Base", helper);
                                     helper = new InfoHelper();
                                     helper.Type = InfoHelperType.InfoDictionary;
                                     helper.Name = ep.Pid.ToString();
+                                    helper.Title = "PID";
                                     AddToInfoDictionary("PID", helper);
                                     helper = new InfoHelper();
                                     helper.Type = InfoHelperType.InfoDictionary;
                                     helper.Name = ep.Ppid.ToString();
+                                    helper.Title = "Parent PID";
                                     AddToInfoDictionary("Parent PID", helper);
                                     physicalAddress = (ulong)ep.PhysicalAddress;
                                     escape = true;
@@ -392,6 +409,7 @@ namespace MemoryExplorer.Model
                         InfoHelper helper = new InfoHelper();
                         helper.Type = InfoHelperType.InfoDictionary;
                         helper.Name = build;
+                        helper.Title = "Build String";
                         AddToInfoDictionary("Build String", helper);
                         try
                         {
@@ -404,6 +422,7 @@ namespace MemoryExplorer.Model
                             helper = new InfoHelper();
                             helper.Type = InfoHelperType.InfoDictionary;
                             helper.Name = build;
+                            helper.Title = "Build String Ex";
                             AddToInfoDictionary("Build String Ex", helper);
                         }
                         catch { }                        
@@ -451,12 +470,14 @@ namespace MemoryExplorer.Model
                                             InfoHelper helper = new InfoHelper();
                                             helper.Type = InfoHelperType.InfoDictionary;
                                             helper.Name = "0x" + _kernelBaseAddress.ToString("X08");
+                                            helper.Title = "Kernel Base Address";
                                             helper.VirtualAddress = _kernelBaseAddress;
                                             helper.BufferSize = 4096;
                                             AddToInfoDictionary("Kernel Base Address", helper);
                                             helper = new InfoHelper();
                                             helper.Type = InfoHelperType.InfoDictionary;
                                             helper.Name = build;
+                                            helper.Title = "Build String";
                                             AddToInfoDictionary("Build String", helper);
                                             try
                                             {
@@ -469,6 +490,7 @@ namespace MemoryExplorer.Model
                                                 helper = new InfoHelper();
                                                 helper.Type = InfoHelperType.InfoDictionary;
                                                 helper.Name = build;
+                                                helper.Title = "Build String Ex";
                                                 AddToInfoDictionary("Build String Ex", helper);
                                             }
                                             catch { }
@@ -504,21 +526,25 @@ namespace MemoryExplorer.Model
                     InfoHelper helper = new InfoHelper();
                     helper.Type = InfoHelperType.InfoDictionary;
                     helper.Name = version;
+                    helper.Title = "Version";
                     AddToInfoDictionary("Version", helper);
                     var pageCount = kusd.Get("NumberOfPhysicalPages");
                     helper = new InfoHelper();
                     helper.Type = InfoHelperType.InfoDictionary;
                     helper.Name = pageCount.ToString();
+                    helper.Title = "Physical Page Count";
                     AddToInfoDictionary("Physical Page Count", helper);
                     string rootDir = kusd.GetString("NtSystemRoot");
                     helper = new InfoHelper();
                     helper.Type = InfoHelperType.InfoDictionary;
                     helper.Name = rootDir;
+                    helper.Title = "System Root";
                     AddToInfoDictionary("System Root", helper);
                     var procCount = kusd.Get("ActiveProcessorCount");
                     helper = new InfoHelper();
                     helper.Type = InfoHelperType.InfoDictionary;
                     helper.Name = procCount.ToString();
+                    helper.Title = "Active Processor Count";
                     AddToInfoDictionary("Active Processor Count", helper);
 
 
@@ -569,11 +595,10 @@ namespace MemoryExplorer.Model
                     InfoHelper helper = new InfoHelper();
                     helper.Type = InfoHelperType.InfoDictionary;
                     helper.Name = _pfnDatabaseBaseAddress.ToString("X08");
+                    helper.Title = "PFN Database Address";
                     helper.VirtualAddress = _pfnDatabaseBaseAddress;
                     helper.BufferSize = 4096; // just the first page, it's huge!
                     AddToInfoDictionary("PFN Database Address", helper);
-                    //CurrentInfoHexViewerContentAddress = _pfnDatabaseBaseAddress;
-                    //CurrentInfoHexViewerContent = _dataProvider.ReadMemoryBlock(_pfnDatabaseBaseAddress, 4096);                                        
                     _pfnDatabase = new PfnDatabase(_dataProvider, _profile, _pfnDatabaseBaseAddress);
                 }
                 catch

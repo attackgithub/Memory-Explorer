@@ -54,7 +54,7 @@
             </Grid>
             <GridSplitter  Grid.Column="1" Width="3" HorizontalAlignment="Stretch"/>
             <Grid Grid.Column="2">
-                <local:Details2 />
+                <local:TellMeAbout />
             </Grid>
         </Grid>
         

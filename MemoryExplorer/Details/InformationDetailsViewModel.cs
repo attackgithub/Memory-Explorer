@@ -12,7 +12,7 @@ namespace MemoryExplorer.Details
         {
             get
             {
-                if (_dataModel == null)
+                if (_dataModel == null || _dataModel.InfoDictionary == null)
                     return null;
                 var r =
                     from item in _dataModel.InfoDictionary

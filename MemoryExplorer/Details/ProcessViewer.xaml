@@ -9,10 +9,11 @@
     <UserControl.DataContext>
         <local:ProcessViewerViewModel />
     </UserControl.DataContext>
-    <ListView Width="auto" Height="auto" ItemsSource="{Binding Processes}" Margin="0" AlternationCount="1" BorderBrush="{x:Null}">
+    <ListView Width="auto" Height="auto" ItemsSource="{Binding Processes}" Margin="0" AlternationCount="1" BorderBrush="{x:Null}" PreviewMouseLeftButtonUp="ListView_PreviewMouseLeftButtonUp">
         <ListView.ItemContainerStyle>
             <Style TargetType="ListViewItem">
                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="Tag" Value="{Binding Helper}" />
             </Style>
         </ListView.ItemContainerStyle>
         <ListView.View >

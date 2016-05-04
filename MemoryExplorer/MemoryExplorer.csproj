@@ -148,6 +148,10 @@
       <DependentUpon>RootDetails.xaml</DependentUpon>
     </Compile>
     <Compile Include="Details\RootDetailsViewModel.cs" />
+    <Compile Include="Details\TellMeAbout.xaml.cs">
+      <DependentUpon>TellMeAbout.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Details\TellMeAboutViewModel.cs" />
     <Compile Include="HexView\BuiltInContextMenu.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -188,12 +192,15 @@
     <Compile Include="ModelObjects\UnicodeString.cs" />
     <Compile Include="Model\BusinessLogic.cs" />
     <Compile Include="Model\Common.cs" />
+    <Compile Include="Model\InfoTree.cs" />
     <Compile Include="Model\ProcessLists.cs" />
     <Compile Include="Model\ProcessProcesses.cs" />
+    <Compile Include="Model\TellMeAbout.cs" />
     <Compile Include="Processes\EProcess.cs" />
     <Compile Include="Processes\Process.cs" />
     <Compile Include="Profiles\PeHeader.cs" />
     <Compile Include="Profiles\Profile.cs" />
+    <Compile Include="Profiles\ProfileEntry.cs" />
     <Compile Include="Profiles\RSDS.cs" />
     <Compile Include="RelayCommand.cs" />
     <Compile Include="Scanners\PoolScan.cs" />
@@ -209,6 +216,7 @@
       <DependentUpon>MxTree.xaml</DependentUpon>
     </Compile>
     <Compile Include="Tree\MxTreeViewModel.cs" />
+    <Compile Include="Tree\ProfileTreeItem.cs" />
     <Compile Include="Tree\TreeItem.cs" />
     <Page Include="Details\DebugViewer.xaml">
       <SubType>Designer</SubType>
@@ -251,6 +259,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Details\RootDetails.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Details\TellMeAbout.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

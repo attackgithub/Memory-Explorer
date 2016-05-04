@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Artifacts;
+using MemoryExplorer.Info;
 using MemoryExplorer.Processes;
 using System;
 using System.Collections.Generic;
@@ -23,7 +24,7 @@ namespace MemoryExplorer.Details
         private readonly string _m4;
         private readonly string _eprocessVirtualAddress;
         private readonly string _eprocessPhysicalAddress;
-
+        private readonly object _object = new object();
 
         public PsListResult(ProcessInfo info)
         {
@@ -46,7 +47,13 @@ namespace MemoryExplorer.Details
             _session = info.Session.ToString("X08");
             _eprocessVirtualAddress = "0x" + info.VirtualAddress.ToString("X8").ToLower();
             _eprocessPhysicalAddress = "0x" + info.PhysicalAddress.ToString("X").ToLower();
-
+            InfoHelper helper = new InfoHelper();
+            helper.Type = InfoHelperType.ProcessObject;
+            helper.PhysicalAddress = info.PhysicalAddress;
+            helper.BufferSize = 1024; // need to get the actual eprocess size
+            helper.Title = "Process Object";
+            helper.TheObject = info;
+            _object = helper;
         }
         public string Name { get { return _name; } }
         public string Pid { get { return _pid; } }
@@ -61,6 +68,6 @@ namespace MemoryExplorer.Details
         public string M4 { get { return _m4; } }
         public string EprocessVirtualAddress { get { return _eprocessVirtualAddress; } }
         public string EprocessPhysicalAddress { get { return _eprocessPhysicalAddress; } }
-
+        public object Helper { get { return _object; } }
     }
 }

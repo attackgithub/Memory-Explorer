@@ -62,60 +62,39 @@ namespace MemoryExplorer.Model
         {
             switch(helper.Type)
             {
+                case InfoHelperType.DriverObject:
+                    UpdateInfoViewer(helper);
+                    break;
                 case InfoHelperType.InfoDictionary:
-                    if(helper.PhysicalAddress != 0 && helper.BufferSize != 0)
-                    {
-                        CurrentInfoHexViewerContentAddress = helper.PhysicalAddress;
-                        CurrentInfoHexViewerContent = _dataProvider.ReadPhysicalMemory(helper.PhysicalAddress, helper.BufferSize);
-                        //NotifyPropertyChange("CurrentInfoHexViewerContent");
-                    }
-                    else if(helper.VirtualAddress != 0 && helper.BufferSize != 0)
-                    {
-                        CurrentInfoHexViewerContentAddress = helper.VirtualAddress;
-                        CurrentInfoHexViewerContent = _dataProvider.ReadMemoryBlock(helper.VirtualAddress, helper.BufferSize);
-                        //NotifyPropertyChange("CurrentInfoHexViewerContent");
-                    }
-                    else
-                    {
-                        CurrentInfoHexViewerContentAddress = 0;
-                        CurrentInfoHexViewerContent = null;
-                    }
+                    UpdateInfoViewer(helper);
+                    break;
+                case InfoHelperType.ProcessObject:
+                    helper.BufferSize = _eprocessSize;
+                    UpdateInfoViewer(helper);
                     break;
                 default:
                     break;
             }
+            TellMeAbout(helper);
         }
-        //private List<LIST_ENTRY> FindAllLists(DataProviderBase dataProvider, LIST_ENTRY source)
-        //{
-        //    List<LIST_ENTRY> results = new List<LIST_ENTRY>();
-        //    List<ulong> seen = new List<ulong>();
-        //    List<LIST_ENTRY> stack = new List<LIST_ENTRY>();
-        //    AddressBase addressSpace = dataProvider.ActiveAddressSpace;
-        //    stack.Add(source);
-        //    while (stack.Count > 0)
-        //    {
-        //        LIST_ENTRY item = stack[0];
-        //        stack.RemoveAt(0);
-        //        if (!seen.Contains(item.PhysicalAddress))
-        //        {
-        //            seen.Add(item.PhysicalAddress);
-        //            results.Add(item);
-        //            ulong Blink = item.Blink;
-        //            if (Blink != 0)
-        //            {
-        //                ulong refr = addressSpace.vtop(Blink);
-        //                stack.Add(new LIST_ENTRY(dataProvider, item.Blink));
-        //            }
-        //            ulong Flink = item.Flink;
-        //            if (Flink != 0)
-        //            {
-        //                ulong refr = addressSpace.vtop(Flink);
-        //                stack.Add(new LIST_ENTRY(dataProvider, item.Flink));
-        //            }
-        //        }
-        //    }
-        //    return results;
-        //}
+        private void UpdateInfoViewer(InfoHelper helper)
+        {
+            if (helper.PhysicalAddress != 0 && helper.BufferSize != 0)
+            {
+                CurrentInfoHexViewerContentAddress = helper.PhysicalAddress;
+                CurrentInfoHexViewerContent = _dataProvider.ReadPhysicalMemory(helper.PhysicalAddress, helper.BufferSize);
+            }
+            else if (helper.VirtualAddress != 0 && helper.BufferSize != 0)
+            {
+                CurrentInfoHexViewerContentAddress = helper.VirtualAddress;
+                CurrentInfoHexViewerContent = _dataProvider.ReadMemoryBlock(helper.VirtualAddress, helper.BufferSize);
+            }
+            else
+            {
+                CurrentInfoHexViewerContentAddress = 0;
+                CurrentInfoHexViewerContent = null;
+            }
+        }        
         private ProcessInfo GetProcessInfo(uint pid, string name)
         {
             foreach (ProcessInfo p in _processList)
@@ -134,5 +113,6 @@ namespace MemoryExplorer.Model
             }
             return null;
         }
+        
     }
 }
