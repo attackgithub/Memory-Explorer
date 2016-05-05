@@ -39,7 +39,6 @@ namespace MemoryExplorer.Details
                     InfoHelper helper = result.Helper as InfoHelper;
                     _dvvm.NewSelection(helper);
                 }
-
             }
         }
     }

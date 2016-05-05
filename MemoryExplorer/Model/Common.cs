@@ -1,5 +1,6 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Data;
+using MemoryExplorer.HexView;
 using MemoryExplorer.Info;
 using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Processes;
@@ -63,6 +64,7 @@ namespace MemoryExplorer.Model
             switch(helper.Type)
             {
                 case InfoHelperType.DriverObject:
+                    helper.BufferSize = _driverObjectSize;
                     UpdateInfoViewer(helper);
                     break;
                 case InfoHelperType.InfoDictionary:
@@ -113,6 +115,15 @@ namespace MemoryExplorer.Model
             }
             return null;
         }
-        
+        public void AddInfoHighlight(HexViewHighlight highlight)
+        {
+            _infoHexHighlights.Add(highlight);
+            NotifyPropertyChange("CurrentInfoHexViewerHighlight");
+        }
+        public void ClearInfoHighlights()
+        {
+            _infoHexHighlights.Clear();
+            NotifyPropertyChange("CurrentInfoHexViewerHighlight");
+        }
     }
 }

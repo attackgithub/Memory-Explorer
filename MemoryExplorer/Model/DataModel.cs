@@ -1,6 +1,7 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Artifacts;
 using MemoryExplorer.Data;
+using MemoryExplorer.HexView;
 using MemoryExplorer.Info;
 using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Processes;
@@ -23,7 +24,7 @@ using System.Windows.Forms;
 
 namespace MemoryExplorer.Model
 {
-    public partial class DataModel : INotifyPropertyChanged
+    public partial class DataModel : INotifyPropertyChanged, IDisposable
     {
         #region globals
         public object AccessLock = new object();
@@ -64,6 +65,10 @@ namespace MemoryExplorer.Model
         private List<DriverObject> _driverList = null;
         private string _tellMeAboutTitle = "Nothing to see here";
         private uint _eprocessSize = 0;
+        private uint _driverObjectSize = 0;
+        private List<HexViewHighlight> _infoHexHighlights = new List<HexViewHighlight>();
+        private List<HexViewHighlight> _mainHexHighlights = new List<HexViewHighlight>();
+
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -181,6 +186,8 @@ namespace MemoryExplorer.Model
         public List<ProcessInfo> ProcessList { get { return _processList; } }
         public List<DriverObject> DriverList { get { return _driverList; } set { SetProperty(ref _driverList, value); } }
 
+        public List<HexViewHighlight> InfoHexHighlights { get { return _infoHexHighlights; } }
+
         #endregion
         public DataModel(bool IsAdmin)
         {
@@ -194,8 +201,7 @@ namespace MemoryExplorer.Model
                     if(item != "empty")
                         _mru.Add(item);
                 }                   
-            }
-            
+            }            
         }
         public bool NewLiveInvestigation()
         {
@@ -224,7 +230,7 @@ namespace MemoryExplorer.Model
             _dataProvider = new LiveDataProvider(this);            
             UpdateDetails(_rootArtifact = AddArtifact(ArtifactType.Root, "Live Capture", true));
             InitialSurvey();
-            ProcessProcesses();
+            //ProcessProcesses();
             return true;
         }
         public bool NewImageInvestigation(string possibleFilename)
@@ -248,7 +254,7 @@ namespace MemoryExplorer.Model
             UpdateMru(MemoryImageFilename);
             DecrementActiveJobs();
             InitialSurvey();
-            ProcessProcesses();
+            //ProcessProcesses();
             return true;
         }
         public bool NewImageInvestigation()
@@ -409,17 +415,23 @@ namespace MemoryExplorer.Model
         }
         private void AddObjectType(ObjectTypeRecord record)
         {
-            _profile.ObjectTypeList.Add(record);
+            lock(AccessLock)
+            {
+                _profile.ObjectTypeList.Add(record);
+            }
             NotifyPropertyChange("ObjectTypes"); // this forces the set property / INotifyPropertyCHange
         }
         public void AddDebugMessage(string message)
         {
 #if DEBUG
-            DateTime CurrentTime = DateTime.Now;
-            string Timestamp = CurrentTime.ToString() + " - ";
-            //string Timestamp = CurrentTime.ToString("yyyyMMddHHmmss - ", DateTimeFormatInfo.InvariantInfo);
-            _debugTracer.Add(Timestamp + message);
-            NotifyPropertyChange("DebugTracer"); // this forces the set property / INotifyPropertyCHange
+            lock(AccessLock)
+            {
+                DateTime CurrentTime = DateTime.Now;
+                string Timestamp = CurrentTime.ToString() + " - ";
+                //string Timestamp = CurrentTime.ToString("yyyyMMddHHmmss - ", DateTimeFormatInfo.InvariantInfo);
+                _debugTracer.Add(Timestamp + message);
+                NotifyPropertyChange("DebugTracer"); // this forces the set property / INotifyPropertyCHange
+            }            
 #else
             return;
 #endif
@@ -431,11 +443,13 @@ namespace MemoryExplorer.Model
         }
         private void AddProcess(ProcessInfo process)
         {
-            _processList.Add(process);
+            lock(AccessLock)
+            {
+                _processList.Add(process);
+            }
             _rootArtifact.IsExpanded = true;
             ProcessArtifact pa = AddArtifact(ArtifactType.Process, process.ProcessName, false, _rootArtifact) as ProcessArtifact;
             pa.LinkedProcess = process;            
-
         }
         #endregion
         #region cleanup
@@ -446,6 +460,7 @@ namespace MemoryExplorer.Model
                 _driverManager.UnloadDriver();
                 _driverManager = null;
             }
+            _shouldStop = true;
             FlushArtifactsList();
             _activeArtifact = null;
             _imageMd5 = "";
@@ -463,7 +478,10 @@ namespace MemoryExplorer.Model
         }
         private void FlushArtifactsList()
         {
-            _artifacts.Clear();
+            lock(AccessLock)
+            {
+                _artifacts.Clear();
+            }
         }
         #endregion
         private string GetImageFile()

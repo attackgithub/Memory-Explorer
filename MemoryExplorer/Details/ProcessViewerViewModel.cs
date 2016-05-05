@@ -14,12 +14,15 @@ namespace MemoryExplorer.Details
             {
                 if (_dataModel == null)
                     return null;
-                var r =
-                    from item in _dataModel.ProcessList
-                    orderby item.Pid
-                    select new PsListResult(item);
+                lock(_dataModel.AccessLock)
+                {
+                    var r =
+                        from item in _dataModel.ProcessList
+                        orderby item.Pid
+                        select new PsListResult(item);
 
-                return r;
+                    return r;
+                }
             }
         }
     }

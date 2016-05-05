@@ -18,6 +18,11 @@ namespace MemoryExplorer.Model
     }
     public partial class DataModel : INotifyPropertyChanged
     {
+        private void ClearInfoTree()
+        {
+            _profileEntries.Clear();
+            NotifyPropertyChange("ProfileTreeItems");
+        }
         private void PopulateInfoTree(string structureName)
         {
             int structureSize = 0;
@@ -52,6 +57,8 @@ namespace MemoryExplorer.Model
             root.Name = realName + " [" + structureSize + "]";
             root.Parent = null;
             root.IsExpanded = true;
+            root.Offset = 0;
+            root.Length = (uint)structureSize;
             _profileEntries.Add(root);
             PopulateNode(structureName, root, 0);
             
@@ -72,6 +79,8 @@ namespace MemoryExplorer.Model
                 next.Name = s.Name + " [" + (s.Offset + offset).ToString() + " , " + s.Size + " , " + s.EntryType + "]";
                 next.Parent = parent;
                 next.IsExpanded = expanded;
+                next.Offset = (uint)(s.Offset + offset);
+                next.Length = (uint)s.Size;
                 _profileEntries.Add(next);
                 int structureSize = 0;
                 try
@@ -88,6 +97,16 @@ namespace MemoryExplorer.Model
         }
         protected bool PersistStructureTree(StructureHelper source, string fileName)
         {
+            uint marker = 0;
+            foreach (ProfileEntry item in source.StructureEntries)
+                item.RecordNumber = marker++;
+            foreach (ProfileEntry item in source.StructureEntries)
+            {
+                ProfileEntry parent = item.Parent;
+                if (parent != null)
+                    item.ParentRecordNumber = parent.RecordNumber;
+            }
+
             if (!fileName.EndsWith(".gz"))
                 fileName += ".gz";
             byte[] bytesToCompress = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(source));
@@ -109,7 +128,21 @@ namespace MemoryExplorer.Model
                     buffer = br.ReadBytes((int)sourceFile.Length);
                 }
                 byte[] decompressed = Decompress(buffer);
-                return JsonConvert.DeserializeObject<StructureHelper>(Encoding.UTF8.GetString(decompressed));
+                StructureHelper sh = JsonConvert.DeserializeObject<StructureHelper>(Encoding.UTF8.GetString(decompressed));
+                foreach (ProfileEntry item in sh.StructureEntries)
+                {
+                    if (item.RecordNumber == 0)
+                        continue;
+                    foreach(ProfileEntry parentItem in sh.StructureEntries)
+                    {
+                        if (parentItem.RecordNumber == item.ParentRecordNumber)
+                        {
+                            item.Parent = parentItem;
+                            break;
+                        }
+                    }
+                }
+                return sh;
             }
             catch { return null; }
         }

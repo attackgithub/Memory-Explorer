@@ -13,12 +13,15 @@ namespace MemoryExplorer.Details
             get
             {
                 string completeMessage = "";
-                foreach (string message in _dataModel.DebugTracer)
+                lock(_dataModel.AccessLock)
                 {
-                    completeMessage += message;
-                    completeMessage += "\n";
-                }
-                return completeMessage;
+                    foreach (string message in _dataModel.DebugTracer)
+                    {
+                        completeMessage += message;
+                        completeMessage += "\n";
+                    }
+                    return completeMessage;
+                }                
             }
         }
     }

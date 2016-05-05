@@ -1,4 +1,7 @@
-﻿using System;
+﻿using MemoryExplorer.Info;
+using MemoryExplorer.Profiles;
+using MemoryExplorer.Tree;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -24,5 +27,7 @@ namespace MemoryExplorer.Details
         {
             InitializeComponent();
         }
+
+        
     }
 }

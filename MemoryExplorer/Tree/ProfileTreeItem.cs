@@ -1,4 +1,5 @@
-﻿using MemoryExplorer.Model;
+﻿using MemoryExplorer.HexView;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 using System;
 using System.Collections.Generic;
@@ -54,8 +55,16 @@ namespace MemoryExplorer.Tree
             set
             {
                 _profileEntry.IsSelected = value;
-                //if (value)
-                //    _dataSource.UpdateDetails(_profileEntry);
+                if (value)
+                {
+                    HexViewHighlight highlight = new HexViewHighlight();
+                    highlight.startByte = _profileEntry.Offset;
+                    highlight.endByte = _profileEntry.Offset + _profileEntry.Length - 1;
+                    highlight.foregroundColour = System.Drawing.Color.DarkRed;
+                    highlight.backgroundColour = System.Drawing.Color.Yellow;
+                    _dataModel.ClearInfoHighlights();
+                    _dataModel.AddInfoHighlight(highlight);
+                }
             }
         }
         public string Name
@@ -65,5 +74,6 @@ namespace MemoryExplorer.Tree
                 return _profileEntry.Name;
             }
         }
+        public object Helper { get { return _profileEntry; } }
     }
 }

@@ -193,6 +193,7 @@
     <Compile Include="Model\BusinessLogic.cs" />
     <Compile Include="Model\Common.cs" />
     <Compile Include="Model\InfoTree.cs" />
+    <Compile Include="Worker\Job.cs" />
     <Compile Include="Model\ProcessLists.cs" />
     <Compile Include="Model\ProcessProcesses.cs" />
     <Compile Include="Model\TellMeAbout.cs" />
@@ -218,6 +219,7 @@
     <Compile Include="Tree\MxTreeViewModel.cs" />
     <Compile Include="Tree\ProfileTreeItem.cs" />
     <Compile Include="Tree\TreeItem.cs" />
+    <Compile Include="Worker\JobStatus.cs" />
     <Page Include="Details\DebugViewer.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -354,6 +356,7 @@
   <ItemGroup>
     <Resource Include="Images\Icons\mx.ico" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -32,7 +32,7 @@ namespace MemoryExplorer.Model
                 return;
 
             _eprocessSize = (uint)_profile.GetStructureSize("_EPROCESS");
-            PopulateInfoTree("_EPROCESS");
+            _driverObjectSize = (uint)_profile.GetStructureSize("_DRIVER_OBJECT");
 
             IncrementActiveJobs("Finding Kernel DTB");
             ulong eppa = await FindKernelDtb();
@@ -97,6 +97,8 @@ namespace MemoryExplorer.Model
             IncrementActiveJobs("Driver Scan");
             await ScanForDrivers();
             DecrementActiveJobs();
+
+            ProcessProcesses();
         }
 
         

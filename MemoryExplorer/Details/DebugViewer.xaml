@@ -9,7 +9,7 @@
     <UserControl.DataContext>
         <local:DebugViewerViewModel />
     </UserControl.DataContext>
-    <DockPanel>
-            <TextBlock Text="{Binding DebugTracer}" />
-    </DockPanel>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" >
+        <TextBlock Text="{Binding DebugTracer}" />
+    </ScrollViewer>
 </UserControl>

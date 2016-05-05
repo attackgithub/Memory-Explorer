@@ -57,8 +57,6 @@ namespace MemoryExplorer.Details
 
         private void HexViewModelPropertyChangedEventHandler(object sender, PropertyChangedEventArgs e)
         {
-            //MainWindowViewModel mwvm = this.DataContext as MainWindowViewModel;
-            //Debug.WriteLine("Event: " + e.PropertyName);
             if (e.PropertyName == "CurrentInfoHexViewerContent")
             {
                 _hexBoxViewer.LineInfoOffset = _hvvm.ActiveStartAddress;
@@ -66,6 +64,14 @@ namespace MemoryExplorer.Details
                     _hexBoxViewer.ByteProvider = null;
                 else
                     _hexBoxViewer.ByteProvider = new DynamicByteProvider(_hvvm.DataProvider);
+            }
+            else if(e.PropertyName == "CurrentInfoHexViewerHighlight")
+            {
+                _hexBoxViewer.ClearHighlights();
+                foreach (HexViewHighlight highlight in _hvvm.DataModel.InfoHexHighlights)
+                {
+                    _hexBoxViewer.AddHighlight(highlight);
+                }
             }
         }
 

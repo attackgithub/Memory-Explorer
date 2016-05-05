@@ -15,7 +15,7 @@ namespace MemoryExplorer.HexView
     public class HexViewerControl : Control
     {
         #region Highlights
-        List<Highlight> highlightList = new List<Highlight>();
+        List<HexViewHighlight> highlightList = new List<HexViewHighlight>();
         int highlightListTracker = 1;
 
         public int AddHighlight(long start, long end, Color fore, Color back)
@@ -26,7 +26,7 @@ namespace MemoryExplorer.HexView
                 return 0;
             if (end > _byteProvider.Length)
                 return 0;
-            Highlight hl = new Highlight();
+            HexViewHighlight hl = new HexViewHighlight();
             hl.identity = highlightListTracker++;
             hl.startByte = start;
             hl.endByte = end;
@@ -36,9 +36,23 @@ namespace MemoryExplorer.HexView
             Invalidate();
             return hl.identity;
         }
+        public int AddHighlight(HexViewHighlight highlight)
+        {
+            if (_byteProvider == null)
+                return 0;
+            if (highlight.endByte < highlight.startByte)
+                return 0;
+            if (highlight.endByte > _byteProvider.Length)
+                return 0;
+            highlight.identity = highlightListTracker++;
+            highlightList.Add(highlight);
+            Invalidate();
+            return highlight.identity;
+
+        }
         public bool RemoveHighlight(int Id)
         {
-            foreach (Highlight h in highlightList)
+            foreach (HexViewHighlight h in highlightList)
             {
                 if (h.identity == Id)
                 {
@@ -2553,7 +2567,7 @@ namespace MemoryExplorer.HexView
             Brush hiBrushBack = new SolidBrush(Color.Yellow);
 
             List<long> lookup = new List<long>();
-            foreach (Highlight hl in highlightList)
+            foreach (HexViewHighlight hl in highlightList)
             {
                 for (long l = hl.startByte; l <= hl.endByte; l++)
                     lookup.Add(l);
@@ -2588,7 +2602,7 @@ namespace MemoryExplorer.HexView
                     if (l == i)
                     {
                         trigger = true;
-                        foreach (Highlight hl in highlightList)
+                        foreach (HexViewHighlight hl in highlightList)
                         {
                             if (i >= hl.startByte && i <= hl.endByte)
                             {
@@ -4088,7 +4102,7 @@ namespace MemoryExplorer.HexView
         }
         #endregion
     }
-    public class Highlight
+    public class HexViewHighlight
     {
         public long startByte = 0;
         public long endByte = 0;

@@ -8,9 +8,6 @@ namespace MemoryExplorer.Details
 {
     public class ObjectTypesViewModel : BindableBase
     {
-        public ObjectTypesViewModel()
-        {
-        }
         public IEnumerable<KvpResult> ObjectTypeList
         {
             get
@@ -19,11 +16,14 @@ namespace MemoryExplorer.Details
                     return null;
                 if (_dataModel.ObjectTypeList.Count == 0)
                     return null;
-                var r =
-                    from item in _dataModel.ObjectTypeList
-                    select new KvpResult(item);
+                lock(_dataModel.AccessLock)
+                {
+                    var r =
+                        from item in _dataModel.ObjectTypeList
+                        select new KvpResult(item);
 
-                return r;
+                    return r;
+                }
             }
         }
     
