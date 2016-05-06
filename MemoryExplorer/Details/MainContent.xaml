@@ -11,8 +11,8 @@
         <local:MainContentViewModel />
     </UserControl.DataContext>
     <UserControl.Resources>
-        <DataTemplate DataType="{x:Type local:Details1ViewModel}">
-            <local:Details1 />
+        <DataTemplate DataType="{x:Type local:ProcessDetailsViewModel}">
+            <local:ProcessDetails />
         </DataTemplate>
         <DataTemplate DataType="{x:Type local:Details2ViewModel}">
             <local:Details2 />

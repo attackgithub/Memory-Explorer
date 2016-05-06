@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Address;
+using MemoryExplorer.ModelObjects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +24,10 @@ namespace MemoryExplorer.Processes
         public DateTime StartTime;
         public DateTime ExitTime;
         public ulong ObjectTableAddress;
+        public ulong HandleTableAddress;
         public ulong PhysicalAddress;
         public ulong VirtualAddress;
+        public List<HandleTableEntry> HandleTable;
+        public List<HandleRecord> HandleRecords;
     }
 }

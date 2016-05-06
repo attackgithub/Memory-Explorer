@@ -70,6 +70,13 @@ namespace MemoryExplorer.Model
                 case InfoHelperType.InfoDictionary:
                     UpdateInfoViewer(helper);
                     break;
+                case InfoHelperType.ProcessInfoDictionary:
+                    UpdateInfoViewer(helper);
+                    break;
+                case InfoHelperType.HandleTable:
+                    helper.BufferSize = _handleTableSize;
+                    UpdateInfoViewer(helper);
+                    break;                    
                 case InfoHelperType.ProcessObject:
                     helper.BufferSize = _eprocessSize;
                     UpdateInfoViewer(helper);
@@ -124,6 +131,19 @@ namespace MemoryExplorer.Model
         {
             _infoHexHighlights.Clear();
             NotifyPropertyChange("CurrentInfoHexViewerHighlight");
+        }
+        public string GetObjectName(ulong index)
+        {
+            try
+            {
+                foreach (ObjectTypeRecord t in ObjectTypeList)
+                {
+                    if (t.Index == index)
+                        return t.Name;
+                }
+                return "--";
+            }
+            catch { return "--"; }
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using MemoryExplorer.Processes;
+﻿using MemoryExplorer.ModelObjects;
+using MemoryExplorer.Processes;
+using MemoryExplorer.Tools;
 using MemoryExplorer.Worker;
 using System;
 using System.Collections.Generic;
@@ -80,16 +82,71 @@ namespace MemoryExplorer.Model
             BackgroundWorker worker = sender as BackgroundWorker;
             Job job = e.Argument as Job;
             AddDebugMessage("Background Worker: " + job.ProcessInformation.ProcessName);
-            Random r = new Random();
-            int rnd = r.Next(1500, 5500);
-            Thread.Sleep(rnd);
+            // get the EPROCESS object
+            EProcess ep = new EProcess(_profile, _dataProvider, job.ProcessInformation.VirtualAddress);
+            if(ep.Pid != job.ProcessInformation.Pid)
+            {
+                job.Status = JobStatus.Failed;
+                job.ErrorMessage = "EPROCESS Virtual Address resulted in a different PID to the Process Pid";
+                e.Result = job;
+                return;
+            }
+            job.ProcessInformation.HandleTableAddress = ep.ObjectTable;
+
+            Handles handles = new Handles(_profile, _dataProvider, job.ProcessInformation.Pid, job.ProcessInformation.HandleTableAddress);
+            job.ProcessInformation.HandleTable = handles.Run();
+            if(job.ProcessInformation.HandleTable != null && job.ProcessInformation.HandleTable.Count > 0)
+            {
+                ProcessHandleTable(job.ProcessInformation);
+            }
+
+            job.Status = JobStatus.Complete;
+            if(job.ProcessInformation.HandleTable == null)
+            {
+                job.Status = JobStatus.Failed;
+                job.ErrorMessage = "Process Had No Handles";
+            }
             e.Result = job;
         }
+
+        private void ProcessHandleTable(ProcessInfo processInformation)
+        {
+            List<HandleRecord> handleRecords = new List<HandleRecord>();
+            foreach (HandleTableEntry e in processInformation.HandleTable)
+            {
+                HandleRecord record = new HandleRecord();
+                record.objectHeader = new ObjectHeader(_profile, _dataProvider, virtualAddress: e.ObjectPointer);
+                if (record.objectHeader.HeaderNameInfo != null)
+                    record.Name = record.objectHeader.HeaderNameInfo.Name;
+                string objectName = GetObjectName(e.TypeInfo);
+                switch(objectName)
+                {
+                    case "File":
+                        break;
+                    case "Key":
+                        break;
+                    case "Thread":
+                        break;
+                    case "Process":
+                        break;
+
+                    default:
+                        break;
+                }
+
+                handleRecords.Add(record);
+            }
+            processInformation.HandleRecords = handleRecords;
+        }
+
         private void WorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             BackgroundWorker worker = sender as BackgroundWorker;
             Job job = e.Result as Job;
-            AddDebugMessage("Background Worker Finished: " + job.ProcessInformation.ProcessName);
+            if (job.Status == JobStatus.Complete)
+                AddDebugMessage("Background Worker Finished: " + job.ProcessInformation.ProcessName + " Handles: " + job.ProcessInformation.HandleTable.Count.ToString());
+            else
+                AddDebugMessage("Background Worker ERROR: " + job.ProcessInformation.ProcessName + " - " + job.ErrorMessage);
         }
         private void KillBackgroundWorkerPool()
         {

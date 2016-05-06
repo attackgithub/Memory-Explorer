@@ -5,7 +5,9 @@
         Unknown = 0,
         InfoDictionary = 1,
         DriverObject = 2,
-        ProcessObject = 3
+        ProcessObject = 3,
+        ProcessInfoDictionary = 4,
+        HandleTable = 5
     }
     public class InfoHelper
     {

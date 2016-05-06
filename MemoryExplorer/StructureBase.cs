@@ -54,6 +54,8 @@ namespace MemoryExplorer
 
         protected Structure GetStructureMember(string member)
         {
+            if (_structure == null)
+                return null;
             foreach (Structure s in _structure)
                 if (s.Name == member)
                     return s;

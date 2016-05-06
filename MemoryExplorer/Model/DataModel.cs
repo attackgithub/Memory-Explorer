@@ -45,6 +45,7 @@ namespace MemoryExplorer.Model
         private int _activeJobCount = 0;
         private string _architecture = "";
         private Dictionary<string, InfoHelper> _infoDictionary = new Dictionary<string, InfoHelper>();
+        private Dictionary<string, InfoHelper> _processInfoDictionary = new Dictionary<string, InfoHelper>();
         private ulong _kiUserSharedData = 0;
         private ulong _kernelDtb = 0;
         private Profile _profile = null;
@@ -66,6 +67,7 @@ namespace MemoryExplorer.Model
         private string _tellMeAboutTitle = "Nothing to see here";
         private uint _eprocessSize = 0;
         private uint _driverObjectSize = 0;
+        private uint _handleTableSize = 0;
         private List<HexViewHighlight> _infoHexHighlights = new List<HexViewHighlight>();
         private List<HexViewHighlight> _mainHexHighlights = new List<HexViewHighlight>();
 
@@ -74,6 +76,10 @@ namespace MemoryExplorer.Model
 
         #endregion
         #region access
+        public ArtifactBase ActiveArtifact
+        {
+            get { return _activeArtifact; }
+        }
         public TabItem RootDetailsSelectedTab
         {
             get { return _rootDetailsSelectedTab; }
@@ -129,6 +135,11 @@ namespace MemoryExplorer.Model
         {
             get { return _infoDictionary; }
             set { SetProperty(ref _infoDictionary, value); } }
+        public Dictionary<string, InfoHelper> ProcessInfoDictionary
+        {
+            get { return _processInfoDictionary; }
+            set { SetProperty(ref _processInfoDictionary, value); }
+        }
         public string Architecture
         {
             get { return _architecture; }
@@ -276,6 +287,7 @@ namespace MemoryExplorer.Model
             if(ra != null)
             {
                 CurrentDetailsViewModelHint = "root";
+                _processInfoDictionary.Clear();
                 NotifyPropertyChange("CurrentDetailsViewModel"); // this forces the set property / INotifyPropertyCHange  CurrentHexViewerContent   CurrentDetailsViewModel
                 return;
             }
@@ -283,10 +295,66 @@ namespace MemoryExplorer.Model
             if (pa != null)
             {
                 CurrentDetailsViewModelHint = "process";
+                _processInfoDictionary.Clear();
+                UpdateProcessInfoDictionary(pa.LinkedProcess);
                 NotifyPropertyChange("CurrentDetailsViewModel"); 
                 return;
             }
 
+        }
+        private void UpdateProcessInfoDictionary(ProcessInfo info)
+        {
+            if (info != null)
+            {
+                InfoHelper helper = new InfoHelper();
+                helper.TheObject = info;
+                helper.Type = InfoHelperType.ProcessInfoDictionary;
+                helper.Title = "PID";
+                helper.PhysicalAddress = info.PhysicalAddress;
+                helper.Name = info.Pid.ToString();
+                AddToProcessInfoDictionary("Pid", helper);
+
+                helper = new InfoHelper();
+                helper.TheObject = info;
+                helper.Type = InfoHelperType.ProcessInfoDictionary;
+                helper.Title = "Parent PID";
+                helper.PhysicalAddress = info.PhysicalAddress;
+                helper.Name = info.ParentPid.ToString();
+                AddToProcessInfoDictionary("Parent Pid", helper);
+
+                helper = new InfoHelper();
+                helper.TheObject = info;
+                helper.Type = InfoHelperType.ProcessInfoDictionary;
+                helper.Title = "EPROCESS Physical Address";
+                helper.PhysicalAddress = info.PhysicalAddress;
+                helper.Name = "0x" + info.PhysicalAddress.ToString("X8").ToLower();
+                AddToProcessInfoDictionary("EPROCESS Physical Address", helper);
+
+                helper = new InfoHelper();
+                helper.TheObject = info;
+                helper.Type = InfoHelperType.ProcessInfoDictionary;
+                helper.Title = "EPROCESS Virtual Address";
+                helper.PhysicalAddress = info.PhysicalAddress;
+                helper.Name = "0x" + info.VirtualAddress.ToString("X8").ToLower();
+                AddToProcessInfoDictionary("EPROCESS VIrtual Address", helper);
+
+                helper = new InfoHelper();
+                helper.TheObject = info;
+                helper.Type = InfoHelperType.ProcessInfoDictionary;
+                helper.Title = "Directory Table Base";
+                helper.PhysicalAddress = info.PhysicalAddress;
+                helper.Name = "0x" + info.Dtb.ToString("X8").ToLower();
+                AddToProcessInfoDictionary("Directory Table Base", helper);
+
+                helper = new InfoHelper();
+                helper.TheObject = info;
+                helper.Type = InfoHelperType.HandleTable;
+                helper.Title = "Handle Table Address";
+                helper.VirtualAddress = info.HandleTableAddress;
+                helper.BufferSize = (uint)_profile.GetStructureSize("_HANDLE_TABLE");
+                helper.Name = "0x" + info.HandleTableAddress.ToString("X8").ToLower();
+                AddToProcessInfoDictionary("Handle Table Address", helper);
+            }
         }
         public void UpdateMru(string newEntry)
         {
@@ -347,6 +415,31 @@ namespace MemoryExplorer.Model
                 _tempInfo.Add(alternativeKey, helper);
                 InfoDictionary = _tempInfo;
             }            
+        }
+        private void AddToProcessInfoDictionary(string key, InfoHelper helper)
+        {
+            if (helper == null)
+                return;
+            lock (AccessLock)
+            {
+                InfoHelper testValue;
+                int suffix = 1;
+                bool trying = true;
+                string alternativeKey = key;
+                while (trying)
+                {
+                    trying = ProcessInfoDictionary.TryGetValue(alternativeKey, out testValue);
+                    if (trying)
+                        alternativeKey = key + (suffix++).ToString();
+                }
+                Dictionary<string, InfoHelper> _tempInfo = new Dictionary<string, InfoHelper>();
+                foreach (var item in ProcessInfoDictionary)
+                {
+                    _tempInfo.Add(item.Key, item.Value);
+                }
+                _tempInfo.Add(alternativeKey, helper);
+                ProcessInfoDictionary = _tempInfo;
+            }
         }
         private string GetMD5HashFromFile(string filename)
         {
@@ -470,6 +563,7 @@ namespace MemoryExplorer.Model
             _profile = null;
             _kernelDtb = 0;
             _infoDictionary.Clear();
+            _processInfoDictionary.Clear();
             _kernelBaseAddress = 0;
             _architecture = "";
             _processList.Clear();

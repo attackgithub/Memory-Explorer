@@ -6,6 +6,7 @@
         Running = 0x02,
         Complete = 0x03,
         Cancelled = 0x04,
-        Unknown = 0x05
+        Failed = 0x05,
+        Unknown = 0x06
     }
 }

@@ -33,6 +33,7 @@ namespace MemoryExplorer.Model
 
             _eprocessSize = (uint)_profile.GetStructureSize("_EPROCESS");
             _driverObjectSize = (uint)_profile.GetStructureSize("_DRIVER_OBJECT");
+            _handleTableSize = (uint)_profile.GetStructureSize("_HANDLE_TABLE");
 
             IncrementActiveJobs("Finding Kernel DTB");
             ulong eppa = await FindKernelDtb();
@@ -317,13 +318,9 @@ namespace MemoryExplorer.Model
                 if (_kernelDtb == 0)
                 {
                     ulong filenameOffset = _profile.GetOffset("_EPROCESS", "ImageFileName");
-                    //ulong dtbOffset = _profile.GetOffset("_EPROCESS", "Pcb.DirectoryTableBase");
-                    //int dtbSize = _profile.GetSize("_EPROCESS", "Pcb.DirectoryTableBase");
-                    //long size = _profile.GetStructureSize("_EPROCESS");
-
                     StringSearch mySearch = new StringSearch(_dataProvider);
                     mySearch.AddNeedle("Idle\x00\x00\x00\x00\x00\x00\x00");
-                    //Dictionary<string, List<ulong>> results = mySearch.Scan();
+
                     foreach (var answer in mySearch.Scan())
                     {
                         if (escape)
@@ -352,16 +349,16 @@ namespace MemoryExplorer.Model
                                     helper.Name = "0x" + _kernelDtb.ToString("X08") + " (" + _kernelDtb.ToString() + ")";
                                     helper.Title = "Directory Table Base";
                                     AddToInfoDictionary("Directory Table Base", helper);
-                                    helper = new InfoHelper();
-                                    helper.Type = InfoHelperType.InfoDictionary;
-                                    helper.Name = ep.Pid.ToString();
-                                    helper.Title = "PID";
-                                    AddToInfoDictionary("PID", helper);
-                                    helper = new InfoHelper();
-                                    helper.Type = InfoHelperType.InfoDictionary;
-                                    helper.Name = ep.Ppid.ToString();
-                                    helper.Title = "Parent PID";
-                                    AddToInfoDictionary("Parent PID", helper);
+                                    //helper = new InfoHelper();
+                                    //helper.Type = InfoHelperType.InfoDictionary;
+                                    //helper.Name = ep.Pid.ToString();
+                                    //helper.Title = "PID";
+                                    //AddToInfoDictionary("PID", helper);
+                                    //helper = new InfoHelper();
+                                    //helper.Type = InfoHelperType.InfoDictionary;
+                                    //helper.Name = ep.Ppid.ToString();
+                                    //helper.Title = "Parent PID";
+                                    //AddToInfoDictionary("Parent PID", helper);
                                     physicalAddress = (ulong)ep.PhysicalAddress;
                                     escape = true;
                                     break;
