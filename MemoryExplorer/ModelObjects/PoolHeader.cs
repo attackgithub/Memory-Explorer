@@ -10,10 +10,8 @@ namespace MemoryExplorer.ModelObjects
 {
     public class PoolHeader : StructureBase
     {
-        public PoolHeader(Profile profile, DataProviderBase dataProvider, ulong physicalAddress)
+        public PoolHeader(Profile profile, DataProviderBase dataProvider, ulong physicalAddress) : base(profile, dataProvider, 0)
         {
-            _profile = profile;
-            _dataProvider = dataProvider;
             _physicalAddress = physicalAddress;
             _is64 = (_profile.Architecture == "AMD64");
             if (_physicalAddress == 0)

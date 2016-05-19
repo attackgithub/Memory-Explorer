@@ -183,6 +183,7 @@
     <Compile Include="HexView\Utils.cs" />
     <Compile Include="Info\InfoHelper.cs" />
     <Compile Include="Memory\MemoryRange.cs" />
+    <Compile Include="ModelObjects\CmNameControlBlock.cs" />
     <Compile Include="ModelObjects\DriverExtension.cs" />
     <Compile Include="ModelObjects\DriverObject.cs" />
     <Compile Include="ModelObjects\HandleRecord.cs" />
@@ -190,6 +191,7 @@
     <Compile Include="ModelObjects\HandleTableEntry.cs" />
     <Compile Include="ModelObjects\HeaderHandleInfo.cs" />
     <Compile Include="ModelObjects\HeaderNameInfo.cs" />
+    <Compile Include="ModelObjects\KeyControlBlock.cs" />
     <Compile Include="ModelObjects\KUserSharedData.cs" />
     <Compile Include="ModelObjects\ListEntry.cs" />
     <Compile Include="ModelObjects\ObjectHeader.cs" />
@@ -197,6 +199,7 @@
     <Compile Include="ModelObjects\PfnDatabase.cs" />
     <Compile Include="ModelObjects\PoolHeader.cs" />
     <Compile Include="ModelObjects\PoolType.cs" />
+    <Compile Include="ModelObjects\RegistryKey.cs" />
     <Compile Include="ModelObjects\SessionSpace.cs" />
     <Compile Include="ModelObjects\UnicodeString.cs" />
     <Compile Include="Model\BusinessLogic.cs" />
@@ -364,9 +367,6 @@
     <Resource Include="Images\Icons\resize_16.ico" />
     <Resource Include="Images\Icons\resize_8.ico" />
     <Resource Include="Images\Icons\resize_auto.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Awicons-Vista-Artistic-Computer-search.ico" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\Icons\badge.ico" />

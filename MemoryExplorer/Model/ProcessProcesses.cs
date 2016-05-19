@@ -32,6 +32,7 @@ namespace MemoryExplorer.Model
             // how many processors do we have available?
             _coreCount = Environment.ProcessorCount;
             AddDebugMessage("Host Reported Core Count: " + _coreCount.ToString());
+            _coreCount = 1;
             // create the worker pool
             for (int i = 0; i < _coreCount; i++)
             {
@@ -83,8 +84,16 @@ namespace MemoryExplorer.Model
             Job job = e.Argument as Job;
             AddDebugMessage("Background Worker: " + job.ProcessInformation.ProcessName);
             // get the EPROCESS object
-            EProcess ep = new EProcess(_profile, _dataProvider, job.ProcessInformation.VirtualAddress);
-            if(ep.Pid != job.ProcessInformation.Pid)
+            EProcess ep = null;
+            // pid 0 is special because it's the Idle process and has no virtual address
+            lock(_profile.AccessLock)
+            {
+                if (job.ProcessInformation.Pid == 0)
+                    ep = new EProcess(_profile, _dataProvider, physicalAddress: job.ProcessInformation.PhysicalAddress);
+                else
+                    ep = new EProcess(_profile, _dataProvider, job.ProcessInformation.VirtualAddress);
+            }
+            if (ep.Pid != job.ProcessInformation.Pid)
             {
                 job.Status = JobStatus.Failed;
                 job.ErrorMessage = "EPROCESS Virtual Address resulted in a different PID to the Process Pid";
@@ -93,8 +102,11 @@ namespace MemoryExplorer.Model
             }
             job.ProcessInformation.HandleTableAddress = ep.ObjectTable;
 
-            Handles handles = new Handles(_profile, _dataProvider, job.ProcessInformation.Pid, job.ProcessInformation.HandleTableAddress);
-            job.ProcessInformation.HandleTable = handles.Run();
+            //lock (_profile.AccessLock)
+            {
+                Handles handles = new Handles(_profile, _dataProvider, job.ProcessInformation.Pid, job.ProcessInformation.HandleTableAddress);
+                job.ProcessInformation.HandleTable = handles.Run();
+            }
             if(job.ProcessInformation.HandleTable != null && job.ProcessInformation.HandleTable.Count > 0)
             {
                 ProcessHandleTable(job.ProcessInformation);
@@ -115,7 +127,10 @@ namespace MemoryExplorer.Model
             foreach (HandleTableEntry e in processInformation.HandleTable)
             {
                 HandleRecord record = new HandleRecord();
-                record.objectHeader = new ObjectHeader(_profile, _dataProvider, virtualAddress: e.ObjectPointer);
+                //lock (_profile.AccessLock)
+                {
+                    record.objectHeader = new ObjectHeader(_profile, _dataProvider, virtualAddress: e.ObjectPointer);
+                }
                 if (record.objectHeader.HeaderNameInfo != null)
                     record.Name = record.objectHeader.HeaderNameInfo.Name;
                 string objectName = GetObjectName(e.TypeInfo);
@@ -124,6 +139,11 @@ namespace MemoryExplorer.Model
                     case "File":
                         break;
                     case "Key":
+                        //lock (_profile.AccessLock)
+                        {
+                            RegistryKey rk = new RegistryKey(_profile, _dataProvider, record.objectHeader, (e.ObjectPointer + (ulong)record.objectHeader.Size));
+                            record.Details = rk.Name;
+                        }
                         break;
                     case "Thread":
                         break;

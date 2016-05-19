@@ -10,5 +10,6 @@ namespace MemoryExplorer.ModelObjects
     {
         public ObjectHeader objectHeader;
         public string Name;
+        public string Details;
     }
 }

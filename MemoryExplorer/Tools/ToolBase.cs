@@ -213,6 +213,8 @@ namespace MemoryExplorer.Tools
 
             //    ulong pageAddress = kernelAS.vtop(virtualAddress);
             byte[] buffer = _dataProvider.ReadMemoryBlock(virtualAddress, 0x1000); //  ReadBytes(pageAddress, 4096);
+            if (buffer == null)
+                return null;
 
             if (level == 0)
             {

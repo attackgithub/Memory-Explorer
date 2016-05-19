@@ -13,11 +13,8 @@ namespace MemoryExplorer.ModelObjects
     {
         string _name;
         ulong _referenceCount;
-        public HeaderNameInfo(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0)
+        public HeaderNameInfo(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
         {
-            _profile = profile;
-            _dataProvider = dataProvider;
-            _virtualAddress = virtualAddress;
             _physicalAddress = physicalAddress;
             _is64 = (_profile.Architecture == "AMD64");
             _structureSize = _profile.GetStructureSize("_OBJECT_HEADER_NAME_INFO");

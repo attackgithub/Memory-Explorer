@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -16,6 +17,7 @@ namespace MemoryExplorer.Profiles
 {
     public class Profile
     {
+        public object AccessLock = new object();
         private bool _fileActive = false;
         private string _requestedImage;
         private string _cacheRoot;
@@ -244,13 +246,18 @@ namespace MemoryExplorer.Profiles
                             }
                             results.Add(wrapper);
                         }
-                        _entriesDictionary.Add(structure, results);
+                        if (!_entriesDictionary.ContainsKey(structure))
+                            _entriesDictionary.Add(structure, results);
                         return results;
                     }
                 }
                 return null;
             }
-            catch { return null; }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error: " + ex.Message);
+                return null;
+            }
         }
         public uint GetSize(string structure, string member)
         {

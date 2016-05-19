@@ -4,6 +4,7 @@ using MemoryExplorer.Profiles;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -50,6 +51,7 @@ namespace MemoryExplorer.Tools
 
             try
             {
+                Debug.WriteLine("Handle Table Address: 0x" + _handleTableAddress.ToString("X"));
                 HandleTable ht = new HandleTable(_profile, _dataProvider, _handleTableAddress);
                 List<HandleTableEntry> records = EnumerateHandles(ht.TableStartAddress, ht.Level);
                 foreach (HandleTableEntry e in records)

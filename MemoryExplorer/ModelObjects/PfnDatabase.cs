@@ -40,10 +40,8 @@ namespace MemoryExplorer.ModelObjects
     {
         private List<PfnRecord> _pfnDatabaseList = new List<PfnRecord>();
 
-        public PfnDatabase(DataProviderBase dataProvider, Profile profile, ulong address)
+        public PfnDatabase(DataProviderBase dataProvider, Profile profile, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
         {
-            _dataProvider = dataProvider;
-            _profile = profile;
             _is64 = (_profile.Architecture == "AMD64");
             // there's no point if the system is live
             if (_dataProvider.IsLive)
@@ -64,7 +62,7 @@ namespace MemoryExplorer.ModelObjects
             byte[] blockBuffer = null;
             for (int i = 0; i < pageCount; i++)
             {
-                ulong startAddress = address + (uint)(i * 0x30); // assuming pfn records are always 48 bytes long!
+                ulong startAddress = virtualAddress + (uint)(i * 0x30); // assuming pfn records are always 48 bytes long!
                 if (blockTracker == 25600)
                 {
                     blockTracker = 0;

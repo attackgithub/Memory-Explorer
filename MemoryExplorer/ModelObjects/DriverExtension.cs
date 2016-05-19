@@ -7,11 +7,8 @@ namespace MemoryExplorer.ModelObjects
 {
     public class DriverExtension : StructureBase
     {
-        public DriverExtension(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0)
-        {
-            _profile = profile;
-            _dataProvider = dataProvider;
-            _virtualAddress = virtualAddress;
+        public DriverExtension(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
+        {            
             _physicalAddress = physicalAddress;
             _is64 = (_profile.Architecture == "AMD64");
             AddressBase addressSpace = dataProvider.ActiveAddressSpace;

@@ -19,11 +19,8 @@ namespace MemoryExplorer.Processes
         private AddressBase _addressSpace;
         //private HandleTable _hndTable = null;
 
-        public EProcess(Profile profile, DataProviderBase dataProvider, ulong virtualAddress, ulong physicalAddress = 0)
+        public EProcess(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
         {
-            _profile = profile;
-            _dataProvider = dataProvider;
-            _virtualAddress = virtualAddress;
             ObjectHeader oh = new ObjectHeader(_profile);
             if (virtualAddress == 0)
             {

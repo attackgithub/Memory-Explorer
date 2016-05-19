@@ -20,12 +20,9 @@ namespace MemoryExplorer.ModelObjects
         public string Name { get { return _name; } }
 
         // this will fail if the string runs off the end of the page
-        public UnicodeString(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0)
+        public UnicodeString(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
         {
-            _profile = profile;
-            _dataProvider = dataProvider;
             _physicalAddress = physicalAddress;
-            _virtualAddress = virtualAddress;
             _is64 = (_profile.Architecture == "AMD64");
             _addressSpace = _profile.KernelAddressSpace;
             _structureSize = (int)_profile.GetStructureSize("_UNICODE_STRING");

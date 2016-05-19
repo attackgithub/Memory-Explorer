@@ -27,6 +27,7 @@ namespace MemoryExplorer.Model
     public partial class DataModel : INotifyPropertyChanged, IDisposable
     {
         #region globals
+        public bool ProcessPfnDatabase = false;
         public object AccessLock = new object();
         private bool _runningAsAdmin = false;
         private bool _liveCapture = false;
@@ -197,7 +198,7 @@ namespace MemoryExplorer.Model
         public List<ProcessInfo> ProcessList { get { return _processList; } }
         public List<DriverObject> DriverList { get { return _driverList; } set { SetProperty(ref _driverList, value); } }
 
-        public List<HexViewHighlight> InfoHexHighlights { get { return _infoHexHighlights; } }
+        public List<HexViewHighlight> InfoHexHighlights { get { return _infoHexHighlights; } }        
 
         #endregion
         public DataModel(bool IsAdmin)

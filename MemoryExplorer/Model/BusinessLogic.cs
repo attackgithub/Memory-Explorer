@@ -103,127 +103,201 @@ namespace MemoryExplorer.Model
         }
 
         
-
+        public void GetInformationBody()
+        {
+            Dictionary<string, object> info = _dataProvider.GetInformation();
+            string friendlyKey;
+            foreach (var item in info)
+            {
+                if (item.Key == "dtb")
+                {
+                    friendlyKey = "Directory Table Base";
+                    _kernelDtb = (ulong)item.Value;
+                }
+                else if (item.Key == "buildNumber")
+                    friendlyKey = "Build Number";
+                else if (item.Key == "kernelBase")
+                {
+                    _kernelBaseAddress = (ulong)item.Value;
+                    friendlyKey = "Kernel Base Address";
+                    if (_kernelBaseAddress == 0)
+                        continue;
+                }
+                else if (item.Key == "kdbg")
+                    friendlyKey = "KDBG";
+                else if (item.Key == "pfnDatabase")
+                {
+                    _pfnDatabaseBaseAddress = (ulong)item.Value;
+                    friendlyKey = "PFN Database Address";
+                    if (_pfnDatabaseBaseAddress == 0)
+                        continue;
+                }
+                else if (item.Key == "psLoadedModuleList")
+                    friendlyKey = "PsLoadedModuleList Address";
+                else if (item.Key == "ntBuildNumberAddress")
+                    friendlyKey = "NtBuildNumberAddress";
+                else if (item.Key == "maximumPhysicalAddress")
+                    friendlyKey = "Maximum Physical Address";
+                else
+                    friendlyKey = item.Key;
+                ulong friendlyValue = (ulong)item.Value;
+                InfoHelper helper = new InfoHelper();
+                helper.Type = InfoHelperType.InfoDictionary;
+                helper.Title = friendlyKey;
+                helper.Name = "0x" + friendlyValue.ToString("X08") + " (" + friendlyValue.ToString() + ")";
+                AddToInfoDictionary(friendlyKey, helper);
+            }
+        }
         async private Task GetInformation()
         {
             await Task.Run(() => 
             {
-                Dictionary<string, object> info = _dataProvider.GetInformation();
-                string friendlyKey;
-                foreach (var item in info)
-                {
-                    if (item.Key == "dtb")
-                    {
-                        friendlyKey = "Directory Table Base";
-                        _kernelDtb = (ulong)item.Value;
-                    }
-                    else if (item.Key == "buildNumber")
-                        friendlyKey = "Build Number";
-                    else if (item.Key == "kernelBase")
-                    {
-                        _kernelBaseAddress = (ulong)item.Value;
-                        friendlyKey = "Kernel Base Address";
-                        if (_kernelBaseAddress == 0)
-                            continue;
-                    }
-                    else if (item.Key == "kdbg")
-                        friendlyKey = "KDBG";
-                    else if (item.Key == "pfnDatabase")
-                    {
-                        _pfnDatabaseBaseAddress = (ulong)item.Value;
-                        friendlyKey = "PFN Database Address";
-                        if (_pfnDatabaseBaseAddress == 0)
-                            continue;
-                    }
-                    else if (item.Key == "psLoadedModuleList")
-                        friendlyKey = "PsLoadedModuleList Address";
-                    else if (item.Key == "ntBuildNumberAddress")
-                        friendlyKey = "NtBuildNumberAddress";
-                    else if (item.Key == "maximumPhysicalAddress")
-                        friendlyKey = "Maximum Physical Address";
-                    else
-                        friendlyKey = item.Key;
-                    ulong friendlyValue = (ulong)item.Value;
-                    InfoHelper helper = new InfoHelper();
-                    helper.Type = InfoHelperType.InfoDictionary;
-                    helper.Title = friendlyKey;
-                    helper.Name = "0x" + friendlyValue.ToString("X08") + " (" + friendlyValue.ToString() + ")";
-                    AddToInfoDictionary(friendlyKey, helper);
-                }
+                GetInformationBody();
             });
         }
-        async private Task FindProfileGuid()
+        public void FindProfileGuidBody()
         {
-            await Task.Run(() => 
+            if (_dataProvider.IsLive)
             {
-                if (_dataProvider.IsLive)
+                try
+                {
+                    // get the system folder
+                    string systemDirectory = Environment.SystemDirectory;
+                    string kernelLocation = systemDirectory + "\\ntoskrnl.exe";
+                    int matches = 0;
+                    using (FileStream fs = new FileStream(kernelLocation, FileMode.Open, FileAccess.Read))
+                    {
+                        while (true)
+                        {
+                            byte b = (byte)fs.ReadByte();
+                            if (matches == 0 && b == 82) // R
+                                matches = 1;
+                            else if (matches == 1 && b == 83) // S
+                                matches = 2;
+                            else if (matches == 2 && b == 68) // D
+                                matches = 3;
+                            else if (matches == 3 && b == 83) // S
+                            {
+                                byte[] buffer = new byte[16];
+                                int result = fs.Read(buffer, 0, 16);
+                                Guid g = new Guid(buffer);
+                                buffer = new byte[4];
+                                result = fs.Read(buffer, 0, 4);
+                                uint age = BitConverter.ToUInt32(buffer, 0);
+                                buffer = new byte[12];
+                                result = fs.Read(buffer, 0, 12);
+                                string name = Encoding.Default.GetString(buffer);
+                                if (name == "ntkrnlpa.pdb" || name == "ntkrnlmp.pdb" || name == "ntkrpamp.pdb" || name == "ntoskrnl.pdb")
+                                {
+                                    string GuidAge = (g.ToString("N") + age.ToString()).ToUpper();
+                                    ProfileName = GuidAge + ".gz";
+                                    InfoHelper helper = new InfoHelper();
+                                    helper.Type = InfoHelperType.InfoDictionary;
+                                    helper.Name = ProfileName;
+                                    helper.Title = "Profile Name";
+                                    AddToInfoDictionary("ProfileName", helper);
+                                    _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache"); // TO DO - make this a user option when you get around to writing the settings dialog
+                                    Architecture = _profile.Architecture;
+                                    Architecture = _profile.Architecture;
+                                    helper = new InfoHelper();
+                                    helper.Type = InfoHelperType.InfoDictionary;
+                                    helper.Name = Architecture;
+                                    helper.Title = "Architecture";
+                                    AddToInfoDictionary("Architecture", helper);
+                                    if (_profile.Architecture == "I386")
+                                    {
+                                        _kiUserSharedData = 0xFFDF0000;
+                                        _profile.PoolAlign = 8;
+                                    }
+                                    else
+                                    {
+                                        _kiUserSharedData = 0xFFFFF78000000000;
+                                        _profile.PoolAlign = 16;
+                                    }
+                                    helper = new InfoHelper();
+                                    helper.Type = InfoHelperType.InfoDictionary;
+                                    helper.Name = "0x" + _kiUserSharedData.ToString("X");
+                                    helper.Title = "KiUserSharedData";
+                                    AddToInfoDictionary("KiUserSharedData", helper);
+                                    return;
+                                }
+                                matches = 0;
+                            }
+                            else
+                                matches = 0;
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    return;
+                }
+            }
+            else
+            {
+                StringSearch mySearch = new StringSearch(_dataProvider);
+                mySearch.AddNeedle("RSDS");
+                //Dictionary<string, List<ulong>> results = mySearch.Scan();
+                foreach (var answer in mySearch.Scan())
                 {
                     try
                     {
-                        // get the system folder
-                        string systemDirectory = Environment.SystemDirectory;
-                        string kernelLocation = systemDirectory + "\\ntoskrnl.exe";
-                        int matches = 0;
-                        using (FileStream fs = new FileStream(kernelLocation, FileMode.Open, FileAccess.Read))
+                        List<ulong> hitList = answer["RSDS"];
+                        foreach (ulong hit in hitList)
                         {
-                            while (true)
+                            try
                             {
-                                byte b = (byte)fs.ReadByte();
-                                if (matches == 0 && b == 82) // R
-                                    matches = 1;
-                                else if (matches == 1 && b == 83) // S
-                                    matches = 2;
-                                else if (matches == 2 && b == 68) // D
-                                    matches = 3;
-                                else if (matches == 3 && b == 83) // S
+                                RSDS rsds = new RSDS(_dataProvider, hit);
+                                if (rsds.Signature == "RSDS" && (rsds.Filename == "ntkrnlpa.pdb" || rsds.Filename == "ntkrnlmp.pdb" || rsds.Filename == "ntkrpamp.pdb" || rsds.Filename == "ntoskrnl.pdb"))
                                 {
-                                    byte[] buffer = new byte[16];
-                                    int result = fs.Read(buffer, 0, 16);
-                                    Guid g = new Guid(buffer);
-                                    buffer = new byte[4];
-                                    result = fs.Read(buffer, 0, 4);
-                                    uint age = BitConverter.ToUInt32(buffer, 0);
-                                    buffer = new byte[12];
-                                    result = fs.Read(buffer, 0, 12);
-                                    string name = Encoding.Default.GetString(buffer);
-                                    if (name == "ntkrnlpa.pdb" || name == "ntkrnlmp.pdb" || name == "ntkrpamp.pdb" || name == "ntoskrnl.pdb")
+                                    InfoHelper helper = new InfoHelper();
+                                    helper.Type = InfoHelperType.InfoDictionary;
+                                    helper.Name = "0x" + hit.ToString("X08") + " (p)";
+                                    helper.PhysicalAddress = hit;
+                                    helper.BufferSize = 36;
+                                    helper.Title = "Debug Symbols (RSDS)";
+                                    AddToInfoDictionary("Debug Symbols (RSDS)", helper);
+                                    helper = new InfoHelper();
+                                    helper.Type = InfoHelperType.InfoDictionary;
+                                    helper.Name = rsds.Filename;
+                                    helper.Title = "Debug Symbols Filename";
+                                    AddToInfoDictionary("Debug Symbols Filename", helper);
+                                    ProfileName = rsds.GuidAge + ".gz";
+                                    helper = new InfoHelper();
+                                    helper.Type = InfoHelperType.InfoDictionary;
+                                    helper.Name = ProfileName;
+                                    helper.Title = "Profile Name";
+                                    AddToInfoDictionary("ProfileName", helper);
+                                    _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache"); // TO DO - make this a user option when you get around to writing the settings dialog
+                                    Architecture = _profile.Architecture;
+                                    helper = new InfoHelper();
+                                    helper.Type = InfoHelperType.InfoDictionary;
+                                    helper.Name = Architecture;
+                                    helper.Title = "Architecture";
+                                    AddToInfoDictionary("Architecture", helper);
+                                    if (_profile.Architecture == "I386")
                                     {
-                                        string GuidAge = (g.ToString("N") + age.ToString()).ToUpper();
-                                        ProfileName = GuidAge + ".gz";
-                                        InfoHelper helper = new InfoHelper();
-                                        helper.Type = InfoHelperType.InfoDictionary;
-                                        helper.Name = ProfileName;
-                                        helper.Title = "Profile Name";
-                                        AddToInfoDictionary("ProfileName", helper);
-                                        _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache"); // TO DO - make this a user option when you get around to writing the settings dialog
-                                        Architecture = _profile.Architecture;
-                                        Architecture = _profile.Architecture;
-                                        helper = new InfoHelper();
-                                        helper.Type = InfoHelperType.InfoDictionary;
-                                        helper.Name = Architecture;
-                                        helper.Title = "Architecture";
-                                        AddToInfoDictionary("Architecture", helper);
-                                        if (_profile.Architecture == "I386")
-                                        {
-                                            _kiUserSharedData = 0xFFDF0000;
-                                            _profile.PoolAlign = 8;
-                                        }
-                                        else
-                                        {
-                                            _kiUserSharedData = 0xFFFFF78000000000;
-                                            _profile.PoolAlign = 16;
-                                        }
-                                        helper = new InfoHelper();
-                                        helper.Type = InfoHelperType.InfoDictionary;
-                                        helper.Name = "0x" + _kiUserSharedData.ToString("X");
-                                        helper.Title = "KiUserSharedData";
-                                        AddToInfoDictionary("KiUserSharedData", helper);
-                                        return;
+                                        _kiUserSharedData = 0xFFDF0000;
+                                        _profile.PoolAlign = 8;
                                     }
-                                    matches = 0;                                    
+                                    else
+                                    {
+                                        _kiUserSharedData = 0xFFFFF78000000000;
+                                        _profile.PoolAlign = 16;
+                                    }
+                                    helper = new InfoHelper();
+                                    helper.Type = InfoHelperType.InfoDictionary;
+                                    helper.Name = "0x" + _kiUserSharedData.ToString("X");
+                                    helper.Title = "KiUserSharedData";
+                                    helper.VirtualAddress = _kiUserSharedData;
+                                    helper.BufferSize = 4096;
+                                    AddToInfoDictionary("KiUserSharedData", helper);
+                                    return;
                                 }
-                                else
-                                    matches = 0;
+                            }
+                            catch (Exception)
+                            {
+                                continue;
                             }
                         }
                     }
@@ -232,149 +306,88 @@ namespace MemoryExplorer.Model
                         return;
                     }
                 }
-                else
+            }
+        }
+        async private Task FindProfileGuid()
+        {
+            await Task.Run(() => 
+            {
+                FindProfileGuidBody();
+            });
+        }
+        public ulong FindKernelDtbBody()
+        {
+            ulong physicalAddress = 0;
+            bool escape = false;
+            // check if we already have it (from the live image)
+            if (_kernelDtb == 0)
+            {
+                ulong filenameOffset = _profile.GetOffset("_EPROCESS", "ImageFileName");
+                StringSearch mySearch = new StringSearch(_dataProvider);
+                mySearch.AddNeedle("Idle\x00\x00\x00\x00\x00\x00\x00");
+
+                foreach (var answer in mySearch.Scan())
                 {
-                    StringSearch mySearch = new StringSearch(_dataProvider);
-                    mySearch.AddNeedle("RSDS");
-                    //Dictionary<string, List<ulong>> results = mySearch.Scan();
-                    foreach (var answer in mySearch.Scan())
+                    if (escape)
+                        break;
+                    try
                     {
-                        try
+                        List<ulong> hitList = answer.First().Value;
+                        foreach (ulong hit in hitList)
                         {
-                            List<ulong> hitList = answer["RSDS"];
-                            foreach (ulong hit in hitList)
+                            try
                             {
-                                try
+                                EProcess ep = new EProcess(_profile, _dataProvider, 0, hit - filenameOffset);
+                                _kernelDtb = ep.DTB;
+                                if (_kernelDtb > _dataProvider.ImageLength || _kernelDtb == 0)
                                 {
-                                    RSDS rsds = new RSDS(_dataProvider, hit);
-                                    if (rsds.Signature == "RSDS" && (rsds.Filename == "ntkrnlpa.pdb" || rsds.Filename == "ntkrnlmp.pdb" || rsds.Filename == "ntkrpamp.pdb" || rsds.Filename == "ntoskrnl.pdb"))
-                                    {
-                                        InfoHelper helper = new InfoHelper();
-                                        helper.Type = InfoHelperType.InfoDictionary;
-                                        helper.Name = "0x" + hit.ToString("X08") + " (p)";
-                                        helper.PhysicalAddress = hit;
-                                        helper.BufferSize = 36;
-                                        helper.Title = "Debug Symbols (RSDS)";
-                                        AddToInfoDictionary("Debug Symbols (RSDS): ", helper);
-                                        helper = new InfoHelper();
-                                        helper.Type = InfoHelperType.InfoDictionary;
-                                        helper.Name = rsds.Filename;
-                                        helper.Title = "Debug Symbols Filename";
-                                        AddToInfoDictionary("Debug Symbols Filename: ", helper);
-                                        ProfileName = rsds.GuidAge + ".gz";
-                                        helper = new InfoHelper();
-                                        helper.Type = InfoHelperType.InfoDictionary;
-                                        helper.Name = ProfileName;
-                                        helper.Title = "Profile Name";
-                                        AddToInfoDictionary("ProfileName", helper);
-                                        _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache"); // TO DO - make this a user option when you get around to writing the settings dialog
-                                        Architecture = _profile.Architecture;
-                                        helper = new InfoHelper();
-                                        helper.Type = InfoHelperType.InfoDictionary;
-                                        helper.Name = Architecture;
-                                        helper.Title = "Architecture";
-                                        AddToInfoDictionary("Architecture", helper);
-                                        if (_profile.Architecture == "I386")
-                                        {
-                                            _kiUserSharedData = 0xFFDF0000;
-                                            _profile.PoolAlign = 8;
-                                        }
-                                        else
-                                        {
-                                            _kiUserSharedData = 0xFFFFF78000000000;
-                                            _profile.PoolAlign = 16;
-                                        }
-                                        helper = new InfoHelper();
-                                        helper.Type = InfoHelperType.InfoDictionary;
-                                        helper.Name = "0x" + _kiUserSharedData.ToString("X");
-                                        helper.Title = "KiUserSharedData";
-                                        helper.VirtualAddress = _kiUserSharedData;
-                                        helper.BufferSize = 4096;
-                                        AddToInfoDictionary("KiUserSharedData", helper);
-                                        return;
-                                    }
-                                }
-                                catch (Exception)
-                                {
+                                    _kernelDtb = 0;
                                     continue;
                                 }
+                                if (ep.Pid != 0 || ep.Ppid != 0)
+                                {
+                                    _kernelDtb = 0;
+                                    continue;
+                                }
+                                InfoHelper helper = new InfoHelper();
+                                helper.Type = InfoHelperType.InfoDictionary;
+                                helper.Name = "0x" + _kernelDtb.ToString("X08") + " (" + _kernelDtb.ToString() + ")";
+                                helper.Title = "Directory Table Base";
+                                AddToInfoDictionary("Directory Table Base", helper);
+                                //helper = new InfoHelper();
+                                //helper.Type = InfoHelperType.InfoDictionary;
+                                //helper.Name = ep.Pid.ToString();
+                                //helper.Title = "PID";
+                                //AddToInfoDictionary("PID", helper);
+                                //helper = new InfoHelper();
+                                //helper.Type = InfoHelperType.InfoDictionary;
+                                //helper.Name = ep.Ppid.ToString();
+                                //helper.Title = "Parent PID";
+                                //AddToInfoDictionary("Parent PID", helper);
+                                physicalAddress = (ulong)ep.PhysicalAddress;
+                                escape = true;
+                                break;
+                            }
+                            catch (Exception ex)
+                            {
+                                continue;
                             }
                         }
-                        catch (Exception)
-                        {
-                            return;
-                        }
+                    }
+                    catch (Exception)
+                    {
+
                     }
                 }
-            });
+            }
+            return physicalAddress;
         }
         async private Task<ulong> FindKernelDtb()
         {
             ulong physicalAddress = 0;
-            bool escape = false;
             await Task.Run(() =>
             {
-                // check if we already have it (from the live image)
-                if (_kernelDtb == 0)
-                {
-                    ulong filenameOffset = _profile.GetOffset("_EPROCESS", "ImageFileName");
-                    StringSearch mySearch = new StringSearch(_dataProvider);
-                    mySearch.AddNeedle("Idle\x00\x00\x00\x00\x00\x00\x00");
-
-                    foreach (var answer in mySearch.Scan())
-                    {
-                        if (escape)
-                            break;
-                        try
-                        {
-                            List<ulong> hitList = answer.First().Value;
-                            foreach (ulong hit in hitList)
-                            {
-                                try
-                                {
-                                    EProcess ep = new EProcess(_profile, _dataProvider, 0, hit - filenameOffset);
-                                    _kernelDtb = ep.DTB;
-                                    if (_kernelDtb > _dataProvider.ImageLength || _kernelDtb == 0)
-                                    {
-                                        _kernelDtb = 0;
-                                        continue;
-                                    }
-                                    if (ep.Pid != 0 || ep.Ppid != 0)
-                                    {
-                                        _kernelDtb = 0;
-                                        continue;
-                                    }
-                                    InfoHelper helper = new InfoHelper();
-                                    helper.Type = InfoHelperType.InfoDictionary;
-                                    helper.Name = "0x" + _kernelDtb.ToString("X08") + " (" + _kernelDtb.ToString() + ")";
-                                    helper.Title = "Directory Table Base";
-                                    AddToInfoDictionary("Directory Table Base", helper);
-                                    //helper = new InfoHelper();
-                                    //helper.Type = InfoHelperType.InfoDictionary;
-                                    //helper.Name = ep.Pid.ToString();
-                                    //helper.Title = "PID";
-                                    //AddToInfoDictionary("PID", helper);
-                                    //helper = new InfoHelper();
-                                    //helper.Type = InfoHelperType.InfoDictionary;
-                                    //helper.Name = ep.Ppid.ToString();
-                                    //helper.Title = "Parent PID";
-                                    //AddToInfoDictionary("Parent PID", helper);
-                                    physicalAddress = (ulong)ep.PhysicalAddress;
-                                    escape = true;
-                                    break;
-                                }
-                                catch (Exception ex)
-                                {
-                                    continue;
-                                }
-                            }
-                        }
-                        catch (Exception)
-                        {
-
-                        }
-                    }
-                }                                                 
+                physicalAddress = FindKernelDtbBody();
             });
             return physicalAddress;
         }
@@ -598,7 +611,8 @@ namespace MemoryExplorer.Model
                     helper.VirtualAddress = _pfnDatabaseBaseAddress;
                     helper.BufferSize = 4096; // just the first page, it's huge!
                     AddToInfoDictionary("PFN Database Address", helper);
-                    _pfnDatabase = new PfnDatabase(_dataProvider, _profile, _pfnDatabaseBaseAddress);
+                    if(ProcessPfnDatabase)
+                        _pfnDatabase = new PfnDatabase(_dataProvider, _profile, _pfnDatabaseBaseAddress);
                 }
                 catch
                 {
@@ -614,18 +628,18 @@ namespace MemoryExplorer.Model
                 {
                     DriverScan dScan = new DriverScan(_profile, _dataProvider);
                     DriverList = dScan.Run();
-                    foreach (var item in _driverList)
-                    {
-                        Debug.WriteLine("  0x" + item.PhysicalAddress.ToString("x12").PadRight(14) +
-                            item.DriverName.PadRight(30) +
-                            item.Name.PadRight(22) +
-                            item.DriverExtension.ServiceKeyName.PadRight(27) +
-                            "0x" + item.DriverSize.ToString("x").PadRight(10) +
-                            "0x" + item.DriverStartPointer.ToString("x12").PadRight(19) +
-                            item.HandleCount.ToString().PadLeft(4) +
-                            item.PointerCount.ToString().PadLeft(6)
-                            );
-                    }
+                    //foreach (var item in _driverList)
+                    //{
+                    //    Debug.WriteLine("  0x" + item.PhysicalAddress.ToString("x12").PadRight(14) +
+                    //        item.DriverName.PadRight(30) +
+                    //        item.Name.PadRight(22) +
+                    //        item.DriverExtension.ServiceKeyName.PadRight(27) +
+                    //        "0x" + item.DriverSize.ToString("x").PadRight(10) +
+                    //        "0x" + item.DriverStartPointer.ToString("x12").PadRight(19) +
+                    //        item.HandleCount.ToString().PadLeft(4) +
+                    //        item.PointerCount.ToString().PadLeft(6)
+                    //        );
+                    //}
                     NotifyPropertyChange("Drivers");
                 }
                 catch (Exception)

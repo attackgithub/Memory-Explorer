@@ -15,38 +15,28 @@ namespace MemoryExplorer.ModelObjects
         string _name;
         DriverExtension _driverExtension = null;
 
-        public DriverObject(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0)
-        {
-            _profile = profile;
-            _dataProvider = dataProvider;
-            _virtualAddress = virtualAddress;
+        public DriverObject(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
+        {            
             _physicalAddress = physicalAddress;
-            _is64 = (_profile.Architecture == "AMD64");
-            AddressBase addressSpace = dataProvider.ActiveAddressSpace;
-            if (virtualAddress != 0)
-                _physicalAddress = addressSpace.vtop(_virtualAddress);
             Initialise();
             ObjectHeader oh = new ObjectHeader(_profile);
             long headerSize = oh.Size;
             if (headerSize != -1)
                 _header = new ObjectHeader(_profile, _dataProvider, _virtualAddress - (uint)headerSize);
         }
-        public DriverObject(Profile profile, DataProviderBase dataProvider, ObjectHeader header, ulong virtualAddress=0, ulong physicalAddress = 0)
+        public DriverObject(Profile profile, DataProviderBase dataProvider, ObjectHeader header, ulong virtualAddress=0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
         {
-            _profile = profile;
-            _dataProvider = dataProvider;
-            _virtualAddress = virtualAddress;
             _physicalAddress = physicalAddress;
-            _is64 = (_profile.Architecture == "AMD64");
             _header = header;
-            AddressBase addressSpace = dataProvider.ActiveAddressSpace;
-            if (virtualAddress != 0)
-                _physicalAddress = addressSpace.vtop(_virtualAddress);
             Initialise();
         }
 
         private void Initialise()
         {
+            _is64 = (_profile.Architecture == "AMD64");
+            AddressBase addressSpace = _dataProvider.ActiveAddressSpace;
+            if (_virtualAddress != 0)
+                _physicalAddress = addressSpace.vtop(_virtualAddress);
             if (_physicalAddress == 0)
                 throw new ArgumentException("Error - Address is ZERO for _DRIVER_OBJECT");
             //_physicalAddress = _dataProvider.ActiveAddressSpace.vtop(_virtualAddress, _dataProvider.IsLive);

@@ -33,9 +33,8 @@ namespace MemoryExplorer.ModelObjects
         public ulong HeaderSize { get { return _headerSize; } }
         public byte InfoMask { get { return _infoMask; } }
 
-        public ObjectHeader(Profile profile)
+        public ObjectHeader(Profile profile) : base(profile, null, 0)
         {
-            _profile = profile;
             _structure = profile.GetEntries("_OBJECT_HEADER");
             Structure s = GetStructureMember("Body");
             if (s != null)
@@ -50,11 +49,8 @@ namespace MemoryExplorer.ModelObjects
         /// <param name="dataProvider"></param>
         /// <param name="virtualAddress"></param>
         /// <param name="physicalAddress"></param>
-        public ObjectHeader(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0)
+        public ObjectHeader(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
         {
-            _dataProvider = dataProvider;
-            _profile = profile;
-            _virtualAddress = virtualAddress;
             _physicalAddress = physicalAddress;
             if (virtualAddress == 0 && physicalAddress == 0)
                 throw new ArgumentException("Error - Offset is ZERO for _OBJECT_HEADER");

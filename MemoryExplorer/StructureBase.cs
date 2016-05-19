@@ -52,6 +52,13 @@ namespace MemoryExplorer
         protected DataProviderBase _dataProvider;
         protected ObjectHeader _header = null;
 
+        protected StructureBase(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0)
+        {
+            _profile = profile;
+            _dataProvider = dataProvider;
+            _virtualAddress = virtualAddress;
+        }
+
         protected Structure GetStructureMember(string member)
         {
             if (_structure == null)

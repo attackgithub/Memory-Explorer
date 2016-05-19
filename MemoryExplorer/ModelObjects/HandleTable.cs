@@ -16,11 +16,8 @@ namespace MemoryExplorer.ModelObjects
         private const ulong LEVEL_MASK = 7;
 
 
-        public HandleTable(Profile profile, DataProviderBase dataProvider, ulong virtualAddress)
+        public HandleTable(Profile profile, DataProviderBase dataProvider, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
         {
-            _profile = profile;
-            _dataProvider = dataProvider;
-            _virtualAddress = virtualAddress;
             _is64 = (_profile.Architecture == "AMD64");
             int structureSize = (int)_profile.GetStructureSize("_HANDLE_TABLE");
             if (structureSize == -1)

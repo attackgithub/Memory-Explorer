@@ -109,7 +109,7 @@ namespace MemoryExplorer.Data
             }
             catch (Exception ex)
             {
-                throw new ArgumentException(ex.Message);
+                return null;
             }
         }
         private byte[] CheckCache(ulong address)

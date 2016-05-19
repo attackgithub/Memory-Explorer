@@ -14,11 +14,8 @@ namespace MemoryExplorer.ModelObjects
         private ulong _typeInfo;
         private ulong _grantedAccess;
         private ulong _eprocess;
-        public HandleTableEntry(Profile profile, DataProviderBase dataProvider, ulong virtualAddress, int index)
+        public HandleTableEntry(Profile profile, DataProviderBase dataProvider, ulong virtualAddress, int index) : base(profile, dataProvider, virtualAddress)
         {
-            _profile = profile;
-            _dataProvider = dataProvider;
-            _virtualAddress = virtualAddress;
             _is64 = (_profile.Architecture == "AMD64");
             if (_virtualAddress == 0)
                 throw new ArgumentException("Error - Offset is ZERO for _HANDLE_TABLE_ENTRY");
@@ -30,10 +27,9 @@ namespace MemoryExplorer.ModelObjects
                 throw new ArgumentException("Error - Invalid Virtual Address");
             Parse();
         }
-        public HandleTableEntry(Profile profile, byte[] buffer, int index)
+        public HandleTableEntry(Profile profile, byte[] buffer, int index) : base(profile, null, 0)
         {
             _index = index * 4;
-            _profile = profile;
             _is64 = (_profile.Architecture == "AMD64");
             int structureSize = (int)_profile.GetStructureSize("_HANDLE_TABLE_ENTRY");
             if (structureSize == -1 || structureSize < buffer.Length)
