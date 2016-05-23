@@ -20,22 +20,25 @@ namespace MemoryExplorer.ModelObjects
         public string Name { get { return _name; } }
 
         // this will fail if the string runs off the end of the page
+        // remember to set the dataProvider.ActiveAddressSpace before you call
         public UnicodeString(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
         {
             _physicalAddress = physicalAddress;
             _is64 = (_profile.Architecture == "AMD64");
-            _addressSpace = _profile.KernelAddressSpace;
+            _addressSpace = dataProvider.ActiveAddressSpace;
             _structureSize = (int)_profile.GetStructureSize("_UNICODE_STRING");
             if (_structureSize == -1)
                 throw new ArgumentException("Error - Profile didn't contain a definition for _OBJECT_TYPE");
-            AddressBase addressSpace = dataProvider.ActiveAddressSpace;
+            //AddressBase addressSpace = dataProvider.ActiveAddressSpace;
             if (virtualAddress == 0)
                 _buffer = _dataProvider.ReadPhysicalMemory(_physicalAddress, (uint)_structureSize);
             else
             {
-                _physicalAddress = addressSpace.vtop(_virtualAddress);
+                _physicalAddress = _addressSpace.vtop(_virtualAddress);
                 _buffer = _dataProvider.ReadMemoryBlock(_virtualAddress, (uint)_structureSize);
             }
+            if (_buffer == null)
+                throw new ArgumentException("Invalid Address: " + virtualAddress.ToString("X08"));
             _structure = _profile.GetEntries("_UNICODE_STRING");
             Structure s = GetStructureMember("Length");
             //int realOffset = (int)s.Offset + (int)(_physicalAddress & 0xfff);

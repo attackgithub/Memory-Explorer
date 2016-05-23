@@ -63,8 +63,8 @@ namespace MemoryExplorer.ModelObjects
                 ptr = ReadUInt64((int)(pAddr & 0xfff));
             else
                 ptr = ReadUInt32((int)(pAddr & 0xfff));
-            ulong pAddress = kernelAS.vtop(ptr);
-            ObjectType ot = new ObjectType(_profile, _dataProvider, pAddress);
+            //ulong pAddress = kernelAS.vtop(ptr);
+            ObjectType ot = new ObjectType(_profile, _dataProvider, ptr);
 
             int count = (int)ot.TotalNumberOfObjects;
             for (int i = 0; i < count; i++)
@@ -79,8 +79,8 @@ namespace MemoryExplorer.ModelObjects
                     ptr = ReadUInt64((int)(pAddr & 0xfff));
                 else
                     ptr = ReadUInt32((int)(pAddr & 0xfff));
-                pAddress = kernelAS.vtop(ptr);
-                ot = new ObjectType(_profile, _dataProvider, pAddress);
+                //pAddress = kernelAS.vtop(ptr);
+                ot = new ObjectType(_profile, _dataProvider, ptr);
                 ObjectTypeRecord otr = new ObjectTypeRecord();
                 otr.Name = ot.Name;
                 otr.Index = ot.Index;
@@ -135,21 +135,23 @@ namespace MemoryExplorer.ModelObjects
             int structureSize = (int)_profile.GetStructureSize("_OBJECT_TYPE");
             if (structureSize == -1)
                 throw new ArgumentException("Error - Profile didn't contain a definition for _OBJECT_TYPE");
-            _structure = _profile.GetEntries("_OBJECT_TYPE");
+            _structure = _profile.GetEntries("_OBJECT_TYPE");            
+            _buffer = _dataProvider.ReadMemoryBlock(virtualAddress, (uint)structureSize);
+            //_buffer = _dataProvider.ReadMemory(virtualAddress & 0xfffffffff000, 1);
+            //_index = _buffer[(int)s.Offset + (int)(virtualAddress & 0xfff)];
             Structure s = GetStructureMember("Index");
-            _buffer = _dataProvider.ReadMemory(virtualAddress & 0xfffffffff000, 1);
-            _index = _buffer[(int)s.Offset + (int)(virtualAddress & 0xfff)];
+            _index = _buffer[(int)s.Offset];
             s = GetStructureMember("Name");
             UnicodeString us = new UnicodeString(_profile, _dataProvider, virtualAddress + s.Offset);
             _name = us.Name;
             s = GetStructureMember("TotalNumberOfObjects");
-            _totalNumberOfObjects = BitConverter.ToUInt64(_buffer, (int)s.Offset + (int)(virtualAddress & 0xfff));
+            _totalNumberOfObjects = BitConverter.ToUInt64(_buffer, (int)s.Offset);
             s = GetStructureMember("TotalNumberOfHandles");
-            _totalNumberOfHandles = BitConverter.ToUInt64(_buffer, (int)s.Offset + (int)(virtualAddress & 0xfff));
+            _totalNumberOfHandles = BitConverter.ToUInt64(_buffer, (int)s.Offset);
             s = GetStructureMember("HighWaterNumberOfHandles");
-            _highWaterNumberOfHandles = BitConverter.ToUInt64(_buffer, (int)s.Offset + (int)(virtualAddress & 0xfff));
+            _highWaterNumberOfHandles = BitConverter.ToUInt64(_buffer, (int)s.Offset);
             s = GetStructureMember("HighWaterNumberOfObjects");
-            _highWaterNumberOfObjects = BitConverter.ToUInt64(_buffer, (int)s.Offset + (int)(virtualAddress & 0xfff));
+            _highWaterNumberOfObjects = BitConverter.ToUInt64(_buffer, (int)s.Offset);
 
         }
         public ulong Index { get { return _index; } }

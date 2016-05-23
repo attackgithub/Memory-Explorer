@@ -71,12 +71,17 @@ namespace MemoryExplorer.Model
         private uint _handleTableSize = 0;
         private List<HexViewHighlight> _infoHexHighlights = new List<HexViewHighlight>();
         private List<HexViewHighlight> _mainHexHighlights = new List<HexViewHighlight>();
+        private ProcessInfo _selectedProcess = null;
 
 
         public event PropertyChangedEventHandler PropertyChanged;
 
         #endregion
         #region access
+        public ProcessInfo ActiveProcess
+        {
+            get { return _selectedProcess; }
+        }
         public ArtifactBase ActiveArtifact
         {
             get { return _activeArtifact; }
@@ -198,7 +203,9 @@ namespace MemoryExplorer.Model
         public List<ProcessInfo> ProcessList { get { return _processList; } }
         public List<DriverObject> DriverList { get { return _driverList; } set { SetProperty(ref _driverList, value); } }
 
-        public List<HexViewHighlight> InfoHexHighlights { get { return _infoHexHighlights; } }        
+        public List<HexViewHighlight> InfoHexHighlights { get { return _infoHexHighlights; } }
+
+        public Profile GetProfile { get { return _profile; } }
 
         #endregion
         public DataModel(bool IsAdmin)
@@ -298,6 +305,7 @@ namespace MemoryExplorer.Model
                 CurrentDetailsViewModelHint = "process";
                 _processInfoDictionary.Clear();
                 UpdateProcessInfoDictionary(pa.LinkedProcess);
+                _selectedProcess = pa.LinkedProcess;
                 NotifyPropertyChange("CurrentDetailsViewModel"); 
                 return;
             }
@@ -513,7 +521,7 @@ namespace MemoryExplorer.Model
             {
                 _profile.ObjectTypeList.Add(record);
             }
-            NotifyPropertyChange("ObjectTypes"); // this forces the set property / INotifyPropertyCHange
+            NotifyPropertyChange("ObjectTypeList"); // this forces the set property / INotifyPropertyCHange
         }
         public void AddDebugMessage(string message)
         {

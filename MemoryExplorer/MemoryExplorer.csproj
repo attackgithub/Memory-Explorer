@@ -135,6 +135,7 @@
       <DependentUpon>MainContent.xaml</DependentUpon>
     </Compile>
     <Compile Include="Details\MainContentViewModel.cs" />
+    <Compile Include="Details\MemMapResult.cs" />
     <Compile Include="Details\ObjectTypes.xaml.cs">
       <DependentUpon>ObjectTypes.xaml</DependentUpon>
     </Compile>
@@ -147,6 +148,10 @@
       <DependentUpon>ProcessInformation.xaml</DependentUpon>
     </Compile>
     <Compile Include="Details\ProcessInformationViewModel.cs" />
+    <Compile Include="Details\ProcessMemoryMap.xaml.cs">
+      <DependentUpon>ProcessMemoryMap.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Details\ProcessMemoryMapViewModel.cs" />
     <Compile Include="Details\ProcessViewer.xaml.cs">
       <DependentUpon>ProcessViewer.xaml</DependentUpon>
     </Compile>
@@ -274,6 +279,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Details\ProcessInformation.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Details\ProcessMemoryMap.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

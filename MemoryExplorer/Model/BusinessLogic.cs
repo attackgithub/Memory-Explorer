@@ -45,6 +45,7 @@ namespace MemoryExplorer.Model
             IncrementActiveJobs("Loading Kernel Address Space");
             _kernelAddressSpace = await LoadKernelAddressSpace();
             _profile.KernelAddressSpace = _kernelAddressSpace;
+            _dataProvider.ActiveAddressSpace = _kernelAddressSpace;
             if (_kernelAddressSpace != null)
             {
                 ProcessInfo p = new ProcessInfo();
@@ -99,7 +100,7 @@ namespace MemoryExplorer.Model
             await ScanForDrivers();
             DecrementActiveJobs();
 
-            ProcessProcesses();
+            //ProcessProcesses();
         }
 
         
@@ -390,7 +391,7 @@ namespace MemoryExplorer.Model
                 physicalAddress = FindKernelDtbBody();
             });
             return physicalAddress;
-        }
+        }        
         async private Task<AddressBase> LoadKernelAddressSpace()
         {
             AddressBase addressSpace = null;
@@ -403,170 +404,177 @@ namespace MemoryExplorer.Model
             });
             return addressSpace;
         }
-        async private Task FindKernelImage()
+        public void FindKernelImageBody(AddressBase kernelAddress=null)
         {
-            await Task.Run(() =>
-            {                                
-                try
+            if (kernelAddress != null)
+                _kernelAddressSpace = kernelAddress;
+            try
+            {
+                uint buildOffset = (uint)_profile.GetConstant("NtBuildLab");
+                // first check that we haven't already got it - the live info grab will have got it!             
+                if (_kernelBaseAddress != 0)
                 {
-                    uint buildOffset = (uint)_profile.GetConstant("NtBuildLab");
-                    // first check that we haven't already got it - the live info grab will have got it!             
-                    if (_kernelBaseAddress != 0)
+                    ulong pAddr = _kernelAddressSpace.vtop(_kernelBaseAddress + buildOffset, true);
+                    if (pAddr == 0)
+                        return;
+                    byte[] buffer2 = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
+                    string build = ReadString(buffer2, (uint)(pAddr & 0xfff));
+                    InfoHelper helper = new InfoHelper();
+                    helper.Type = InfoHelperType.InfoDictionary;
+                    helper.Name = build;
+                    helper.Title = "Build String";
+                    AddToInfoDictionary("Build String", helper);
+                    try
                     {
-                        ulong pAddr = _kernelAddressSpace.vtop(_kernelBaseAddress + buildOffset, true);
+                        uint buildOffset2 = (uint)_profile.GetConstant("NtBuildLabEx");
+                        pAddr = _kernelAddressSpace.vtop(_kernelBaseAddress + buildOffset2, true);
                         if (pAddr == 0)
                             return;
-                        byte[] buffer2 = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
-                        string build = ReadString(buffer2, (uint)(pAddr & 0xfff));
-                        InfoHelper helper = new InfoHelper();
+                        buffer2 = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
+                        build = ReadString(buffer2, (uint)(pAddr & 0xfff));
+                        helper = new InfoHelper();
                         helper.Type = InfoHelperType.InfoDictionary;
                         helper.Name = build;
-                        helper.Title = "Build String";
-                        AddToInfoDictionary("Build String", helper);
-                        try
-                        {
-                            uint buildOffset2 = (uint)_profile.GetConstant("NtBuildLabEx");
-                            pAddr = _kernelAddressSpace.vtop(_kernelBaseAddress + buildOffset2, true);
-                            if (pAddr == 0)
-                                return;
-                            buffer2 = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
-                            build = ReadString(buffer2, (uint)(pAddr & 0xfff));
-                            helper = new InfoHelper();
-                            helper.Type = InfoHelperType.InfoDictionary;
-                            helper.Name = build;
-                            helper.Title = "Build String Ex";
-                            AddToInfoDictionary("Build String Ex", helper);
-                        }
-                        catch { }                        
-                        return;
+                        helper.Title = "Build String Ex";
+                        AddToInfoDictionary("Build String Ex", helper);
                     }
+                    catch { }
+                    return;
+                }
 
-                    StringSearch mySearch = new StringSearch(_dataProvider);
-                    mySearch.AddNeedle("INITKDBG");
-                    mySearch.AddNeedle("MISYSPTE");
-                    mySearch.AddNeedle("PAGEKD");
-                    byte[] buffer = null;
-                    foreach (var answer in mySearch.Scan())
+                StringSearch mySearch = new StringSearch(_dataProvider);
+                mySearch.AddNeedle("INITKDBG");
+                mySearch.AddNeedle("MISYSPTE");
+                mySearch.AddNeedle("PAGEKD");
+                byte[] buffer = null;
+                foreach (var answer in mySearch.Scan())
+                {
+                    foreach (var kvp in answer)
                     {
-                        foreach (var kvp in answer)
+                        List<ulong> hitList = kvp.Value;
+                        foreach (ulong hit in hitList)
                         {
-                            List<ulong> hitList = kvp.Value;
-                            foreach (ulong hit in hitList)
+                            // the physical address must exist in the kernel address space space
+                            ulong vAddr = _kernelAddressSpace.ptov(hit);
+                            if (vAddr == 0)
+                                continue;
+                            //// let's grab the PE header while we're here
+                            ulong page = vAddr & 0xfffffffff000;
+                            // remember PE images are page aligned
+                            for (int i = 0; i < 10; i++) // need to think about 10 being enough
                             {
-                                // the physical address must exist in the kernel address space space
-                                ulong vAddr = _kernelAddressSpace.ptov(hit);
-                                if (vAddr == 0)
-                                    continue;
-                                //// let's grab the PE header while we're here
-                                ulong page = vAddr & 0xfffffffff000;
-                                // remember PE images are page aligned
-                                for (int i = 0; i < 10; i++) // need to think about 10 being enough
+                                ulong tryAddress = _kernelAddressSpace.vtop(page, false);
+                                buffer = _dataProvider.ReadMemory(tryAddress, 1);
+                                string sig = Encoding.Default.GetString(buffer, 0, 2);
+                                if (sig == "MZ")
                                 {
-                                    ulong tryAddress = _kernelAddressSpace.vtop(page, false);
-                                    buffer = _dataProvider.ReadMemory(tryAddress, 1);
-                                    string sig = Encoding.Default.GetString(buffer, 0, 2);
-                                    if(sig == "MZ")
+                                    PE peHeader = new PE(_dataProvider, _kernelAddressSpace, page);
+                                    RSDS debugSection = peHeader.DebugSection;
+                                    if (IsValidKernel(debugSection.Filename))
                                     {
-                                        PE peHeader = new PE(_dataProvider, _kernelAddressSpace, page);
-                                        RSDS debugSection = peHeader.DebugSection;
-                                        if (IsValidKernel(debugSection.Filename))
+                                        _kernelBaseAddress = page;
+                                        ulong pAddr = _kernelAddressSpace.vtop(_kernelBaseAddress + buildOffset, false);
+                                        if (pAddr == 0)
+                                            continue;
+                                        buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
+                                        //CurrentHexViewerContentAddress = pAddr & 0xfffffffff000;
+                                        //CurrentHexViewerContent = buffer;
+                                        string build = ReadString(buffer, (uint)(pAddr & 0xfff));
+                                        InfoHelper helper = new InfoHelper();
+                                        helper.Type = InfoHelperType.InfoDictionary;
+                                        helper.Name = "0x" + _kernelBaseAddress.ToString("X08");
+                                        helper.Title = "Kernel Base Address";
+                                        helper.VirtualAddress = _kernelBaseAddress;
+                                        helper.BufferSize = 4096;
+                                        AddToInfoDictionary("Kernel Base Address", helper);
+                                        helper = new InfoHelper();
+                                        helper.Type = InfoHelperType.InfoDictionary;
+                                        helper.Name = build;
+                                        helper.Title = "Build String";
+                                        AddToInfoDictionary("Build String", helper);
+                                        try
                                         {
-                                            _kernelBaseAddress = page;
-                                            ulong pAddr = _kernelAddressSpace.vtop(_kernelBaseAddress + buildOffset, false);
+                                            uint buildOffset2 = (uint)_profile.GetConstant("NtBuildLabEx");
+                                            pAddr = _kernelAddressSpace.vtop(_kernelBaseAddress + buildOffset2, true);
                                             if (pAddr == 0)
                                                 continue;
                                             buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
-                                            //CurrentHexViewerContentAddress = pAddr & 0xfffffffff000;
-                                            //CurrentHexViewerContent = buffer;
-                                            string build = ReadString(buffer, (uint)(pAddr & 0xfff));
-                                            InfoHelper helper = new InfoHelper();
-                                            helper.Type = InfoHelperType.InfoDictionary;
-                                            helper.Name = "0x" + _kernelBaseAddress.ToString("X08");
-                                            helper.Title = "Kernel Base Address";
-                                            helper.VirtualAddress = _kernelBaseAddress;
-                                            helper.BufferSize = 4096;
-                                            AddToInfoDictionary("Kernel Base Address", helper);
+                                            build = ReadString(buffer, (uint)(pAddr & 0xfff));
                                             helper = new InfoHelper();
                                             helper.Type = InfoHelperType.InfoDictionary;
                                             helper.Name = build;
-                                            helper.Title = "Build String";
-                                            AddToInfoDictionary("Build String", helper);
-                                            try
-                                            {
-                                                uint buildOffset2 = (uint)_profile.GetConstant("NtBuildLabEx");
-                                                pAddr = _kernelAddressSpace.vtop(_kernelBaseAddress + buildOffset2, true);
-                                                if (pAddr == 0)
-                                                    continue;
-                                                buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
-                                                build = ReadString(buffer, (uint)(pAddr & 0xfff));
-                                                helper = new InfoHelper();
-                                                helper.Type = InfoHelperType.InfoDictionary;
-                                                helper.Name = build;
-                                                helper.Title = "Build String Ex";
-                                                AddToInfoDictionary("Build String Ex", helper);
-                                            }
-                                            catch { }
-                                            return;
+                                            helper.Title = "Build String Ex";
+                                            AddToInfoDictionary("Build String Ex", helper);
                                         }
+                                        catch { }
+                                        return;
                                     }
-                                    // move backwards one page at a time
-                                    page -= 0x1000;
                                 }
+                                // move backwards one page at a time
+                                page -= 0x1000;
                             }
                         }
                     }
                 }
-                catch
-                {
-                    return;
-                }
+            }
+            catch
+            {
+                return;
+            }
+        }
+        async private Task FindKernelImage()
+        {
+            await Task.Run(() =>
+            {
+                FindKernelImageBody();
             });
         }        
+        public void FindUserSharedDataBody()
+        {
+            try
+            {
+                ulong pAddr = _kernelAddressSpace.vtop(_kiUserSharedData, _liveCapture);
+                if (pAddr == 0)
+                    return;
+                KUserSharedData kusd = new KUserSharedData(_dataProvider, _profile, pAddr);
+                string version = kusd.Version;
+                version = VersionHelper(version);
+
+                InfoHelper helper = new InfoHelper();
+                helper.Type = InfoHelperType.InfoDictionary;
+                helper.Name = version;
+                helper.Title = "Version";
+                AddToInfoDictionary("Version", helper);
+                var pageCount = kusd.Get("NumberOfPhysicalPages");
+                helper = new InfoHelper();
+                helper.Type = InfoHelperType.InfoDictionary;
+                helper.Name = pageCount.ToString();
+                helper.Title = "Physical Page Count";
+                AddToInfoDictionary("Physical Page Count", helper);
+                string rootDir = kusd.GetString("NtSystemRoot");
+                helper = new InfoHelper();
+                helper.Type = InfoHelperType.InfoDictionary;
+                helper.Name = rootDir;
+                helper.Title = "System Root";
+                AddToInfoDictionary("System Root", helper);
+                var procCount = kusd.Get("ActiveProcessorCount");
+                helper = new InfoHelper();
+                helper.Type = InfoHelperType.InfoDictionary;
+                helper.Name = procCount.ToString();
+                helper.Title = "Active Processor Count";
+                AddToInfoDictionary("Active Processor Count", helper);
+                return;
+            }
+            catch (Exception)
+            {
+                return;
+            }
+        }
         async private Task FindUserSharedData()
         {
             await Task.Run(() =>
             {
-                try
-                {
-                    ulong pAddr = _kernelAddressSpace.vtop(_kiUserSharedData, _liveCapture);
-                    if (pAddr == 0)
-                        return;
-                    KUserSharedData kusd = new KUserSharedData(_dataProvider , _profile, pAddr);
-                    string version = kusd.Version;
-                    version = VersionHelper(version);
-
-                    InfoHelper helper = new InfoHelper();
-                    helper.Type = InfoHelperType.InfoDictionary;
-                    helper.Name = version;
-                    helper.Title = "Version";
-                    AddToInfoDictionary("Version", helper);
-                    var pageCount = kusd.Get("NumberOfPhysicalPages");
-                    helper = new InfoHelper();
-                    helper.Type = InfoHelperType.InfoDictionary;
-                    helper.Name = pageCount.ToString();
-                    helper.Title = "Physical Page Count";
-                    AddToInfoDictionary("Physical Page Count", helper);
-                    string rootDir = kusd.GetString("NtSystemRoot");
-                    helper = new InfoHelper();
-                    helper.Type = InfoHelperType.InfoDictionary;
-                    helper.Name = rootDir;
-                    helper.Title = "System Root";
-                    AddToInfoDictionary("System Root", helper);
-                    var procCount = kusd.Get("ActiveProcessorCount");
-                    helper = new InfoHelper();
-                    helper.Type = InfoHelperType.InfoDictionary;
-                    helper.Name = procCount.ToString();
-                    helper.Title = "Active Processor Count";
-                    AddToInfoDictionary("Active Processor Count", helper);
-
-
-                    return;
-                }
-                catch (Exception)
-                {
-
-                    return;
-                }
+                FindUserSharedDataBody();
             });
         }
         async private Task EnumerateObjectTypes()

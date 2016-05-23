@@ -47,6 +47,7 @@ namespace MemoryExplorer.Address
                 virtualAddress = (pml4eIndex << 39);
                 if (virtualAddress < start || virtualAddress > end)
                     continue;
+                
                 ulong pml4eValue = BitConverter.ToUInt64(buffer, (int)pml4eIndex * 8);
                 L4PageDirectoryEntry l4pde = new L4PageDirectoryEntry(pml4eValue);
                 if (l4pde.InUse)

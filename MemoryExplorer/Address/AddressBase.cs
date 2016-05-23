@@ -117,10 +117,10 @@ namespace MemoryExplorer.Address
             {
                 virtualAddress = originalVA + (pteIndex << 12);
                 if (virtualAddress < start || virtualAddress > end)
-                    continue;
+                    continue;                
                 ulong pteValue = BitConverter.ToUInt64(buffer, (int)pteIndex * 8);
                 PageTableEntry pte = new PageTableEntry(pteValue);
-                if (pde.InUse)
+                if (pte.InUse)
                     ProcessPteEntry(pte, virtualAddress);
                 else
                     ProcessSoftwareEntry(new SoftwarePageTableEntry(pteValue), virtualAddress);

@@ -14,7 +14,9 @@
             <TabItem Header="Information" IsSelected="{Binding InfoSelected, Mode=TwoWay}">
                 <local:ProcessInformation />
             </TabItem>
-            
+            <TabItem Header="Memory Map">
+                <local:ProcessMemoryMap />
+            </TabItem>
         </TabControl>
     </Grid>
 </UserControl>
