@@ -4,7 +4,9 @@ using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Profiles;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -17,6 +19,7 @@ namespace MemoryExplorer.Processes
         private uint _dtbSize;
         //private ulong _offset;
         private AddressBase _addressSpace;
+        private object _eprocess;
         //private HandleTable _hndTable = null;
 
         public EProcess(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
@@ -49,19 +52,29 @@ namespace MemoryExplorer.Processes
                 _buffer = _dataProvider.ReadPhysicalMemory(_physicalAddress, (uint)_structureSize);
             else
                 _buffer = _dataProvider.ReadMemoryBlock(_virtualAddress, (uint)_structureSize);
+
+            var dll = _profile.GetStructureAssembly("EProcess");
+            Type t = dll.GetType("liveforensics.EPROCESS");
+            //_eprocess = Activator.CreateInstance(t);
+            GCHandle pinnedPacket = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
+            _eprocess = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(_buffer, 0), t);
+            pinnedPacket.Free();
+
+
             //_offset = _physicalAddress - (_physicalAddress & 0xfffffffff000);
-            _dtbOffset = _profile.GetOffset("_EPROCESS", "Pcb.DirectoryTableBase");
-            _dtbSize = _profile.GetSize("_EPROCESS", "Pcb.DirectoryTableBase");
-            Structure s = GetStructureMember("ObjectTable");
-            if (s != null && s.PointerType == "_HANDLE_TABLE")
-            {
-                var a = (s.Size == 4) ? BitConverter.ToUInt32(_buffer, (int)s.Offset) : (BitConverter.ToUInt64(_buffer, (int)s.Offset) & 0xffffffffffff);
-                if (a != 0)
-                {
-                    _objectTable = (ulong)a;
-                }
-            }
+            //_dtbOffset = _profile.GetOffset("_EPROCESS", "Pcb.DirectoryTableBase");
+            //_dtbSize = _profile.GetSize("_EPROCESS", "Pcb.DirectoryTableBase");
+            //Structure s = GetStructureMember("ObjectTable");
+            //if (s != null && s.PointerType == "_HANDLE_TABLE")
+            //{
+            //    var a = (s.Size == 4) ? BitConverter.ToUInt32(_buffer, (int)s.Offset) : (BitConverter.ToUInt64(_buffer, (int)s.Offset) & 0xffffffffffff);
+            //    if (a != 0)
+            //    {
+            //        _objectTable = (ulong)a;
+            //    }
+            //}
         }
+        public dynamic Members { get { return _eprocess;  } }
         public object Get(string member)
         {
             try
@@ -124,38 +137,48 @@ namespace MemoryExplorer.Processes
         {
             get
             {
-                Structure s = GetStructureMember("UniqueProcessId");
-                if (s == null)
-                    return 0;
-                int realOffset = (int)(s.Offset);
-                var a = (s.Size == 4) ? BitConverter.ToUInt32(_buffer, realOffset) : BitConverter.ToUInt64(_buffer, realOffset);
-                return (uint)a;
+                return (uint)Members.UniqueProcessId;
+                //Structure s = GetStructureMember("UniqueProcessId");
+                //if (s == null)
+                //    return 0;
+                //int realOffset = (int)(s.Offset);
+                //var a = (s.Size == 4) ? BitConverter.ToUInt32(_buffer, realOffset) : BitConverter.ToUInt64(_buffer, realOffset);
+                //return (uint)a;
             }
         }
         public uint Ppid
         {
             get
             {
-                Structure s = GetStructureMember("InheritedFromUniqueProcessId");
-                if (s == null)
-                    return 0;
-                int realOffset = (int)(s.Offset);
-                var a = (s.Size == 4) ? BitConverter.ToUInt32(_buffer, realOffset) : BitConverter.ToUInt64(_buffer, realOffset);
-                return (uint)a;
+                return (uint)Members.InheritedFromUniqueProcessId;
+                //Structure s = GetStructureMember("InheritedFromUniqueProcessId");
+                //if (s == null)
+                //    return 0;
+                //int realOffset = (int)(s.Offset);
+                //var a = (s.Size == 4) ? BitConverter.ToUInt32(_buffer, realOffset) : BitConverter.ToUInt64(_buffer, realOffset);
+                //return (uint)a;
             }
         }
-        public string ImageFileName { get { return (Encoding.UTF8.GetString((byte[])Get("ImageFileName"))).Trim(new char[] { '\x0' }); } }
+        //public string ImageFileName { get { return (Encoding.UTF8.GetString((byte[])Get("ImageFileName"))).Trim(new char[] { '\x0' }); } }
+        public string ImageFileName
+        {
+            get
+            {
+                return Encoding.UTF8.GetString(Members.ImageFileName).Trim(new char[] { '\x0' });
+            }
+        }
         public uint ActiveThreads
         {
             get
             {
-                MemberInfo mi = _profile.GetMemberInfo("_EPROCESS", "ActiveThreads");
-                if (!mi.IsArray && mi.Size == 4)
-                {
-                    var a = BitConverter.ToUInt32(_buffer, (int)mi.Offset);
-                    return a;
-                }
-                return 0;
+                return (uint)Members.ActiveThreads;
+                //MemberInfo mi = _profile.GetMemberInfo("_EPROCESS", "ActiveThreads");
+                //if (!mi.IsArray && mi.Size == 4)
+                //{
+                //    var a = BitConverter.ToUInt32(_buffer, (int)mi.Offset);
+                //    return a;
+                //}
+                //return 0;
             }
         }
         //public uint? HandleCount
@@ -181,44 +204,69 @@ namespace MemoryExplorer.Processes
         {
             get
             {
-                Structure s = GetStructureMember("CreateTime");
-                if (s == null)
-                    return new DateTime(1666, 1, 1);
                 try
                 {
-                    long longVar = BitConverter.ToInt64(_buffer, (int)s.Offset);
+                    long longVar = (long)Members.CreateTime;
                     if (longVar == 0)
                         return DateTime.MinValue;
                     DateTime dateTimeVar = new DateTime(longVar).AddYears(1600);
                     return dateTimeVar;
                 }
-                catch
+                catch (Exception)
                 {
                     return new DateTime(1666, 1, 1);
                 }
+
+                //Structure s = GetStructureMember("CreateTime");
+                //if (s == null)
+                //    return new DateTime(1666, 1, 1);
+                //try
+                //{
+                //    long longVar = BitConverter.ToInt64(_buffer, (int)s.Offset);
+                //    if (longVar == 0)
+                //        return DateTime.MinValue;
+                //    DateTime dateTimeVar = new DateTime(longVar).AddYears(1600);
+                //    return dateTimeVar;
+                //}
+                //catch
+                //{
+                //    return new DateTime(1666, 1, 1);
+                //}
             }
         }
         public DateTime ExitTime
         {
             get
             {
-                Structure s = GetStructureMember("ExitTime");
-                if (s == null)
-                    return new DateTime(1666, 1, 1);
                 try
                 {
-                    long longVar = BitConverter.ToInt64(_buffer, (int)s.Offset);
+                    long longVar = (long)Members.ExitTime;
                     if (longVar == 0)
                         return DateTime.MinValue;
                     DateTime dateTimeVar = new DateTime(longVar).AddYears(1600);
                     return dateTimeVar;
                 }
-                catch
+                catch (Exception)
                 {
                     return new DateTime(1666, 1, 1);
                 }
+                //Structure s = GetStructureMember("ExitTime");
+                //if (s == null)
+                //    return new DateTime(1666, 1, 1);
+                //try
+                //{
+                //    long longVar = BitConverter.ToInt64(_buffer, (int)s.Offset);
+                //    if (longVar == 0)
+                //        return DateTime.MinValue;
+                //    DateTime dateTimeVar = new DateTime(longVar).AddYears(1600);
+                //    return dateTimeVar;
+                //}
+                //catch
+                //{
+                //    return new DateTime(1666, 1, 1);
+                //}
             }
         }
-        public ulong ObjectTable { get { return _objectTable; } }
+        public ulong ObjectTable { get { return (ulong)Members.ObjectTable; } }
     }
 }

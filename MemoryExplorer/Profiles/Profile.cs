@@ -9,6 +9,8 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -20,7 +22,7 @@ namespace MemoryExplorer.Profiles
         public object AccessLock = new object();
         private bool _fileActive = false;
         private string _requestedImage;
-        private string _cacheRoot;
+        private string _profileRoot;
         private Dictionary<string, JToken> _profileDictionary = null;
         private string _architecture = null;
         private Dictionary<string, List<Structure>> _entriesDictionary = new Dictionary<string, List<Structure>>();
@@ -28,6 +30,8 @@ namespace MemoryExplorer.Profiles
         private ulong _kernelBaseAddress = 0;
         private List<ObjectTypeRecord> _objectTypeList = new List<ObjectTypeRecord>();
         private ulong _poolAlign = 0;
+        private Dictionary<string, Assembly> _structureDictionary = new Dictionary<string, Assembly>();
+        private string _cacheLocation = "";
 
         public List<ObjectTypeRecord> ObjectTypeList
         {
@@ -54,16 +58,20 @@ namespace MemoryExplorer.Profiles
 
         
 
-        public Profile(string sourceFile, string cacheRoot)
+        public Profile(string sourceFile, string profileRoot, string cacheLocation)
         {
             _requestedImage = sourceFile;
-            if (!cacheRoot.EndsWith("\\"))
-                cacheRoot += "\\";
-            _cacheRoot = cacheRoot;
+            _profileRoot = profileRoot;
+            _cacheLocation = cacheLocation;
+            if (!_cacheLocation.EndsWith("\\"))
+                _cacheLocation += "\\";
+            if (!_profileRoot.EndsWith("\\"))
+                _profileRoot += "\\";
+            
             // first check that the cache actually exists
-            DirectoryInfo di = new DirectoryInfo(_cacheRoot);
+            DirectoryInfo di = new DirectoryInfo(_profileRoot);
             if (!di.Exists)
-                throw new ArgumentException("Cache Directory Does Not Exist: " + _cacheRoot);
+                throw new ArgumentException("Cache Directory Does Not Exist: " + _profileRoot);
             bool onlineAvailable = false;
             Dictionary<string, JToken> githubInventory = null;
             try
@@ -76,7 +84,7 @@ namespace MemoryExplorer.Profiles
             }
             catch { }
             // now see if we have the file in the cache
-            FileInfo fi = new FileInfo(_cacheRoot + @"v1.0\nt\GUID\" + _requestedImage);
+            FileInfo fi = new FileInfo(_profileRoot + @"v1.0\nt\GUID\" + _requestedImage);
             bool offlineAvailable = fi.Exists;
             // if offline isn't available but online is, download it and copy to the cache
             if (!offlineAvailable && onlineAvailable)
@@ -87,7 +95,7 @@ namespace MemoryExplorer.Profiles
             }
             if (!offlineAvailable && !onlineAvailable)
             {
-                MessageBox.Show("Couldn't Retrieve Profile " + _requestedImage + " from local cache or online.\n\nLocal cache is " + _cacheRoot + "\n\nYou might need to manually retrieve the profile using fetch_pdb.", "Profile Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Couldn't Retrieve Profile " + _requestedImage + " from local cache or online.\n\nLocal cache is " + _profileRoot + "\n\nYou might need to manually retrieve the profile using fetch_pdb.", "Profile Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 throw new ArgumentException("Profile Could Not Be Located");
             }
                 // if both online and offline are available, check to see if we have the latest version
@@ -114,6 +122,172 @@ namespace MemoryExplorer.Profiles
             }
             _fileActive = true;
             GetArchitectureFromProfile();
+        }
+        public Assembly GetStructureAssembly(string name)
+        {            
+            return ProcessStructureAssembly(name);
+        }
+
+        private Assembly ProcessStructureAssembly(string structureName)
+        {
+            string location = _cacheLocation + structureName + ".dll";
+            string upperVersion = structureName.ToUpper();
+            string lowerVersion = structureName.ToLower();
+            string profileVersion = "_" + upperVersion;
+            if (_structureDictionary.ContainsKey(structureName))
+                return _structureDictionary[structureName];
+            FileInfo fiCheck = new FileInfo(location);
+            if(fiCheck.Exists)
+            {
+                var dll = Assembly.LoadFile(location);
+                if (dll != null)
+                {
+                    _structureDictionary.Add(structureName, dll);
+                    return dll;
+                }
+                return null;
+            }
+            AppDomain myDomain = AppDomain.CurrentDomain;
+            AssemblyName assemblyName = new AssemblyName(structureName + "Assembly");
+            AssemblyBuilder assemblyBuilder = myDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Save);
+            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(structureName + "Module", structureName + ".dll");
+            TypeBuilder typeBuilder = moduleBuilder.DefineType("liveforensics." + upperVersion, TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.ExplicitLayout | TypeAttributes.BeforeFieldInit | TypeAttributes.AnsiClass, typeof(ValueType), PackingSize.Size1);
+            List<Tuple<int, string, string, int>> entryList = new List<Tuple<int, string, string, int>>();
+            FileInfo fi = new FileInfo(_profileRoot + @"v1.0\nt\GUID\" + _requestedImage);
+            if(fi.Exists)
+            {
+                try
+                {
+                    byte[] json = null;
+                    using (FileStream original = fi.OpenRead())
+                    {
+                        using (GZipStream gzStream = new GZipStream(original, CompressionMode.Decompress))
+                        {
+                            MemoryStream final = new MemoryStream();
+                            gzStream.CopyTo(final);
+                            long len = final.Length;
+                            json = final.ToArray();
+                        }
+                    }
+                    string theJson = Encoding.UTF8.GetString(json);
+                    var parsedJson = JObject.Parse(theJson);
+                    foreach (dynamic item in parsedJson["$STRUCTS"][profileVersion][1])
+                    {
+                        string name = item.Name;
+                        var val = item.Value;
+                        int w = (int)val[0];
+                        var v = val[1];
+                        string a = v[0].ToString();
+                        int size = (int)GetEntrySize(a);
+                        if(a == "Array")
+                        {
+                            int arraySize = 0;
+                            string arrayType = "";
+                            foreach (KeyValuePair<string, JToken> k in (JObject)v[1])
+                            {
+                                if (k.Key == "target")
+                                    arrayType = k.Value.ToString();
+                                if (k.Key == "count")
+                                    arraySize = (int)k.Value;
+                            }
+                            size = (int)GetEntrySize(arrayType) * arraySize;
+                        }
+                        else if(a == "BitField")
+                        {
+                            foreach (KeyValuePair<string, JToken> k in (JObject)v[1])
+                            {
+                                if (k.Key == "target")
+                                    size = (int)GetEntrySize(k.Value.ToString());
+                            }
+                        }
+                        entryList.Add(new Tuple<int, string, string, int>(w, name, a, size));
+                    }
+                    entryList.Sort();
+                    FieldBuilder field = null;
+                    foreach (var entry in entryList)
+                    {
+                        if(GetEntryType(entry.Item3) != null)
+                        {
+                            field = typeBuilder.DefineField(entry.Item2, GetEntryType(entry.Item3), FieldAttributes.Public);
+                            field.SetOffset(entry.Item1);
+                        }
+                        else if(entry.Item4 == 1)
+                        {
+                            field = typeBuilder.DefineField(entry.Item2, typeof(byte), FieldAttributes.Public);
+                            field.SetOffset(entry.Item1);
+                        }
+                        else if (entry.Item4 == 2)
+                        {
+                            field = typeBuilder.DefineField(entry.Item2, typeof(UInt16), FieldAttributes.Public);
+                            field.SetOffset(entry.Item1);
+                        }
+                        else if (entry.Item4 == 4)
+                        {
+                            field = typeBuilder.DefineField(entry.Item2, typeof(UInt32), FieldAttributes.Public);
+                            field.SetOffset(entry.Item1);
+                        }
+                        else if (entry.Item4 == 8)
+                        {
+                            field = typeBuilder.DefineField(entry.Item2, typeof(UInt64), FieldAttributes.Public);
+                            field.SetOffset(entry.Item1);
+                        }
+                        else
+                        {
+                            field = typeBuilder.DefineField(entry.Item2, typeof(byte[]), FieldAttributes.Public);
+                            field.SetMarshal(UnmanagedMarshal.DefineByValArray(entry.Item4));
+                            field.SetOffset(entry.Item1);
+                        }
+                    }
+                    Type ptType = typeBuilder.CreateType();
+                    assemblyBuilder.Save(structureName + ".dll");
+                    FileInfo fiMove = new FileInfo(Environment.CurrentDirectory + "\\" + structureName + ".dll");
+                    if (fiMove.Exists)
+                        fiMove.MoveTo(location);
+                    var dll = Assembly.LoadFile(location);
+                    if (dll != null)
+                    {
+                        _structureDictionary.Add(structureName, dll);
+                        return dll;
+                    }
+                    return null;
+                }
+                catch (Exception ex)
+                {                    
+                    throw new ArgumentException("Error: " + ex.Message);
+                }
+            }
+            return null;
+        }
+        private Type GetEntryType(string entryName)
+        {
+            try
+            {
+                switch(entryName)
+                {
+                    case "char":
+                    case "unsigned char":
+                        return typeof(byte);
+                    case "unsigned short":
+                        return typeof(UInt16);
+                    case "short":
+                        return typeof(Int16);
+                    case "unsigned long":
+                        return typeof(UInt32);
+                    case "long":
+                        return typeof(Int32);
+                    case "unsigned long long":
+                    case "Pointer":
+                        return typeof(UInt64);
+                    case "long long":
+                        return typeof(Int64);
+                    default:
+                        return null;
+                }
+            }
+            catch
+            {
+                return null;
+            }
         }
         private void GetArchitectureFromProfile()
         {
@@ -209,7 +383,7 @@ namespace MemoryExplorer.Profiles
                             wrapper.Offset = (ulong)(long)((JValue)t[0]).Value;
                             wrapper.EntryType = (t[1][0]).ToString();
                             JObject q = (JObject)t[1][1];
-                            wrapper.Size = (ulong)Size(wrapper.EntryType);
+                            wrapper.Size = (ulong)GetEntrySize(wrapper.EntryType);
                             switch (wrapper.EntryType)
                             {
                                 case "Array":
@@ -220,7 +394,7 @@ namespace MemoryExplorer.Profiles
                                         if (k.Key == "count")
                                             wrapper.ArrayCount = (ulong)k.Value;
                                     }
-                                    wrapper.Size = (uint)Size(wrapper.ArrayType) * wrapper.ArrayCount;
+                                    wrapper.Size = (uint)GetEntrySize(wrapper.ArrayType) * wrapper.ArrayCount;
                                     break;
                                 case "Pointer":
                                     foreach (KeyValuePair<string, JToken> k in q)
@@ -239,7 +413,7 @@ namespace MemoryExplorer.Profiles
                                         if (k.Key == "target")
                                             wrapper.BitType = k.Value.ToString();
                                     }
-                                    wrapper.Size = (uint)Size(wrapper.BitType);
+                                    wrapper.Size = (uint)GetEntrySize(wrapper.BitType);
                                     break;
                                 default:
                                     break;
@@ -281,18 +455,18 @@ namespace MemoryExplorer.Profiles
                     //activeStructure = ((JValue)targetNode[1][1]["target"]).Value.ToString();
                     break;
             }
-            uint calculatedSize = Size(activeStructure);
+            uint calculatedSize = GetEntrySize(activeStructure);
             if (calculatedSize > 0)
                 return calculatedSize;
             if (activeStructure == "Array")
             {
                 uint count =(uint)targetNode[1][1]["count"];
                 string target = (targetNode[1][1]["target"]).ToString();
-                return count * Size(target);
+                return count * GetEntrySize(target);
             }
             throw new System.ArgumentException("Couldn't Calculate Size For: " + activeStructure);
         }
-        private uint Size(string memberType)
+        private uint GetEntrySize(string memberType)
         {
             switch (memberType)
             {
@@ -344,7 +518,7 @@ namespace MemoryExplorer.Profiles
             if (activeStructure == "Array")
             {
                 mi.Count = (long)((JValue)targetNode[1][1]["count"]).Value;
-                mi.Size = Size(((JValue)targetNode[1][1]["target"]).Value.ToString());
+                mi.Size = GetEntrySize(((JValue)targetNode[1][1]["target"]).Value.ToString());
             }
             return mi;
         }
@@ -428,7 +602,7 @@ namespace MemoryExplorer.Profiles
         }
         private Dictionary<string, JToken> GetLocalInventory()
         {
-            FileInfo fi = new FileInfo(_cacheRoot + @"v1.0\inventory.gz");
+            FileInfo fi = new FileInfo(_profileRoot + @"v1.0\inventory.gz");
             if (!fi.Exists)
                 return null;
             return gzToDictionary(fi);
@@ -466,10 +640,10 @@ namespace MemoryExplorer.Profiles
                     // check to see if we want to cache the data
                     if (cache)
                     {
-                        FileInfo fi = new FileInfo(_cacheRoot + filePath);
+                        FileInfo fi = new FileInfo(_profileRoot + filePath);
                         if (fi.Exists)
                             fi.Delete();
-                        File.WriteAllBytes(_cacheRoot + filePath, buffer);
+                        File.WriteAllBytes(_profileRoot + filePath, buffer);
                     }
                     string json = Encoding.UTF8.GetString(Decompress(buffer));
                     object parsedObject = JsonConvert.DeserializeObject(json);

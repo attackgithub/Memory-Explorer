@@ -197,7 +197,7 @@ namespace MemoryExplorer.Model
                                     helper.Name = ProfileName;
                                     helper.Title = "Profile Name";
                                     AddToInfoDictionary("ProfileName", helper);
-                                    _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache"); // TO DO - make this a user option when you get around to writing the settings dialog
+                                    _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache", _cacheLocation); // TO DO - make this a user option when you get around to writing the settings dialog
                                     Architecture = _profile.Architecture;
                                     Architecture = _profile.Architecture;
                                     helper = new InfoHelper();
@@ -269,7 +269,7 @@ namespace MemoryExplorer.Model
                                     helper.Name = ProfileName;
                                     helper.Title = "Profile Name";
                                     AddToInfoDictionary("ProfileName", helper);
-                                    _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache"); // TO DO - make this a user option when you get around to writing the settings dialog
+                                    _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache", _cacheLocation); // TO DO - make this a user option when you get around to writing the settings dialog
                                     Architecture = _profile.Architecture;
                                     helper = new InfoHelper();
                                     helper.Type = InfoHelperType.InfoDictionary;
@@ -339,6 +339,7 @@ namespace MemoryExplorer.Model
                             try
                             {
                                 EProcess ep = new EProcess(_profile, _dataProvider, 0, hit - filenameOffset);
+                                dynamic test = ep.Members;
                                 _kernelDtb = ep.DTB;
                                 if (_kernelDtb > _dataProvider.ImageLength || _kernelDtb == 0)
                                 {
