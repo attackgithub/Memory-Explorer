@@ -56,7 +56,7 @@ namespace MemoryExplorer.Profiles
         public string Architecture { get { return _architecture; } }
         public bool FileActive { get { return _fileActive; } }
 
-        
+        public Dictionary<string, JToken> ProfileDictionary { get { return _profileDictionary; } }
 
         public Profile(string sourceFile, string profileRoot, string cacheLocation)
         {
@@ -128,12 +128,16 @@ namespace MemoryExplorer.Profiles
             return ProcessStructureAssembly(name);
         }
 
-        private Assembly ProcessStructureAssembly(string structureName)
+        public Assembly ProcessStructureAssembly(string structureName)
         {
-            string location = _cacheLocation + structureName + ".dll";
-            string upperVersion = structureName.ToUpper();
-            string lowerVersion = structureName.ToLower();
-            string profileVersion = "_" + upperVersion;
+            
+            string noUnderscoreVersion = structureName;
+            if (noUnderscoreVersion.StartsWith("_"))
+                noUnderscoreVersion = noUnderscoreVersion.TrimStart(new char[] { '_' });
+            string location = _cacheLocation + noUnderscoreVersion + ".dll";
+            //string upperVersion = structureName.ToUpper();
+            //string lowerVersion = structureName.ToLower();
+            //string profileVersion = "_" + upperVersion;
             if (_structureDictionary.ContainsKey(structureName))
                 return _structureDictionary[structureName];
             FileInfo fiCheck = new FileInfo(location);
@@ -148,16 +152,17 @@ namespace MemoryExplorer.Profiles
                 return null;
             }
             AppDomain myDomain = AppDomain.CurrentDomain;
-            AssemblyName assemblyName = new AssemblyName(structureName + "Assembly");
+            AssemblyName assemblyName = new AssemblyName(noUnderscoreVersion + "Assembly");
             AssemblyBuilder assemblyBuilder = myDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Save);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(structureName + "Module", structureName + ".dll");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("liveforensics." + upperVersion, TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.ExplicitLayout | TypeAttributes.BeforeFieldInit | TypeAttributes.AnsiClass, typeof(ValueType), PackingSize.Size1);
-            List<Tuple<int, string, string, int>> entryList = new List<Tuple<int, string, string, int>>();
+            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(noUnderscoreVersion + "Module", noUnderscoreVersion + ".dll");
+            TypeBuilder typeBuilder = moduleBuilder.DefineType("liveforensics." + noUnderscoreVersion, TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.ExplicitLayout | TypeAttributes.BeforeFieldInit | TypeAttributes.AnsiClass, typeof(ValueType), PackingSize.Size1);
+            List<Tuple<int, string, string, int, bool>> entryList = new List<Tuple<int, string, string, int, bool>>();
             FileInfo fi = new FileInfo(_profileRoot + @"v1.0\nt\GUID\" + _requestedImage);
             if(fi.Exists)
             {
                 try
                 {
+                    Debug.WriteLine("PROCESSING: " + structureName);
                     byte[] json = null;
                     using (FileStream original = fi.OpenRead())
                     {
@@ -171,15 +176,16 @@ namespace MemoryExplorer.Profiles
                     }
                     string theJson = Encoding.UTF8.GetString(json);
                     var parsedJson = JObject.Parse(theJson);
-                    foreach (dynamic item in parsedJson["$STRUCTS"][profileVersion][1])
+                    HashSet<int> unmanagedList = new HashSet<int>();
+                    foreach (dynamic item in parsedJson["$STRUCTS"][structureName][1])
                     {
                         string name = item.Name;
                         var val = item.Value;
-                        int w = (int)val[0];
+                        int fieldOffset = (int)val[0];
                         var v = val[1];
-                        string a = v[0].ToString();
-                        int size = (int)GetEntrySize(a);
-                        if(a == "Array")
+                        string fieldType = v[0].ToString();
+                        int size = (int)GetEntrySize(fieldType);
+                        if(fieldType == "Array")
                         {
                             int arraySize = 0;
                             string arrayType = "";
@@ -192,7 +198,7 @@ namespace MemoryExplorer.Profiles
                             }
                             size = (int)GetEntrySize(arrayType) * arraySize;
                         }
-                        else if(a == "BitField")
+                        else if(fieldType == "BitField")
                         {
                             foreach (KeyValuePair<string, JToken> k in (JObject)v[1])
                             {
@@ -200,13 +206,27 @@ namespace MemoryExplorer.Profiles
                                     size = (int)GetEntrySize(k.Value.ToString());
                             }
                         }
-                        entryList.Add(new Tuple<int, string, string, int>(w, name, a, size));
+                        if (GetEntryType(fieldType) != null || size == 1 || size == 2 || size == 4 | size == 8)
+                            entryList.Add(new Tuple<int, string, string, int, bool>(fieldOffset, name, fieldType, size, false));
+                        else
+                        {
+                            entryList.Add(new Tuple<int, string, string, int, bool>(fieldOffset, name, fieldType, size, true));
+                            unmanagedList.Add(fieldOffset);
+                        }
                     }
                     entryList.Sort();
+
                     FieldBuilder field = null;
+                    
                     foreach (var entry in entryList)
                     {
-                        if(GetEntryType(entry.Item3) != null)
+                        if(!entry.Item5 && unmanagedList.Contains(entry.Item1))
+                        {
+                            Debug.WriteLine("Entry: " + entry + " <-- REMOVED");
+                            continue;
+                        }
+                        Debug.WriteLine("Entry: " + entry);
+                        if (GetEntryType(entry.Item3) != null)
                         {
                             field = typeBuilder.DefineField(entry.Item2, GetEntryType(entry.Item3), FieldAttributes.Public);
                             field.SetOffset(entry.Item1);
@@ -239,8 +259,8 @@ namespace MemoryExplorer.Profiles
                         }
                     }
                     Type ptType = typeBuilder.CreateType();
-                    assemblyBuilder.Save(structureName + ".dll");
-                    FileInfo fiMove = new FileInfo(Environment.CurrentDirectory + "\\" + structureName + ".dll");
+                    assemblyBuilder.Save(noUnderscoreVersion + ".dll");
+                    FileInfo fiMove = new FileInfo(Environment.CurrentDirectory + "\\" + noUnderscoreVersion + ".dll");
                     if (fiMove.Exists)
                         fiMove.MoveTo(location);
                     var dll = Assembly.LoadFile(location);

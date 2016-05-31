@@ -53,7 +53,7 @@ namespace MemoryExplorer.Processes
             else
                 _buffer = _dataProvider.ReadMemoryBlock(_virtualAddress, (uint)_structureSize);
 
-            var dll = _profile.GetStructureAssembly("EProcess");
+            var dll = _profile.GetStructureAssembly("_EPROCESS");
             Type t = dll.GetType("liveforensics.EPROCESS");
             //_eprocess = Activator.CreateInstance(t);
             GCHandle pinnedPacket = GCHandle.Alloc(_buffer, GCHandleType.Pinned);

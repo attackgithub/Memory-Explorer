@@ -81,7 +81,7 @@ namespace MemoryExplorer
         {
             if (LoadDriverEx())
                 return true;
-            UnloadDriver();
+            UnloadDriver(true);
             return LoadDriverEx();
         }
 
@@ -116,9 +116,9 @@ namespace MemoryExplorer
             _driverLoaded = true;
             return result;
         }
-        public bool UnloadDriver()
+        public bool UnloadDriver(bool Override=false)
         {
-            if (!_driverLoaded)
+            if (!_driverLoaded && !Override)
                 return true;
             IntPtr procAddress = GetProcAddress(_helperLib, "Version");
             GetVersion ver = (GetVersion)Marshal.GetDelegateForFunctionPointer(procAddress, typeof(GetVersion));
@@ -129,9 +129,7 @@ namespace MemoryExplorer
             StopDriver stop = (StopDriver)Marshal.GetDelegateForFunctionPointer(procAddress, typeof(StopDriver));
             result = stop("pmem");
             if (result == false)
-            {
                 return result;
-            }
             // start driver
             procAddress = GetProcAddress(_helperLib, "UnregisterDriver");
             UnregisterDriver unreg = (UnregisterDriver)Marshal.GetDelegateForFunctionPointer(procAddress, typeof(UnregisterDriver));
