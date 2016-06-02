@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MemoryExplorer.Artifacts
+﻿namespace MemoryExplorer.Artifacts
 {
     public enum ArtifactType
     {
         Unknown = -1,
         Root = 0,
-        Process = 1
+        Process = 1,
+        Folder = 2,
+        Object = 3
     }
     public abstract class ArtifactBase
     {

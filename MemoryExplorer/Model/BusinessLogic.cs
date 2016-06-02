@@ -72,6 +72,10 @@ namespace MemoryExplorer.Model
             await EnumerateObjectTypes();
             DecrementActiveJobs();
 
+            IncrementActiveJobs("Processing Object Tree");
+            await EnumerateObjectTree();
+            DecrementActiveJobs();
+
             IncrementActiveJobs("Processing Pfn Database");
             await LocatePfnDatabase();
             DecrementActiveJobs();
@@ -598,6 +602,33 @@ namespace MemoryExplorer.Model
                 {
                     return;
                 }
+            });
+        }
+        public void EnumerateObjectTreeBody()
+        {
+            try
+            {
+                ObjectTree ot = new ObjectTree(_profile, _dataProvider);
+                List<ObjectTreeRecord> records = ot.Run();
+                foreach (ObjectTreeRecord record in records)
+                {
+                    ObjectHeader oh = new ObjectHeader(_profile, _dataProvider, record.ObjectHeaderVirtualAddress);
+                    string name = _profile.GetObjectName(oh.TypeInfo);
+                    if (oh.HeaderNameInfo != null)
+                        name += ("\t" + oh.HeaderNameInfo.Name);
+                    Debug.WriteLine("[" + record.Parent + "][" + record.Index + "]" + record.ObjectHeaderVirtualAddress.ToString("X08") + " (0x" + oh.PhysicalAddress.ToString("X08") + ")(p)\t" + name);
+                }
+            }
+            catch (Exception ex)
+            {
+                AddDebugMessage("EnumerateObjectTree Error: " + ex.Message);
+            }
+        }
+        async private Task EnumerateObjectTree()
+        {
+            await Task.Run(() =>
+            {
+                EnumerateObjectTreeBody();
             });
         }
         async private Task LocatePfnDatabase()

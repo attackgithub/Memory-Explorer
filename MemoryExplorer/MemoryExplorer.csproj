@@ -98,6 +98,8 @@
     <Compile Include="Address\PageTableEntry.cs" />
     <Compile Include="Address\PxeBase.cs" />
     <Compile Include="Address\SoftwarePageTableEntry.cs" />
+    <Compile Include="Artifacts\FolderArtifact.cs" />
+    <Compile Include="Artifacts\ObjectArtifact.cs" />
     <Compile Include="Artifacts\ProcessArtifact.cs" />
     <Compile Include="Artifacts\RootArtifact.cs" />
     <Compile Include="Artifacts\ArtifactBase.cs" />
@@ -211,6 +213,7 @@
     <Compile Include="Model\Common.cs" />
     <Compile Include="Model\InfoTree.cs" />
     <Compile Include="Tools\Handles.cs" />
+    <Compile Include="Tools\ObjectTree.cs" />
     <Compile Include="Worker\Job.cs" />
     <Compile Include="Model\ProcessLists.cs" />
     <Compile Include="Model\ProcessProcesses.cs" />

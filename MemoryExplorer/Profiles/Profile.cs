@@ -735,5 +735,14 @@ namespace MemoryExplorer.Profiles
             }
             catch { throw new System.ArgumentException("Entry Isn't Unicode"); }
         }
+        public string GetObjectName(ulong type)
+        {
+            foreach (ObjectTypeRecord item in _objectTypeList)
+            {
+                if (item.Index == type)
+                    return item.Name;
+            }
+            return null;
+        }
     }
 }
