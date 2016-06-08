@@ -10,17 +10,11 @@ namespace MemoryExplorer.ModelObjects
 {
     public class PoolHeader : StructureBase
     {
-        public PoolHeader(Profile profile, DataProviderBase dataProvider, ulong physicalAddress) : base(profile, dataProvider, 0)
+        public PoolHeader(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
         {
             _physicalAddress = physicalAddress;
-            _is64 = (_profile.Architecture == "AMD64");
-            if (_physicalAddress == 0)
-                throw new ArgumentException("Error - Address is ZERO for _POOL_HEADER");
-            _structureSize = (uint)_profile.GetStructureSize("_POOL_HEADER");
-            if (_structureSize == -1)
-                throw new ArgumentException("Error - Profile didn't contain a definition for _POOL_HEADER");
-            _buffer = _dataProvider.ReadPhysicalMemory(_physicalAddress, (uint)_structureSize);
-            _structure = _profile.GetEntries("_POOL_HEADER");
+            Overlay("_POOL_HEADER");
+            _structure = _profile.GetEntries("_POOL_HEADER");            
         }
         public ulong BlockSize
         {
@@ -71,7 +65,7 @@ namespace MemoryExplorer.ModelObjects
             get
             {
                 Structure s = GetStructureMember("PoolTag");
-                return Encoding.UTF8.GetString(_buffer, (int)s.Offset, (int)s.Size);
+                return Encoding.UTF8.GetString(_buffer, (int)s.Offset, (int)s.Size).TrimEnd(new char[] { ' ' });
             }
         }
         public ulong PoolIndex

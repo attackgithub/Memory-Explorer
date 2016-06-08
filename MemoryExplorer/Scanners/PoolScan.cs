@@ -48,7 +48,7 @@ namespace MemoryExplorer.Scanners
                 foreach (ulong hit in hitList)
                 {
                     ulong realHit = hit - tagOffset;
-                    PoolHeader h = new PoolHeader(_profile, _dataProvider, realHit);
+                    PoolHeader h = new PoolHeader(_profile, _dataProvider, physicalAddress: realHit);
                     var bs = h.BlockSize;
                     var pt = h.PoolType;
                     var tag = h.Tag;

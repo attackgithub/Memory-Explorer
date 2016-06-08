@@ -553,6 +553,15 @@ namespace MemoryExplorer.Model
             ProcessArtifact pa = AddArtifact(ArtifactType.Process, process.ProcessName, false, _rootArtifact) as ProcessArtifact;
             pa.LinkedProcess = process;            
         }
+        public ProcessInfo FindProcess(ulong pid)
+        {
+            foreach (ProcessInfo item in _processList)
+            {
+                if (item.Pid == pid)
+                    return item;
+            }
+            return null;
+        }
         #endregion
         #region cleanup
         private void BigCleanUp()

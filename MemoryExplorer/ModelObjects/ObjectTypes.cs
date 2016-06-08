@@ -4,6 +4,7 @@ using MemoryExplorer.Profiles;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -63,33 +64,38 @@ namespace MemoryExplorer.ModelObjects
                 ptr = ReadUInt64((int)(pAddr & 0xfff));
             else
                 ptr = ReadUInt32((int)(pAddr & 0xfff));
-            //ulong pAddress = kernelAS.vtop(ptr);
             ObjectType ot = new ObjectType(_profile, _dataProvider, ptr);
-
-            int count = (int)ot.TotalNumberOfObjects;
-            for (int i = 0; i < count; i++)
+            try
             {
-                if(_is64)
-                    startOffset = _profile.KernelBaseAddress + indexTableOffset + (uint)(i * 8);
-                else
-                    startOffset = _profile.KernelBaseAddress + indexTableOffset + (uint)(i * 4);
-                pAddr = kernelAS.vtop(startOffset, _dataProvider.IsLive);
-                _buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 1);
-                if (_is64)
-                    ptr = ReadUInt64((int)(pAddr & 0xfff));
-                else
-                    ptr = ReadUInt32((int)(pAddr & 0xfff));
-                //pAddress = kernelAS.vtop(ptr);
-                ot = new ObjectType(_profile, _dataProvider, ptr);
-                ObjectTypeRecord otr = new ObjectTypeRecord();
-                otr.Name = ot.Name;
-                otr.Index = ot.Index;
-                if (otr.Index == 0 || otr.Name == "")
-                    continue;
-                _objectMap.ObjectTypeRecords.Add(otr);
+                int count = (int)ot.TotalNumberOfObjects;
+                for (int i = 0; i < count; i++)
+                {
+                    if (_is64)
+                    {
+                        startOffset = _profile.KernelBaseAddress + indexTableOffset + (uint)(i * 8);
+                        ptr = (BitConverter.ToUInt64(_dataProvider.ReadMemoryBlock(startOffset, 8), 0) & 0xffffffffffff);
+                    }
+                    else
+                    {
+                        startOffset = _profile.KernelBaseAddress + indexTableOffset + (uint)(i * 4);
+                        ptr = (BitConverter.ToUInt32(_dataProvider.ReadMemoryBlock(startOffset, 4), 0));
+                    }
+                    ot = new ObjectType(_profile, _dataProvider, ptr);
+                    ObjectTypeRecord otr = new ObjectTypeRecord();
+                    otr.Name = ot.Name;
+                    otr.Index = ot.Index;
+                    if (otr.Index == 0 || otr.Name == "")
+                        continue;
+                    _objectMap.ObjectTypeRecords.Add(otr);
+                }
+                if (!dataProvider.IsLive)
+                    PersistObjectMap(_objectMap, _dataProvider.CacheFolder + "\\object_type_map.gz");
             }
-            if (!dataProvider.IsLive)
-                PersistObjectMap(_objectMap, _dataProvider.CacheFolder + "\\object_type_map.gz");
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error: " + ex.Message);
+            }
+            
         }
         public List<ObjectTypeRecord> Records { get { return _objectMap.ObjectTypeRecords; } }
 

@@ -33,7 +33,7 @@ namespace MemoryExplorer.Tools
         public ObjectTree(Profile profile, DataProviderBase dataProvider) : base(profile, dataProvider)
         {
             // check pre-reqs
-            if (_profile == null || _profile.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
+            if (_profile == null || _profile.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null || _dataProvider == null || _dataProvider.CacheFolder == "")
                 throw new ArgumentException("Missing Prerequisites");
             _objectMap = new ObjectTreeMap();
             _objectMap.ObjectTreeRecords = new List<ObjectTreeRecord>();
@@ -41,6 +41,7 @@ namespace MemoryExplorer.Tools
             _objectMap.ObjectHeaderSize = (ulong)oh.Size;
             _objectMap.ObjectDirectoryEntrySize = (uint)_profile.GetStructureSize("_OBJECT_DIRECTORY_ENTRY");
             _objectMap.ObjectDirectorySize = (uint)_profile.GetStructureSize("_OBJECT_DIRECTORY");
+            
 
         }
         public List<ObjectTreeRecord> Run()
@@ -107,15 +108,16 @@ namespace MemoryExplorer.Tools
         }
         private void ProcessDirectory(ulong tableAddress, int parent)
         {
-            dynamic objectDirectory;
+            ObjectDirectory objectDirectory = new ObjectDirectory(_profile, _dataProvider, virtualAddress: tableAddress);
             
-            byte[] buffer = _dataProvider.ReadMemoryBlock(tableAddress, _objectMap.ObjectDirectorySize);
-            var dll = _profile.GetStructureAssembly("_OBJECT_DIRECTORY");
-            Type t = dll.GetType("liveforensics.OBJECT_DIRECTORY");
-            GCHandle pinnedPacket = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            objectDirectory = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0), t);
-            pinnedPacket.Free();
-            byte[] hashBucket = objectDirectory.HashBuckets;
+            //byte[] buffer = _dataProvider.ReadMemoryBlock(tableAddress, _objectMap.ObjectDirectorySize);
+            //var dll = _profile.GetStructureAssembly("_OBJECT_DIRECTORY");
+            //Type t = dll.GetType("liveforensics.OBJECT_DIRECTORY");
+            //GCHandle pinnedPacket = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+            //objectDirectory = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0), t);
+            //pinnedPacket.Free();
+
+            byte[] hashBucket = objectDirectory.Members.HashBuckets;
             int count = hashBucket.Length / 8;
 
             for (int i = 0; i < count; i++)
@@ -128,27 +130,27 @@ namespace MemoryExplorer.Tools
         }
         private void BuildTree(ulong ptr, int parent)
         {
-            dynamic objectDirectoryEntry;            
+            ObjectDirectoryEntry objectDirectoryEntry = new ObjectDirectoryEntry(_profile, _dataProvider, virtualAddress: ptr);            
             //uint objectDirectoryEntrySize = (uint)_profile.GetStructureSize("_OBJECT_DIRECTORY_ENTRY");
-            var dll = _profile.GetStructureAssembly("_OBJECT_DIRECTORY_ENTRY");
-            Type t = dll.GetType("liveforensics.OBJECT_DIRECTORY_ENTRY");
-            byte[] buffer = _dataProvider.ReadMemoryBlock(ptr, _objectMap.ObjectDirectoryEntrySize);
-            GCHandle pinnedPacket = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            objectDirectoryEntry = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0), t);
-            pinnedPacket.Free();
-            ulong addr = (objectDirectoryEntry.Object - _objectMap.ObjectHeaderSize) & 0xffffffffffff;
+            //var dll = _profile.GetStructureAssembly("_OBJECT_DIRECTORY_ENTRY");
+            //Type t = dll.GetType("liveforensics.OBJECT_DIRECTORY_ENTRY");
+            //byte[] buffer = _dataProvider.ReadMemoryBlock(ptr, _objectMap.ObjectDirectoryEntrySize);
+            //GCHandle pinnedPacket = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+            //objectDirectoryEntry = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0), t);
+            //pinnedPacket.Free();
+            ulong addr = (objectDirectoryEntry.Members.Object - _objectMap.ObjectHeaderSize) & 0xffffffffffff;
             ObjectHeader oh = new ObjectHeader(_profile, _dataProvider, addr);
             string name = _profile.GetObjectName(oh.TypeInfo);
             int index = _index++;
             if(name == "Directory")
             {
-                ProcessDirectory(objectDirectoryEntry.Object & 0xffffffffffff, index);
+                ProcessDirectory(objectDirectoryEntry.Members.Object & 0xffffffffffff, index);
             }
             //if (oh.HeaderNameInfo != null)
             //    name += ("\t" + oh.HeaderNameInfo.Name);
             //Debug.WriteLine("[" + parent + "][" + index + "]" + addr.ToString("X08") + " (0x" + oh.PhysicalAddress.ToString("X08") + ")(p)\t" + name);
             _objectMap.ObjectTreeRecords.Add(new ObjectTreeRecord() { ObjectHeaderVirtualAddress = addr, Parent = parent, Index = index });
-            ulong chainlinkPtr = (objectDirectoryEntry.ChainLink) & 0xffffffffffff;
+            ulong chainlinkPtr = (objectDirectoryEntry.Members.ChainLink) & 0xffffffffffff;
             if (chainlinkPtr != 0)
             {
                 BuildTree(chainlinkPtr, parent);

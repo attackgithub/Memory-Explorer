@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Reflection;
 using Newtonsoft.Json.Linq;
+using MemoryExplorer.Model;
 
 namespace MemoryExplorer.Profiles.Tests
 {
@@ -15,11 +16,12 @@ namespace MemoryExplorer.Profiles.Tests
     {
         private static Profile _profile;
         private static Dictionary<string, JToken> _profileDictionary;
+        private static DataModel _model;
 
         [ClassInitialize()]
         public static void ClassInit(TestContext context)
         {
-            _profile = new Profile(@"D67FECD43A49492C87EC845789255D641.gz", @"E:\Forensics\MxProfileCache", @"c:\temp");
+            _profile = new Profile(@"D67FECD43A49492C87EC845789255D641.gz", @"E:\Forensics\MxProfileCache", @"c:\temp", _model);
             _profileDictionary = _profile.ProfileDictionary;
         }
         [ClassCleanup()]

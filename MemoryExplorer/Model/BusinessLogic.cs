@@ -76,33 +76,36 @@ namespace MemoryExplorer.Model
             await EnumerateObjectTree();
             DecrementActiveJobs();
 
-            IncrementActiveJobs("Processing Pfn Database");
-            await LocatePfnDatabase();
-            DecrementActiveJobs();
+            //IncrementActiveJobs("Processing Pfn Database");
+            //await LocatePfnDatabase();
+            //DecrementActiveJobs();
 
             IncrementActiveJobs("Process List One");
             await PsList_Method1();
             DecrementActiveJobs();
             OrderProcessArtifacts();
 
-            IncrementActiveJobs("Process List Two");
-            await PsList_Method2();
-            DecrementActiveJobs();
-            OrderProcessArtifacts();
+            //IncrementActiveJobs("Process List Two");
+            //await PsList_Method2();
+            //DecrementActiveJobs();
+            //OrderProcessArtifacts();
 
-            IncrementActiveJobs("Process List Three");
-            await PsList_Method3();
-            DecrementActiveJobs();
-            OrderProcessArtifacts();
+            //IncrementActiveJobs("Process List Three");
+            //await PsList_Method3();
+            //DecrementActiveJobs();
+            //OrderProcessArtifacts();
 
-            IncrementActiveJobs("Process List Four");
-            await PsList_Method4();
-            DecrementActiveJobs();
-            OrderProcessArtifacts();
+            //IncrementActiveJobs("Process List Four");
+            //await PsList_Method4();
+            //DecrementActiveJobs();
+            //OrderProcessArtifacts();
 
-            IncrementActiveJobs("Driver Scan");
-            await ScanForDrivers();
-            DecrementActiveJobs();
+            VadInfo vi = new VadInfo(_profile, _dataProvider, 4);
+            vi.Run();
+
+            //IncrementActiveJobs("Driver Scan");
+            //await ScanForDrivers();
+            //DecrementActiveJobs();
 
             //ProcessProcesses();
         }
@@ -201,7 +204,7 @@ namespace MemoryExplorer.Model
                                     helper.Name = ProfileName;
                                     helper.Title = "Profile Name";
                                     AddToInfoDictionary("ProfileName", helper);
-                                    _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache", _cacheLocation); // TO DO - make this a user option when you get around to writing the settings dialog
+                                    _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache", _cacheLocation, this); // TO DO - make this a user option when you get around to writing the settings dialog
                                     Architecture = _profile.Architecture;
                                     Architecture = _profile.Architecture;
                                     helper = new InfoHelper();
@@ -273,7 +276,7 @@ namespace MemoryExplorer.Model
                                     helper.Name = ProfileName;
                                     helper.Title = "Profile Name";
                                     AddToInfoDictionary("ProfileName", helper);
-                                    _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache", _cacheLocation); // TO DO - make this a user option when you get around to writing the settings dialog
+                                    _profile = new Profile(ProfileName, @"E:\Forensics\MxProfileCache", _cacheLocation, this); // TO DO - make this a user option when you get around to writing the settings dialog
                                     Architecture = _profile.Architecture;
                                     helper = new InfoHelper();
                                     helper.Type = InfoHelperType.InfoDictionary;

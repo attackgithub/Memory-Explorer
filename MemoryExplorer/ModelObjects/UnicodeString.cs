@@ -3,6 +3,7 @@ using MemoryExplorer.Data;
 using MemoryExplorer.Profiles;
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace MemoryExplorer.ModelObjects
@@ -12,7 +13,6 @@ namespace MemoryExplorer.ModelObjects
         ulong _length;
         ulong _maximumLength;
         ulong _pointerBuffer;
-        private AddressBase _addressSpace;
         private string _name = "";
 
         public string Name { get { return _name; } }
@@ -64,6 +64,22 @@ namespace MemoryExplorer.ModelObjects
                 Debug.WriteLine("Unicode error: " + ex.Message);
             }
             
+        }
+        public UnicodeString(Profile profile, DataProviderBase dataProvider, byte[] buffer) : base(profile, dataProvider, 0)
+        {
+            var dll = _profile.GetStructureAssembly("_UNICODE_STRING");
+            Type t = dll.GetType("liveforensics.UNICODE_STRING");
+            GCHandle pinedPacket = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+            _members = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0), t);
+            pinedPacket.Free();
+            _maximumLength = _members.MaximumLength;
+            _length = _members.Length;
+            _pointerBuffer = _members.Buffer & 0xffffffffffff;
+            if(_pointerBuffer != 0 && _length != 0)
+            {
+                byte[] nameBuffer = _dataProvider.ReadMemoryBlock(_pointerBuffer, (uint)_length);
+                _name = Encoding.Unicode.GetString(nameBuffer, 0, (int)_length);
+            }
         }
     }
 }

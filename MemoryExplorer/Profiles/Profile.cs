@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Address;
+using MemoryExplorer.Model;
 using MemoryExplorer.ModelObjects;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -32,6 +33,7 @@ namespace MemoryExplorer.Profiles
         private ulong _poolAlign = 0;
         private Dictionary<string, Assembly> _structureDictionary = new Dictionary<string, Assembly>();
         private string _cacheLocation = "";
+        private DataModel _model;
 
         public List<ObjectTypeRecord> ObjectTypeList
         {
@@ -55,14 +57,16 @@ namespace MemoryExplorer.Profiles
         }
         public string Architecture { get { return _architecture; } }
         public bool FileActive { get { return _fileActive; } }
+        public DataModel Model { get { return _model; } }
 
         public Dictionary<string, JToken> ProfileDictionary { get { return _profileDictionary; } }
 
-        public Profile(string sourceFile, string profileRoot, string cacheLocation)
+        public Profile(string sourceFile, string profileRoot, string cacheLocation, DataModel model)
         {
             _requestedImage = sourceFile;
             _profileRoot = profileRoot;
             _cacheLocation = cacheLocation;
+            _model = model;
             if (!_cacheLocation.EndsWith("\\"))
                 _cacheLocation += "\\";
             if (!_profileRoot.EndsWith("\\"))
@@ -222,10 +226,10 @@ namespace MemoryExplorer.Profiles
                     {
                         if(!entry.Item5 && unmanagedList.Contains(entry.Item1))
                         {
-                            Debug.WriteLine("Entry: " + entry + " <-- REMOVED");
+                            //Debug.WriteLine("Entry: " + entry + " <-- REMOVED");
                             continue;
                         }
-                        Debug.WriteLine("Entry: " + entry);
+                        //Debug.WriteLine("Entry: " + entry);
                         if (GetEntryType(entry.Item3) != null)
                         {
                             field = typeBuilder.DefineField(entry.Item2, GetEntryType(entry.Item3), FieldAttributes.Public);
@@ -737,10 +741,13 @@ namespace MemoryExplorer.Profiles
         }
         public string GetObjectName(ulong type)
         {
-            foreach (ObjectTypeRecord item in _objectTypeList)
+            lock (AccessLock)
             {
-                if (item.Index == type)
-                    return item.Name;
+                foreach (ObjectTypeRecord item in _objectTypeList)
+                {
+                    if (item.Index == type)
+                        return item.Name;
+                }
             }
             return null;
         }
