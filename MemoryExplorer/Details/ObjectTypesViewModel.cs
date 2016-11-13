@@ -16,7 +16,6 @@ namespace MemoryExplorer.Details
                     return null;
                 if (_dataModel.ObjectTypeList.Count == 0)
                     return null;
-                return null;
                 lock(_dataModel.AccessLock)
                 {
                     var r =

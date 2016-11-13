@@ -30,6 +30,12 @@ namespace MemoryExplorerTests
             _dataModel = new DataModel(false);
             _dataModel.MemoryImageFilename = @"E:\Forensics\MxProjects\win8\win8.1.vmem";
             _dataModel.DataProvider = new ImageDataProvider(_dataModel, _cacheLocation);
+            string imageMd5 = _dataModel.GetMD5HashFromFile(_dataModel.MemoryImageFilename);
+            FileInfo fi2 = new FileInfo(_dataModel.MemoryImageFilename);
+            _dataModel.CacheLocation = fi2.Directory.FullName + "\\[" + fi2.Name + "]" + imageMd5;
+            DirectoryInfo di2 = new DirectoryInfo(_dataModel.CacheLocation);
+            if (!di2.Exists)
+                di2.Create();
         }
         [ClassCleanup()]
         public static void ClassCleanup()
@@ -85,7 +91,7 @@ namespace MemoryExplorerTests
             Assert.IsNotNull(_kernelAddressSpace);
             Assert.IsTrue(_kernelAddressSpace.Dtb == 0x1aa000);
             Assert.IsNotNull(_kernelAddressSpace.MemoryMap);
-            Assert.IsTrue(_kernelAddressSpace.MemoryMap.MemoryRecords.Count == 0x9634e);
+            Assert.IsTrue(_kernelAddressSpace.MemoryMap.MemoryRecords.Count == 0x870e0);
             Assert.IsTrue(_kernelAddressSpace.MemoryMap.MemoryRecords[4].Flags == 0x901);
             Assert.IsFalse(_kernelAddressSpace.MemoryMap.MemoryRecords[4].IsSoftware);
             Assert.IsTrue(_kernelAddressSpace.MemoryMap.MemoryRecords[4].PhysicalAddress == 0x459000);
@@ -135,6 +141,7 @@ namespace MemoryExplorerTests
             _dataModel.DataProvider.ActiveAddressSpace = _kernelAddressSpace;
             ObjectTypes objectTypes = new ObjectTypes(_dataModel.DataProvider, prof);
             Assert.IsNotNull(objectTypes);
+            Assert.IsTrue(objectTypes.Records.Count == 0x2e);
         }
     }
 }

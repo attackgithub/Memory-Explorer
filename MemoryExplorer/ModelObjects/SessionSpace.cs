@@ -8,6 +8,8 @@ namespace MemoryExplorer.ModelObjects
     {
         public SessionSpace(Profile profile, DataProviderBase dataProvider, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
         {
+            Overlay("_MM_SESSION_SPACE");
+
             if (_virtualAddress == 0)
                 throw new ArgumentException("Error - Offset is ZERO for _MM_SESSION_SPACE");
             _is64 = (_profile.Architecture == "AMD64");

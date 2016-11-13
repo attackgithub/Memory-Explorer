@@ -131,7 +131,7 @@ namespace MemoryExplorer.Model
             get { if (_profile == null) return null;  return _profile.ObjectTypeList; }
             //set { _profile.ObjectTypeList = value; NotifyPropertyChange("ObjectTypes"); }
         }
-        public string CacheLocation { get { return _cacheLocation; } }
+        public string CacheLocation { get { return _cacheLocation; } set { _cacheLocation = value; } }
         public List<string> Mru
         {
             get { return _mru; }
@@ -450,7 +450,7 @@ namespace MemoryExplorer.Model
                 ProcessInfoDictionary = _tempInfo;
             }
         }
-        private string GetMD5HashFromFile(string filename)
+        public string GetMD5HashFromFile(string filename)
         {
             using (var md5 = new MD5CryptoServiceProvider())
             {
@@ -521,7 +521,7 @@ namespace MemoryExplorer.Model
             {
                 _profile.ObjectTypeList.Add(record);
             }
-            NotifyPropertyChange("ObjectTypeList"); // this forces the set property / INotifyPropertyCHange
+            
         }
         public void AddDebugMessage(string message)
         {

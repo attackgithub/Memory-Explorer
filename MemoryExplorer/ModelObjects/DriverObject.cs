@@ -14,6 +14,10 @@ namespace MemoryExplorer.ModelObjects
         string _driverName;
         string _name;
         DriverExtension _driverExtension = null;
+        private ulong _driverExtensionVirtualAddress;
+        private ulong _driverSize;
+        private ulong _driverStart;
+
 
         public DriverObject(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
         {            
@@ -33,70 +37,77 @@ namespace MemoryExplorer.ModelObjects
 
         private void Initialise()
         {
-            _is64 = (_profile.Architecture == "AMD64");
-            AddressBase addressSpace = _dataProvider.ActiveAddressSpace;
-            if (_virtualAddress != 0)
-                _physicalAddress = addressSpace.vtop(_virtualAddress);
-            if (_physicalAddress == 0)
-                throw new ArgumentException("Error - Address is ZERO for _DRIVER_OBJECT");
-            //_physicalAddress = _dataProvider.ActiveAddressSpace.vtop(_virtualAddress, _dataProvider.IsLive);
+            Overlay("_DRIVER_OBJECT");
+            byte[] dnBuffer = Members.DriverName;
+            UnicodeString us = new UnicodeString(_profile, _dataProvider, dnBuffer);
+            _driverName = us.Name;
+            _driverExtensionVirtualAddress = Members.DriverExtension & 0xffffffffffff;
+            if(_driverExtensionVirtualAddress != 0)
+                _driverExtension = new DriverExtension(_profile, _dataProvider, virtualAddress: _driverExtensionVirtualAddress);
+            _driverSize = Members.DriverSize;
+            _driverStart = Members.DriverStart & 0xffffffffffff;
 
-            _structureSize = (uint)_profile.GetStructureSize("_DRIVER_OBJECT");
-            if (_structureSize == -1)
-                throw new ArgumentException("Error - Profile didn't contain a definition for _DRIVER_OBJECT");
-            if (_virtualAddress == 0)
-                _buffer = _dataProvider.ReadPhysicalMemory(_physicalAddress, (uint)_structureSize);
-            else
-                _buffer = _dataProvider.ReadMemoryBlock(_virtualAddress, (uint)_structureSize);
-            _structure = _profile.GetEntries("_DRIVER_OBJECT");
-            Structure s = GetStructureMember("DriverName");
-            if (s.EntryType == "_UNICODE_STRING")
-            {
-                UnicodeString us = new UnicodeString(_profile, _dataProvider, physicalAddress: _physicalAddress + s.Offset);
-                _driverName = us.Name;
-            }
-            // get the driver extension
-            if (DriverExtensionVirtualAddress != 0)
-            {
-                _driverExtension = new DriverExtension(_profile, _dataProvider, physicalAddress: _physicalAddress + (ulong)_structureSize);
-            }
+
+            //_is64 = (_profile.Architecture == "AMD64");
+            //AddressBase addressSpace = _dataProvider.ActiveAddressSpace;
+            //if (_virtualAddress != 0)
+            //    _physicalAddress = addressSpace.vtop(_virtualAddress);
+            //if (_physicalAddress == 0)
+            //    throw new ArgumentException("Error - Address is ZERO for _DRIVER_OBJECT");
+            ////_physicalAddress = _dataProvider.ActiveAddressSpace.vtop(_virtualAddress, _dataProvider.IsLive);
+
+            //_structureSize = (uint)_profile.GetStructureSize("_DRIVER_OBJECT");
+            //if (_structureSize == -1)
+            //    throw new ArgumentException("Error - Profile didn't contain a definition for _DRIVER_OBJECT");
+            //if (_virtualAddress == 0)
+            //    _buffer = _dataProvider.ReadPhysicalMemory(_physicalAddress, (uint)_structureSize);
+            //else
+            //    _buffer = _dataProvider.ReadMemoryBlock(_virtualAddress, (uint)_structureSize);
+            //_structure = _profile.GetEntries("_DRIVER_OBJECT");
+            //Structure s = GetStructureMember("DriverName");
+            //if (s.EntryType == "_UNICODE_STRING")
+            //{
+            //    UnicodeString us = new UnicodeString(_profile, _dataProvider, physicalAddress: _physicalAddress + s.Offset);
+            //    _driverName = us.Name;
+            //}
+            //// get the driver extension
+            //if (DriverExtensionVirtualAddress != 0)
+            //{
+            //    _driverExtension = new DriverExtension(_profile, _dataProvider, physicalAddress: _physicalAddress + (ulong)_structureSize);
+            //}
         }
         public ulong DriverSize
         {
             get
             {
-                Structure s = GetStructureMember("DriverSize");
-                return (BitConverter.ToUInt64(_buffer, (int)s.Offset) & 0xffffffffffff);
+                return _driverSize;
             }
         }
         public ulong DriverStartPointer
         {
             get
             {
-                Structure s = GetStructureMember("DriverStart");
-                return (BitConverter.ToUInt64(_buffer, (int)s.Offset) & 0xffffffffffff);
+                return _driverStart;
             }
         }
         public ulong DriverStartPhysicalAddress
         {
             get
             {
-                return _dataProvider.ActiveAddressSpace.vtop(DriverStartPointer);
+                return _dataProvider.ActiveAddressSpace.vtop(_driverStart);
             }
         }
         public ulong DriverExtensionVirtualAddress
         {
             get
             {
-                Structure s = GetStructureMember("DriverExtension");
-                return (BitConverter.ToUInt64(_buffer, (int)s.Offset) & 0xffffffffffff);
+                return _driverExtensionVirtualAddress;
             }
         }
         public DriverExtension DriverExtension { get { return _driverExtension; } }
         public ulong HandleCount { get { return _header.HandleCount; } }
         public ulong PointerCount { get { return _header.PointerCount; } }
         public string DriverName { get { return _driverName; } }
-        public ulong PhysicalAddress { get { return _physicalAddress; } }
         public string Name
         {
             get

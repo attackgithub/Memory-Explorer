@@ -159,7 +159,7 @@ namespace MemoryExplorer.Profiles
             AssemblyName assemblyName = new AssemblyName(noUnderscoreVersion + "Assembly");
             AssemblyBuilder assemblyBuilder = myDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Save);
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(noUnderscoreVersion + "Module", noUnderscoreVersion + ".dll");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("liveforensics." + noUnderscoreVersion, TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.ExplicitLayout | TypeAttributes.BeforeFieldInit | TypeAttributes.AnsiClass, typeof(ValueType), PackingSize.Size1);
+            TypeBuilder typeBuilder = moduleBuilder.DefineType("liveforensics." + noUnderscoreVersion, TypeAttributes.Public /*| TypeAttributes.Sealed*/ | TypeAttributes.ExplicitLayout /*| TypeAttributes.BeforeFieldInit*/ | TypeAttributes.AnsiClass, typeof(ValueType), PackingSize.Size1);
             List<Tuple<int, string, string, int, bool>> entryList = new List<Tuple<int, string, string, int, bool>>();
             FileInfo fi = new FileInfo(_profileRoot + @"v1.0\nt\GUID\" + _requestedImage);
             if(fi.Exists)
@@ -210,6 +210,14 @@ namespace MemoryExplorer.Profiles
                                     size = (int)GetEntrySize(k.Value.ToString());
                             }
                         }
+                        else if(fieldType == "UnicodeString")
+                        {
+                            foreach (KeyValuePair<string, JToken> k in (JObject)v[1])
+                            {
+                                if (k.Key == "length")
+                                    size = ((int)k.Value) * 2;
+                            }
+                        }
                         if (GetEntryType(fieldType) != null || size == 1 || size == 2 || size == 4 | size == 8)
                             entryList.Add(new Tuple<int, string, string, int, bool>(fieldOffset, name, fieldType, size, false));
                         else
@@ -226,40 +234,54 @@ namespace MemoryExplorer.Profiles
                     {
                         if(!entry.Item5 && unmanagedList.Contains(entry.Item1))
                         {
-                            //Debug.WriteLine("Entry: " + entry + " <-- REMOVED");
+                            Debug.WriteLine("Entry: " + entry + " <-- REMOVED");
                             continue;
                         }
-                        //Debug.WriteLine("Entry: " + entry);
+                        Debug.WriteLine("Entry: " + entry);
                         if (GetEntryType(entry.Item3) != null)
                         {
                             field = typeBuilder.DefineField(entry.Item2, GetEntryType(entry.Item3), FieldAttributes.Public);
                             field.SetOffset(entry.Item1);
+                            Debug.WriteLine("[FieldOffset(" + entry.Item1 + ")]");
+                            Debug.WriteLine("public " + GetEntryType(entry.Item3).ToString() + " " + entry.Item2 + ";");
                         }
                         else if(entry.Item4 == 1)
                         {
                             field = typeBuilder.DefineField(entry.Item2, typeof(byte), FieldAttributes.Public);
                             field.SetOffset(entry.Item1);
+                            Debug.WriteLine("[FieldOffset(" + entry.Item1 + ")]");
+                            Debug.WriteLine("public byte " + entry.Item2 + ";");
                         }
                         else if (entry.Item4 == 2)
                         {
                             field = typeBuilder.DefineField(entry.Item2, typeof(UInt16), FieldAttributes.Public);
                             field.SetOffset(entry.Item1);
+                            Debug.WriteLine("[FieldOffset(" + entry.Item1 + ")]");
+                            Debug.WriteLine("public UInt16 " + entry.Item2 + ";");
                         }
                         else if (entry.Item4 == 4)
                         {
                             field = typeBuilder.DefineField(entry.Item2, typeof(UInt32), FieldAttributes.Public);
                             field.SetOffset(entry.Item1);
+                            Debug.WriteLine("[FieldOffset(" + entry.Item1 + ")]");
+                            Debug.WriteLine("public UInt32 " + entry.Item2 + ";");
                         }
                         else if (entry.Item4 == 8)
                         {
                             field = typeBuilder.DefineField(entry.Item2, typeof(UInt64), FieldAttributes.Public);
                             field.SetOffset(entry.Item1);
+                            Debug.WriteLine("[FieldOffset(" + entry.Item1 + ")]");
+                            Debug.WriteLine("public UInt64 " + entry.Item2 + ";");
                         }
                         else
                         {
                             field = typeBuilder.DefineField(entry.Item2, typeof(byte[]), FieldAttributes.Public);
                             field.SetMarshal(UnmanagedMarshal.DefineByValArray(entry.Item4));
                             field.SetOffset(entry.Item1);
+                            Debug.WriteLine("[FieldOffset(" + entry.Item1 + ")]");
+                            Debug.WriteLine("[MarshalAs(UnmanagedType.ByValArray, SizeConst = " + entry.Item4 + ")]");
+                            Debug.WriteLine("public byte[] " + entry.Item2 + ";");
+                            /// [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
                         }
                     }
                     Type ptType = typeBuilder.CreateType();
@@ -300,10 +322,14 @@ namespace MemoryExplorer.Profiles
                     case "long":
                         return typeof(Int32);
                     case "unsigned long long":
-                    case "Pointer":
                         return typeof(UInt64);
                     case "long long":
                         return typeof(Int64);
+                    case "Pointer":
+                        if (Architecture == "AMD64")
+                            return typeof(UInt64);
+                        else
+                            return typeof(UInt32);
                     default:
                         return null;
                 }

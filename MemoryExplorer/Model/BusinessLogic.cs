@@ -85,27 +85,27 @@ namespace MemoryExplorer.Model
             DecrementActiveJobs();
             OrderProcessArtifacts();
 
-            //IncrementActiveJobs("Process List Two");
-            //await PsList_Method2();
-            //DecrementActiveJobs();
-            //OrderProcessArtifacts();
+            IncrementActiveJobs("Process List Two");
+            await PsList_Method2();
+            DecrementActiveJobs();
+            OrderProcessArtifacts();
 
-            //IncrementActiveJobs("Process List Three");
-            //await PsList_Method3();
-            //DecrementActiveJobs();
-            //OrderProcessArtifacts();
+            IncrementActiveJobs("Process List Three");
+            await PsList_Method3();
+            DecrementActiveJobs();
+            OrderProcessArtifacts();
 
-            //IncrementActiveJobs("Process List Four");
-            //await PsList_Method4();
-            //DecrementActiveJobs();
-            //OrderProcessArtifacts();
+            IncrementActiveJobs("Process List Four");
+            await PsList_Method4();
+            DecrementActiveJobs();
+            OrderProcessArtifacts();
 
             VadInfo vi = new VadInfo(_profile, _dataProvider, 4);
             vi.Run();
 
-            //IncrementActiveJobs("Driver Scan");
-            //await ScanForDrivers();
-            //DecrementActiveJobs();
+            IncrementActiveJobs("Driver Scan");
+            await ScanForDrivers();
+            DecrementActiveJobs();
 
             //ProcessProcesses();
         }
@@ -598,6 +598,7 @@ namespace MemoryExplorer.Model
                         {
                             AddObjectType(record);
                         }
+                        NotifyPropertyChange("ObjectTypeList"); // this forces the set property / INotifyPropertyCHange
                     }
                     return;
                 }
