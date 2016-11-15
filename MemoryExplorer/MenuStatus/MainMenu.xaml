@@ -31,6 +31,7 @@
                 </MenuItem>
                 <MenuItem Header="_View">
                     <MenuItem Header="_Data Interpreter" IsCheckable="True" IsChecked="{Binding IsInterpreterActive}"/>
+                    <MenuItem Header="_Preferences" Command="{Binding PreferenceRequest}"/>
                 </MenuItem>
             </Menu>
             <ToolBarTray>

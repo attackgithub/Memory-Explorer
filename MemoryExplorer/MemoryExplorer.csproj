@@ -167,6 +167,9 @@
       <DependentUpon>TellMeAbout.xaml</DependentUpon>
     </Compile>
     <Compile Include="Details\TellMeAboutViewModel.cs" />
+    <Compile Include="Dialogs\PreferenceViewer.xaml.cs">
+      <DependentUpon>PreferenceViewer.xaml</DependentUpon>
+    </Compile>
     <Compile Include="HexView\BuiltInContextMenu.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -221,6 +224,7 @@
     <Compile Include="Model\BusinessLogic.cs" />
     <Compile Include="Model\Common.cs" />
     <Compile Include="Model\InfoTree.cs" />
+    <Compile Include="Model\Preferences.cs" />
     <Compile Include="Tools\Handles.cs" />
     <Compile Include="Tools\ObjectTree.cs" />
     <Compile Include="Tools\VadInfo.cs" />
@@ -311,6 +315,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Dialogs\PreferenceViewer.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -369,6 +377,7 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="BuildHelper.ps1" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -396,7 +405,15 @@
   <ItemGroup>
     <Resource Include="Images\Icons\mx.ico" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Binaries\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\LIBRARY\Library.LogFileHelper\Library.LogFileHelper.csproj">
+      <Project>{3d4c49b5-8846-4f40-a6e2-d30a2e72fe21}</Project>
+      <Name>Library.LogFileHelper</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
@@ -405,4 +422,19 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <Target Name="PostBuildMacros">
+    <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
+      <Output TaskParameter="Assemblies" ItemName="Targets" />
+    </GetAssemblyIdentity>
+    <ItemGroup>
+      <VersionNumber Include="@(Targets->'%(Version)')" />
+    </ItemGroup>
+  </Target>
+  <PropertyGroup>
+    <PostBuildEventDependsOn>
+    $(PostBuildEventDependsOn);
+    PostBuildMacros;
+  </PostBuildEventDependsOn>
+    <PostBuildEvent>powershell.exe -executionpolicy RemoteSigned $(ProjectDir)BuildHelper.ps1 -version @(VersionNumber) -targetPath $(TargetPath) -zipPath $(ProjectDir)</PostBuildEvent>
+  </PropertyGroup>
 </Project>

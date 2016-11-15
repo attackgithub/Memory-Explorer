@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{0FDBF8E1-2330-46CB-9039-395A06AE2FEB}"
 	ProjectSection(SolutionItems) = preProject
@@ -16,6 +16,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DriverTestHarness", "DriverTestHarness\DriverTestHarness.vcxproj", "{37B3AB92-65CA-4666-A411-F5B6A46313C3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MemoryExplorerTests", "MemoryExplorerTests\MemoryExplorerTests.csproj", "{24402106-8077-4AFB-9626-4226311180DB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Library.LogFileHelper", "..\..\LIBRARY\Library.LogFileHelper\Library.LogFileHelper.csproj", "{3D4C49B5-8846-4F40-A6E2-D30A2E72FE21}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -68,6 +70,18 @@ Global
 		{24402106-8077-4AFB-9626-4226311180DB}.Release|x64.Build.0 = Release|Any CPU
 		{24402106-8077-4AFB-9626-4226311180DB}.Release|x86.ActiveCfg = Release|Any CPU
 		{24402106-8077-4AFB-9626-4226311180DB}.Release|x86.Build.0 = Release|Any CPU
+		{3D4C49B5-8846-4F40-A6E2-D30A2E72FE21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D4C49B5-8846-4F40-A6E2-D30A2E72FE21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D4C49B5-8846-4F40-A6E2-D30A2E72FE21}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3D4C49B5-8846-4F40-A6E2-D30A2E72FE21}.Debug|x64.Build.0 = Debug|Any CPU
+		{3D4C49B5-8846-4F40-A6E2-D30A2E72FE21}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3D4C49B5-8846-4F40-A6E2-D30A2E72FE21}.Debug|x86.Build.0 = Debug|Any CPU
+		{3D4C49B5-8846-4F40-A6E2-D30A2E72FE21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D4C49B5-8846-4F40-A6E2-D30A2E72FE21}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D4C49B5-8846-4F40-A6E2-D30A2E72FE21}.Release|x64.ActiveCfg = Release|Any CPU
+		{3D4C49B5-8846-4F40-A6E2-D30A2E72FE21}.Release|x64.Build.0 = Release|Any CPU
+		{3D4C49B5-8846-4F40-A6E2-D30A2E72FE21}.Release|x86.ActiveCfg = Release|Any CPU
+		{3D4C49B5-8846-4F40-A6E2-D30A2E72FE21}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

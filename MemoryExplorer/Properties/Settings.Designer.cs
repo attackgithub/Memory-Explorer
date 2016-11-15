@@ -62,5 +62,17 @@ namespace MemoryExplorer.Properties {
                 this["MRU"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string CacheLocation {
+            get {
+                return ((string)(this["CacheLocation"]));
+            }
+            set {
+                this["CacheLocation"] = value;
+            }
+        }
     }
 }

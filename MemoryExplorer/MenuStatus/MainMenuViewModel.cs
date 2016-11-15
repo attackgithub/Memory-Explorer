@@ -26,7 +26,9 @@ namespace MemoryExplorer.MenuStatus
             LiveRequest = new RelayCommand(OnLiveRequest);
             ImageRequest = new RelayCommand(OnImageRequest);
             ExitRequest = new RelayCommand(OnExitRequest);
-            MruRequest = new RelayCommand<string>(OnMruRequest);            
+            MruRequest = new RelayCommand<string>(OnMruRequest);
+            PreferenceRequest = new RelayCommand(OnPreferenceRequest);
+
         }
 
         public ObservableCollection<MenuItem> MruMenuItems
@@ -103,6 +105,12 @@ namespace MemoryExplorer.MenuStatus
         private void OnExitRequest()
         {
             Application.Current.Shutdown();
+        }
+        public RelayCommand PreferenceRequest { get; private set; }
+
+        private void OnPreferenceRequest()
+        {
+            _dataModel.ShowPreferences();
         }
     }
 }
