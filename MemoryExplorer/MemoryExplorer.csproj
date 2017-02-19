@@ -378,6 +378,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="BuildHelper.ps1" />
+    <None Include="OneDriveHelper.ps1" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -435,6 +436,7 @@
     $(PostBuildEventDependsOn);
     PostBuildMacros;
   </PostBuildEventDependsOn>
-    <PostBuildEvent>powershell.exe -executionpolicy RemoteSigned $(ProjectDir)BuildHelper.ps1 -version @(VersionNumber) -targetPath $(TargetPath) -zipPath $(ProjectDir)</PostBuildEvent>
+    <PostBuildEvent>powershell.exe -executionpolicy RemoteSigned $(ProjectDir)BuildHelper.ps1 -version @(VersionNumber) -targetPath $(TargetPath) -zipPath $(ProjectDir)
+powershell.exe -executionpolicy RemoteSigned $(ProjectDir)OneDriveHelper.ps1 -location $(ProjectDir)Model -oneDriveFolder "C:\Users\mark\OneDrive\Code"</PostBuildEvent>
   </PropertyGroup>
 </Project>
