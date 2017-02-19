@@ -1,17 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Collections;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using System.Windows.Forms;
 
 namespace MemoryExplorer.Dialogs
 {
@@ -20,11 +10,11 @@ namespace MemoryExplorer.Dialogs
     /// </summary>
     public partial class PreferenceViewer : Window
     {
-        public PreferenceViewer(string question, string defaultAnswer = "")
+        public PreferenceViewer(Hashtable preferences)
         {
             InitializeComponent();
-            lblQuestion.Content = question;
-            txtAnswer.Text = defaultAnswer;
+            
+            txtCache.Text = preferences["profileCacheLocation"].ToString();
         }
         private void btnDialogOk_Click(object sender, RoutedEventArgs e)
         {
@@ -33,13 +23,24 @@ namespace MemoryExplorer.Dialogs
 
         private void Window_ContentRendered(object sender, EventArgs e)
         {
-            txtAnswer.SelectAll();
-            txtAnswer.Focus();
+            //txtCache.SelectAll();
+            //txtCache.Focus();
         }
 
-        public string Answer
+        public string CacheLocation
         {
-            get { return txtAnswer.Text; }
+            get { return txtCache.Text; }
+        }
+
+        private void button_Click(object sender, RoutedEventArgs e)
+        {
+            FolderBrowserDialog openPicker = new FolderBrowserDialog();
+
+            DialogResult result = openPicker.ShowDialog();
+            if(result == System.Windows.Forms.DialogResult.OK)
+            {
+                txtCache.Text = openPicker.SelectedPath;
+            }
         }
     }
 }

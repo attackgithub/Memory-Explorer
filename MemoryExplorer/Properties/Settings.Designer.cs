@@ -66,12 +66,24 @@ namespace MemoryExplorer.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string CacheLocation {
+        public string ProfileCacheLocation {
             get {
-                return ((string)(this["CacheLocation"]));
+                return ((string)(this["ProfileCacheLocation"]));
             }
             set {
-                this["CacheLocation"] = value;
+                this["ProfileCacheLocation"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool bUpgradeRequired {
+            get {
+                return ((bool)(this["bUpgradeRequired"]));
+            }
+            set {
+                this["bUpgradeRequired"] = value;
             }
         }
     }

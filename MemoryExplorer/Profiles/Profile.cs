@@ -93,7 +93,7 @@ namespace MemoryExplorer.Profiles
             // if offline isn't available but online is, download it and copy to the cache
             if (!offlineAvailable && onlineAvailable)
             {
-                _profileDictionary = RetrieveFromGithub(_requestedImage, true);
+                _profileDictionary = RetrieveFromGithub(@"v1.0\nt\GUID\" + _requestedImage, true);
                 if (_profileDictionary == null)
                     onlineAvailable = false;
             }
@@ -116,7 +116,7 @@ namespace MemoryExplorer.Profiles
                     // if the inventory timestamp indicates a new version
                     // go get the one from github
                     if (dt1 > dt2)
-                        _profileDictionary = RetrieveFromGithub(_requestedImage, true);
+                        _profileDictionary = RetrieveFromGithub(@"v1.0\nt\GUID\" + _requestedImage, true);
                 }
                 catch { }
             }
@@ -686,7 +686,7 @@ namespace MemoryExplorer.Profiles
             {
                 using (WebClient webClient = new WebClient())
                 {
-                    byte[] buffer = webClient.DownloadData("https://raw.githubusercontent.com/google/rekall-profiles/master/" + filePath);
+                    byte[] buffer = webClient.DownloadData("https://github.com/google/rekall-profiles/raw/master/" + filePath);
                     // check to see if we want to cache the data
                     if (cache)
                     {

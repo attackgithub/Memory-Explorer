@@ -18,8 +18,11 @@
   &lt;string&gt;empty&lt;/string&gt;
 &lt;/ArrayOfString&gt;</Value>
     </Setting>
-    <Setting Name="CacheLocation" Type="System.String" Scope="User">
+    <Setting Name="ProfileCacheLocation" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="bUpgradeRequired" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
     </Setting>
   </Settings>
 </SettingsFile>
