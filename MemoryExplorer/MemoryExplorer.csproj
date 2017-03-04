@@ -228,6 +228,7 @@
     <Compile Include="Tools\Handles.cs" />
     <Compile Include="Tools\ObjectTree.cs" />
     <Compile Include="Tools\VadInfo.cs" />
+    <Compile Include="WorkerThreads\ProcessingThread.cs" />
     <Compile Include="Worker\Job.cs" />
     <Compile Include="Model\ProcessLists.cs" />
     <Compile Include="Model\ProcessProcesses.cs" />
@@ -414,6 +415,10 @@
       <Project>{3d4c49b5-8846-4f40-a6e2-d30a2e72fe21}</Project>
       <Name>Library.LogFileHelper</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Plugins\PluginContracts\PluginContracts.csproj">
+      <Project>{049BBE7B-FA61-48C5-A5D4-6B0EE6C7F9DC}</Project>
+      <Name>PluginContracts</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
@@ -436,7 +441,7 @@
     $(PostBuildEventDependsOn);
     PostBuildMacros;
   </PostBuildEventDependsOn>
-    <PostBuildEvent>powershell.exe -executionpolicy RemoteSigned $(ProjectDir)BuildHelper.ps1 -version @(VersionNumber) -targetPath $(TargetPath) -zipPath $(ProjectDir)
+    <PostBuildEvent>powershell.exe -executionpolicy RemoteSigned $(ProjectDir)BuildHelper.ps1 -version @(VersionNumber) -targetPath $(TargetPath) -zipPath $(ProjectDir) -pluginPath $(SolutionDir)Plugins\$(ConfigurationName)
 powershell.exe -executionpolicy RemoteSigned $(ProjectDir)OneDriveHelper.ps1 -location $(ProjectDir)Model -oneDriveFolder "C:\Users\mark\OneDrive\Code"</PostBuildEvent>
   </PropertyGroup>
 </Project>

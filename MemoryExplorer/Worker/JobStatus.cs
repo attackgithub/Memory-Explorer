@@ -9,4 +9,9 @@
         Failed = 0x05,
         Unknown = 0x06
     }
+    public enum JobAction
+    {
+        Unknown = 0,
+        LoadPlugin = 0x01
+    }
 }
