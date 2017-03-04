@@ -12,35 +12,37 @@ using System.Windows.Forms;
 
 namespace MemoryExplorer.WorkerThreads
 {
-    public class ProcessingThread
+    public class IngesterThread
     {
         private BackgroundWorker _backgroundWorker = new BackgroundWorker();
         private Queue<Job> _inbound = null;
         private Queue<Job> _outbound = null;
         private Assembly _pluginAssembly;
-        private IProcessor _plugin;
+        private IIngester _plugin;
 
-        public ProcessingThread(DataModel model)
+        public IngesterThread(DataModel model)
         {
-            _backgroundWorker.DoWork += new DoWorkEventHandler(ProcessingThread_DoWork);
-            _backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(ProcessingThread_RunWorkerCompleted);
+            _backgroundWorker.DoWork += new DoWorkEventHandler(IngestingThread_DoWork);
+            _backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(IngestingThread_RunWorkerCompleted);
             _backgroundWorker.WorkerSupportsCancellation = true;
+
             // Start the asynchronous operation.
             _backgroundWorker.RunWorkerAsync(model);
         }
         public void Stop()
         {
-            Debug.WriteLine("The processor is closing");
+            Debug.WriteLine("The ingester is closing");
+
             _backgroundWorker.CancelAsync();
         }
-        private void ProcessingThread_DoWork(object sender, DoWorkEventArgs e)
+        private void IngestingThread_DoWork(object sender, DoWorkEventArgs e)
         {
             // Get the BackgroundWorker that raised this event.
             BackgroundWorker worker = sender as BackgroundWorker;
             DataModel model = (DataModel)e.Argument;
-            _inbound = model.ProcessorOut; // the models out is my in.
-            _outbound = model.ProcessorIn; // the models in is my out!
-            
+            _inbound = model.IngesterOut; // the models out is my in.
+            _outbound = model.IngesterIn; // the models in is my out!
+
             while (!worker.CancellationPending)
             {
                 if (_inbound.Count > 0)
@@ -58,7 +60,7 @@ namespace MemoryExplorer.WorkerThreads
                 }
                 else
                 {
-                    Debug.WriteLine("The processor is waiting");
+                    Debug.WriteLine("The ingester is waiting");
                     Thread.Sleep(5000);
                 }
             }
@@ -74,7 +76,7 @@ namespace MemoryExplorer.WorkerThreads
             {
                 _plugin = null;
                 var pluginLocation = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "Plugins");
-                Debug.WriteLine("The processor is loading plugin " + j.ActionMessage);
+                Debug.WriteLine("The ingester is loading plugin " + j.ActionMessage);
                 AssemblyName an = AssemblyName.GetAssemblyName(Path.Combine(pluginLocation, j.ActionMessage + ".dll"));
                 Debug.WriteLine("Plugin: " + an.FullName);
                 _pluginAssembly = Assembly.Load(an);
@@ -82,10 +84,10 @@ namespace MemoryExplorer.WorkerThreads
                 foreach (Type type in types)
                 {
                     if (type.IsInterface || type.IsAbstract) { continue; }
-                    if (type.FullName == "LocalProcessor.Processor") // have have an interface compatible plugin
+                    if (type.FullName == "LocalIngester.Ingester") // have have an interface compatible plugin
                     {
-                        _plugin = Activator.CreateInstance(type) as IProcessor;
-                        if(_plugin != null)
+                        _plugin = Activator.CreateInstance(type) as IIngester;
+                        if (_plugin != null)
                         {
                             j.Status = JobStatus.Complete;
                             _outbound.Enqueue(j);
@@ -101,14 +103,14 @@ namespace MemoryExplorer.WorkerThreads
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 j.Status = JobStatus.Failed;
                 j.ErrorMessage = ex.Message;
                 _outbound.Enqueue(j);
-            }            
+            }
         }
-        private void ProcessingThread_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        private void IngestingThread_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             // First, handle the case where an exception was thrown.
             if (e.Error != null)

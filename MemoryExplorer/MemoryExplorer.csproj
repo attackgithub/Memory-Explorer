@@ -58,6 +58,10 @@
     <ApplicationIcon>Images\Icons\mx.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Library.LogFileHelper, Version=1.0.10.0, Culture=neutral, PublicKeyToken=c000f866670f4080, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Resources\Library.LogFileHelper.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
@@ -222,13 +226,16 @@
     <Compile Include="ModelObjects\Subsection.cs" />
     <Compile Include="ModelObjects\UnicodeString.cs" />
     <Compile Include="Model\BusinessLogic.cs" />
+    <Compile Include="Model\Cleanup.cs" />
     <Compile Include="Model\Common.cs" />
     <Compile Include="Model\InfoTree.cs" />
     <Compile Include="Model\Preferences.cs" />
     <Compile Include="Tools\Handles.cs" />
     <Compile Include="Tools\ObjectTree.cs" />
     <Compile Include="Tools\VadInfo.cs" />
+    <Compile Include="WorkerThreads\IngesterThread.cs" />
     <Compile Include="WorkerThreads\ProcessingThread.cs" />
+    <Compile Include="WorkerThreads\QueueManager.cs" />
     <Compile Include="Worker\Job.cs" />
     <Compile Include="Model\ProcessLists.cs" />
     <Compile Include="Model\ProcessProcesses.cs" />
@@ -411,10 +418,6 @@
     <Folder Include="Binaries\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\LIBRARY\Library.LogFileHelper\Library.LogFileHelper.csproj">
-      <Project>{3d4c49b5-8846-4f40-a6e2-d30a2e72fe21}</Project>
-      <Name>Library.LogFileHelper</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Plugins\PluginContracts\PluginContracts.csproj">
       <Project>{049BBE7B-FA61-48C5-A5D4-6B0EE6C7F9DC}</Project>
       <Name>PluginContracts</Name>
