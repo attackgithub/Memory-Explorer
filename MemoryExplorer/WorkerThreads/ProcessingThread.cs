@@ -1,4 +1,5 @@
-﻿using MemoryExplorer.Model;
+﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Worker;
 using PluginContracts;
 using System;
@@ -7,6 +8,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -19,6 +22,8 @@ namespace MemoryExplorer.WorkerThreads
         private Queue<Job> _outbound = null;
         private Assembly _pluginAssembly;
         private IProcessor _plugin;
+        private DataModel _model;
+        private DataProviderBase _dataProvider = null;
 
         public ProcessingThread(DataModel model)
         {
@@ -37,9 +42,9 @@ namespace MemoryExplorer.WorkerThreads
         {
             // Get the BackgroundWorker that raised this event.
             BackgroundWorker worker = sender as BackgroundWorker;
-            DataModel model = (DataModel)e.Argument;
-            _inbound = model.ProcessorOut; // the models out is my in.
-            _outbound = model.ProcessorIn; // the models in is my out!
+            _model = (DataModel)e.Argument;
+            _inbound = _model.ProcessorOut; // the models out is my in.
+            _outbound = _model.ProcessorIn; // the models in is my out!
             
             while (!worker.CancellationPending)
             {
@@ -51,7 +56,12 @@ namespace MemoryExplorer.WorkerThreads
                         case JobAction.LoadPlugin:
                             LoadPlugin(j);
                             break;
-
+                        case JobAction.GetInformation:
+                            GetInformation(j);
+                            break;
+                        case JobAction.SetDataProvider:
+                            SetDataProvider(j);
+                            break;
                         default:
                             break;
                     }
@@ -59,7 +69,7 @@ namespace MemoryExplorer.WorkerThreads
                 else
                 {
                     Debug.WriteLine("The processor is waiting");
-                    Thread.Sleep(5000);
+                    Thread.Sleep(500);
                 }
             }
             // Assign the result of the computation
@@ -68,6 +78,47 @@ namespace MemoryExplorer.WorkerThreads
             // RunWorkerCompleted eventhandler.
             //e.Result = ComputeFibonacci((int)e.Argument, worker, e);
         }
+
+        private void SetDataProvider(Job j)
+        {
+            string targetImage = _model.MemoryImageFilename;
+            string ImageMd5 = GetMD5HashFromFile(targetImage);
+            FileInfo fi = new FileInfo(targetImage);
+            string cacheLocation = fi.Directory.FullName + "\\[" + fi.Name + "]" + ImageMd5;
+            DirectoryInfo di = new DirectoryInfo(cacheLocation);
+            if (!di.Exists)
+                di.Create();
+            _dataProvider = new ImageDataProvider(_model, cacheLocation);
+        }
+        private string GetMD5HashFromFile(string filename)
+        {
+            using (var md5 = new MD5CryptoServiceProvider())
+            {
+                var buffer = md5.ComputeHash(File.ReadAllBytes(filename));
+                var sb = new StringBuilder();
+                for (int i = 0; i < buffer.Length; i++)
+                {
+                    sb.Append(buffer[i].ToString("x2"));
+                }
+                return sb.ToString();
+            }
+        }
+        private void GetInformation(Job j)
+        {
+            Dictionary<string, object> info = _dataProvider.GetInformation();
+            string friendlyKey;
+            foreach (var item in info)
+            {
+                if (item.Key == "dtb")
+                {
+                    friendlyKey = "Directory Table Base";
+                    //_model._kernelDtb = (ulong)item.Value;
+                }
+                else if (item.Key == "maximumPhysicalAddress")
+                    friendlyKey = "Maximum Physical Address";
+            }
+        }
+
         private void LoadPlugin(Job j)
         {
             try

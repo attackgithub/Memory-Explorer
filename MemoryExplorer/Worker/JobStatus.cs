@@ -12,6 +12,8 @@
     public enum JobAction
     {
         Unknown = 0,
-        LoadPlugin = 0x01
+        LoadPlugin = 0x01,
+        GetInformation = 0x02,
+        SetDataProvider = 0x03
     }
 }
