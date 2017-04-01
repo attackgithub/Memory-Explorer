@@ -9,7 +9,7 @@ namespace MemoryExplorer.ModelObjects
     public class CmNameControlBlock : StructureBase
     {
         string _name = "";
-        public CmNameControlBlock(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public CmNameControlBlock(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress = 0) : base(profile, dataProvider, virtualAddress)
         {
             Overlay("_CM_NAME_CONTROL_BLOCK");
             int nameLength = Members.NameLength;

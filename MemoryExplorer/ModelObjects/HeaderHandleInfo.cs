@@ -11,7 +11,7 @@ namespace MemoryExplorer.ModelObjects
 {
     public class HeaderHandleInfo : StructureBase
     {
-        public HeaderHandleInfo(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
+        public HeaderHandleInfo(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
         {
             _physicalAddress = physicalAddress;
             Overlay("_OBJECT_HEADER_HANDLE_INFO");

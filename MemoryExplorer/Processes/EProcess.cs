@@ -22,7 +22,7 @@ namespace MemoryExplorer.Processes
         private object _eprocess;
         //private HandleTable _hndTable = null;
 
-        public EProcess(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public EProcess(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
         {
             ObjectHeader oh = new ObjectHeader(_profile);
             if (virtualAddress == 0)

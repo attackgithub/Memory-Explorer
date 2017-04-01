@@ -66,6 +66,9 @@
       <HintPath>..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Pdb-Magician">
+      <HintPath>Resources\Pdb-Magician.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -230,6 +233,7 @@
     <Compile Include="Model\Common.cs" />
     <Compile Include="Model\InfoTree.cs" />
     <Compile Include="Model\Preferences.cs" />
+    <Compile Include="Profiles\Profile.cs" />
     <Compile Include="Tools\Handles.cs" />
     <Compile Include="Tools\ObjectTree.cs" />
     <Compile Include="Tools\VadInfo.cs" />
@@ -243,7 +247,7 @@
     <Compile Include="Processes\EProcess.cs" />
     <Compile Include="Processes\Process.cs" />
     <Compile Include="Profiles\PeHeader.cs" />
-    <Compile Include="Profiles\Profile.cs" />
+    <Compile Include="Profiles\Profile_Deprecated.cs" />
     <Compile Include="Profiles\ProfileEntry.cs" />
     <Compile Include="Profiles\RSDS.cs" />
     <Compile Include="RelayCommand.cs" />

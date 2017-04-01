@@ -60,7 +60,7 @@ namespace MemoryExplorer.WorkerThreads
                 }
                 else
                 {
-                    Debug.WriteLine("The ingester is waiting");
+                    //Debug.WriteLine("The ingester is waiting");
                     Thread.Sleep(5000);
                 }
             }
@@ -76,8 +76,8 @@ namespace MemoryExplorer.WorkerThreads
             {
                 _plugin = null;
                 var pluginLocation = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "Plugins");
-                Debug.WriteLine("The ingester is loading plugin " + j.ActionMessage);
-                AssemblyName an = AssemblyName.GetAssemblyName(Path.Combine(pluginLocation, j.ActionMessage + ".dll"));
+                Debug.WriteLine("The ingester is loading plugin " + j.ActionMessage[0]);
+                AssemblyName an = AssemblyName.GetAssemblyName(Path.Combine(pluginLocation, j.ActionMessage[0] + ".dll"));
                 Debug.WriteLine("Plugin: " + an.FullName);
                 _pluginAssembly = Assembly.Load(an);
                 Type[] types = _pluginAssembly.GetTypes();

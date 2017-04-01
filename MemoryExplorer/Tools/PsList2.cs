@@ -27,7 +27,7 @@ namespace MemoryExplorer.Tools
         /// Project must contain the image file MD5 hash (fileHash)
         /// </prerequisites>
         List<ProcessInfo> _processList;
-        public PsList2(Profile profile, DataProviderBase dataProvider, List<ProcessInfo> processList=null) : base(profile, dataProvider)
+        public PsList2(Profile_Deprecated profile, DataProviderBase dataProvider, List<ProcessInfo> processList=null) : base(profile, dataProvider)
         {
             _processList = processList;
             // check pre-reqs

@@ -1,5 +1,6 @@
 ﻿using MemoryExplorer.Processes;
 using System;
+using System.Collections.Generic;
 
 namespace MemoryExplorer.Worker
 {
@@ -9,7 +10,7 @@ namespace MemoryExplorer.Worker
         public JobStatus Status;
         public JobAction Action;
         public string ErrorMessage;
-        public string ActionMessage;
+        public List<string> ActionMessage;
         public long JobNumber;
 
         public Job()
@@ -17,7 +18,7 @@ namespace MemoryExplorer.Worker
             ProcessInformation = null;
             Status = JobStatus.Unknown;
             ErrorMessage = "";
-            ActionMessage = "";
+            ActionMessage = new List<string>();
             Action = JobAction.Unknown;
             JobNumber = DateTime.Now.Ticks;
         }
@@ -26,7 +27,7 @@ namespace MemoryExplorer.Worker
             ProcessInformation = processInformation;
             Status = status;
             ErrorMessage = "";
-            ActionMessage = "";
+            ActionMessage = new List<string>();
             Action = JobAction.Unknown;
             JobNumber = DateTime.Now.Ticks;
         }

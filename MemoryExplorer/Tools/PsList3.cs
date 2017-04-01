@@ -29,7 +29,7 @@ namespace MemoryExplorer.Tools
         /// <param name="dataProvider"></param>
         /// <param name="processList"></param>
         List<ProcessInfo> _processList;
-        public PsList3(Profile profile, DataProviderBase dataProvider, List<ProcessInfo> processList = null) : base(profile, dataProvider)
+        public PsList3(Profile_Deprecated profile, DataProviderBase dataProvider, List<ProcessInfo> processList = null) : base(profile, dataProvider)
         {
             _processList = processList;
             // check pre-reqs

@@ -19,7 +19,7 @@ namespace MemoryExplorer.ModelObjects
 
         // this will fail if the string runs off the end of the page
         // remember to set the dataProvider.ActiveAddressSpace before you call
-        public UnicodeString(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
+        public UnicodeString(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
         {
             try
             {
@@ -65,7 +65,7 @@ namespace MemoryExplorer.ModelObjects
             }
             
         }
-        public UnicodeString(Profile profile, DataProviderBase dataProvider, byte[] buffer) : base(profile, dataProvider, 0)
+        public UnicodeString(Profile_Deprecated profile, DataProviderBase dataProvider, byte[] buffer) : base(profile, dataProvider, 0)
         {
             var dll = _profile.GetStructureAssembly("_UNICODE_STRING");
             Type t = dll.GetType("liveforensics.UNICODE_STRING");

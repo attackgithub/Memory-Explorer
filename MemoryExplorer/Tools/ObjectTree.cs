@@ -30,7 +30,7 @@ namespace MemoryExplorer.Tools
         private int _index = 1;
         ObjectTreeMap _objectMap = null;
 
-        public ObjectTree(Profile profile, DataProviderBase dataProvider) : base(profile, dataProvider)
+        public ObjectTree(Profile_Deprecated profile, DataProviderBase dataProvider) : base(profile, dataProvider)
         {
             // check pre-reqs
             if (_profile == null || _profile.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null || _dataProvider == null || _dataProvider.CacheFolder == "")

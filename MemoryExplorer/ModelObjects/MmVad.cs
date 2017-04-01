@@ -7,7 +7,7 @@ namespace MemoryExplorer.ModelObjects
     {
         private MmVadShort _shorty;
         private string _name = "";
-        public MmVad(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress, physicalAddress)
+        public MmVad(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress, physicalAddress)
         {
             _physicalAddress = physicalAddress;
             Overlay("_MMVAD");

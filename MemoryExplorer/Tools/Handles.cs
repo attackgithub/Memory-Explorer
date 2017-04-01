@@ -24,7 +24,7 @@ namespace MemoryExplorer.Tools
         private ulong _handleTableAddress;
         private HandleEntryMap _handleEntryMap;
 
-        public Handles(Profile profile, DataProviderBase dataProvider, ulong pid, ulong handleTableAddress) : base(profile, dataProvider)
+        public Handles(Profile_Deprecated profile, DataProviderBase dataProvider, ulong pid, ulong handleTableAddress) : base(profile, dataProvider)
         {
             // check pre-reqs
             if (_profile == null || _profile.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)

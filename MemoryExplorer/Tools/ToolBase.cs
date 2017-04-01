@@ -21,11 +21,11 @@ namespace MemoryExplorer.Tools
     }
     public abstract class ToolBase
     {
-        protected Profile _profile = null;
+        protected Profile_Deprecated _profile = null;
         protected bool _isx64;
         protected DataProviderBase _dataProvider = null;
 
-        public ToolBase(Profile profile, DataProviderBase dataProvider)
+        public ToolBase(Profile_Deprecated profile, DataProviderBase dataProvider)
         {
             _profile = profile;
             _dataProvider = dataProvider;

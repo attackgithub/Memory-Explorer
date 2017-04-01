@@ -13,7 +13,9 @@
     {
         Unknown = 0,
         LoadPlugin = 0x01,
-        GetInformation = 0x02,
-        SetDataProvider = 0x03
+        GetProfileIdentification = 0x02,
+        SetDataProvider = 0x03,
+        LoadProfile = 0x04,
+        FindKernelDtb = 0x05
     }
 }

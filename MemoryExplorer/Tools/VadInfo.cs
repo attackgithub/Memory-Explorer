@@ -17,7 +17,7 @@ namespace MemoryExplorer.Tools
         private ulong _pid;
         private MmVadBase _vadItem;
         private HashSet<ulong> _seen = new HashSet<ulong>();
-        public VadInfo(Profile profile, DataProviderBase dataProvider, ulong pid) : base(profile, dataProvider)
+        public VadInfo(Profile_Deprecated profile, DataProviderBase dataProvider, ulong pid) : base(profile, dataProvider)
         {
             _pid = pid;
             // check pre-reqs

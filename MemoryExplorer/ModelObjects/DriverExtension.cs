@@ -6,7 +6,7 @@ namespace MemoryExplorer.ModelObjects
     public class DriverExtension : StructureBase
     {
         private string _serviceKeyName;
-        public DriverExtension(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public DriverExtension(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
         {            
             _physicalAddress = physicalAddress;
             Overlay("_DRIVER_EXTENSION");

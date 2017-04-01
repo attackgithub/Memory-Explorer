@@ -14,11 +14,11 @@ namespace MemoryExplorer.Scanners
         DataProviderBase _dataProvider;
         StringSearch _scanner;
         PoolType _poolType;
-        Profile _profile;
+        Profile_Deprecated _profile;
         ulong _objectTypeIndex = 0;
         string _poolTypeName;
 
-        public PoolScan(Profile profile, DataProviderBase dataProvider, PoolType poolType)
+        public PoolScan(Profile_Deprecated profile, DataProviderBase dataProvider, PoolType poolType)
         {
             _profile = profile;
             _dataProvider = dataProvider;

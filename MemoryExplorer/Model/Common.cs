@@ -64,7 +64,7 @@ namespace MemoryExplorer.Model
             switch(helper.Type)
             {
                 case InfoHelperType.DriverObject:
-                    helper.BufferSize = _driverObjectSize;
+                    helper.BufferSize = DriverObjectSize;
                     UpdateInfoViewer(helper);
                     break;
                 case InfoHelperType.InfoDictionary:
@@ -74,11 +74,11 @@ namespace MemoryExplorer.Model
                     UpdateInfoViewer(helper);
                     break;
                 case InfoHelperType.HandleTable:
-                    helper.BufferSize = _handleTableSize;
+                    helper.BufferSize = HandleTableSize;
                     UpdateInfoViewer(helper);
                     break;                    
                 case InfoHelperType.ProcessObject:
-                    helper.BufferSize = _eprocessSize;
+                    helper.BufferSize = EprocessSize;
                     UpdateInfoViewer(helper);
                     break;
                 default:

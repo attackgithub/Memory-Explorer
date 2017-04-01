@@ -18,11 +18,11 @@ namespace MemoryExplorer.Model
             {
                 try
                 {
-                    PsList1 psList = new PsList1(_profile, _dataProvider);
+                    PsList1 psList = new PsList1(_profile_deprecated, _dataProvider);
                     HashSet<ulong> results = psList.Run();
                     foreach (ulong address in results)
                     {
-                        EProcess ep = new EProcess(_profile, _dataProvider, address);
+                        EProcess ep = new EProcess(_profile_deprecated, _dataProvider, address);
                         string name = ep.ImageFileName;
                         uint pid = ep.Pid;
                         if (pid == 0 || name == "")
@@ -65,11 +65,11 @@ namespace MemoryExplorer.Model
             {
                 try
                 {
-                    PsList2 psList = new PsList2(_profile, _dataProvider, _processList);
+                    PsList2 psList = new PsList2(_profile_deprecated, _dataProvider, _processList);
                     HashSet<ulong> results = psList.Run();
                     foreach (ulong address in results)
                     {
-                        EProcess ep = new EProcess(_profile, _dataProvider, address);
+                        EProcess ep = new EProcess(_profile_deprecated, _dataProvider, address);
                         string name = ep.ImageFileName;
                         uint pid = ep.Pid;
                         if (pid == 0 || name == "")
@@ -112,11 +112,11 @@ namespace MemoryExplorer.Model
             {
                 try
                 {
-                    PsList3 psList = new PsList3(_profile, _dataProvider);
+                    PsList3 psList = new PsList3(_profile_deprecated, _dataProvider);
                     HashSet<ulong> results = psList.Run();
                     foreach (ulong address in results)
                     {
-                        EProcess ep = new EProcess(_profile, _dataProvider, address);
+                        EProcess ep = new EProcess(_profile_deprecated, _dataProvider, address);
                         string name = ep.ImageFileName;
                         uint pid = ep.Pid;
                         if (pid == 0 || name == "")
@@ -159,11 +159,11 @@ namespace MemoryExplorer.Model
             {
                 try
                 {
-                    PsList4 psList = new PsList4(_profile, _dataProvider, _processList);
+                    PsList4 psList = new PsList4(_profile_deprecated, _dataProvider, _processList);
                     HashSet<ulong> results = psList.Run();
                     foreach (ulong address in results)
                     {
-                        EProcess ep = new EProcess(_profile, _dataProvider, address);
+                        EProcess ep = new EProcess(_profile_deprecated, _dataProvider, address);
                         string name = ep.ImageFileName;
                         uint pid = ep.Pid;
                         if (pid == 0 || name == "")

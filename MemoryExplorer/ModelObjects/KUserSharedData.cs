@@ -10,11 +10,11 @@ namespace MemoryExplorer.ModelObjects
 {
     public class KUserSharedData
     {
-        private Profile _profile;
+        private Profile_Deprecated _profile;
         private DataProviderBase _dataProvider;
         private byte[] _buffer = null;
 
-        public KUserSharedData(DataProviderBase dataProvider, Profile profile, ulong physicalAddress)
+        public KUserSharedData(DataProviderBase dataProvider, Profile_Deprecated profile, ulong physicalAddress)
         {
             _dataProvider = dataProvider;
             _profile = profile;

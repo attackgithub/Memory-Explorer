@@ -43,7 +43,7 @@ namespace MemoryExplorer
     }
     public abstract class StructureBase
     {
-        protected Profile _profile;
+        protected Profile_Deprecated _profile;
         protected string _imageFile;
         protected ulong _physicalAddress;
         protected ulong _virtualAddress;
@@ -56,7 +56,7 @@ namespace MemoryExplorer
         protected dynamic _members;
         protected AddressBase _addressSpace;
 
-        protected StructureBase(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0)
+        protected StructureBase(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress = 0)
         {
             _profile = profile;
             _dataProvider = dataProvider;

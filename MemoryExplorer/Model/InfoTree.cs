@@ -28,7 +28,7 @@ namespace MemoryExplorer.Model
             int structureSize = 0;
             try
             {
-                structureSize = (int)_profile.GetStructureSize(structureName);
+                structureSize = (int)_profile_deprecated.GetStructureSize(structureName);
                 if (structureSize == -1)
                     return;
             }
@@ -72,7 +72,7 @@ namespace MemoryExplorer.Model
         }
         private void PopulateNode(string structureName, ProfileEntry parent, ulong offset, bool expanded = false)
         {
-            List<Structure> results = _profile.GetEntries(structureName);
+            List<Structure> results = _profile_deprecated.GetEntries(structureName);
             foreach (Structure s in results)
             {
                 ProfileEntry next = new ProfileEntry();
@@ -85,7 +85,7 @@ namespace MemoryExplorer.Model
                 int structureSize = 0;
                 try
                 {
-                    structureSize = (int)_profile.GetStructureSize(s.EntryType);
+                    structureSize = (int)_profile_deprecated.GetStructureSize(s.EntryType);
                     if (structureSize != -1)
                         PopulateNode(s.EntryType, next, s.Offset + offset);
                 }

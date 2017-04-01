@@ -30,7 +30,7 @@ namespace MemoryExplorer.ModelObjects
         //List<ObjectTypeRecord> _records = new List<ObjectTypeRecord>();
         ObjectTypeMap _objectMap = null;
 
-        public ObjectTypes(DataProviderBase dataProvider, Profile profile) : base(profile, dataProvider, 0)
+        public ObjectTypes(DataProviderBase dataProvider, Profile_Deprecated profile) : base(profile, dataProvider, 0)
         {
             _is64 = (_profile.Architecture == "AMD64");
             _objectMap = new ObjectTypeMap();
@@ -135,7 +135,7 @@ namespace MemoryExplorer.ModelObjects
         private ulong _highWaterNumberOfObjects;
 
 
-        public ObjectType(Profile profile, DataProviderBase dataProvider, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
+        public ObjectType(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
         {
             _is64 = (_profile.Architecture == "AMD64");
             int structureSize = (int)_profile.GetStructureSize("_OBJECT_TYPE");

@@ -12,7 +12,7 @@ namespace MemoryExplorer.ModelObjects
         private ulong _bodySize;
         private string _tag;
 
-        public RtlBalancedNode(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public RtlBalancedNode(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
         {
             _physicalAddress = physicalAddress;
             Overlay("_RTL_BALANCED_NODE");

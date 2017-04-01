@@ -13,7 +13,7 @@ namespace MemoryExplorer.ModelObjects
     {
         string _name;
         ulong _referenceCount;
-        public HeaderNameInfo(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
+        public HeaderNameInfo(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
         {
             _physicalAddress = physicalAddress;
             _is64 = (_profile.Architecture == "AMD64");

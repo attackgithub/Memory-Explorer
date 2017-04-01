@@ -14,14 +14,14 @@ namespace MemoryExplorer.Profiles.Tests
     [TestClass()]
     public sealed class ProfileTests
     {
-        private static Profile _profile;
+        private static Profile_Deprecated _profile;
         private static Dictionary<string, JToken> _profileDictionary;
         private static DataModel _model;
 
         [ClassInitialize()]
         public static void ClassInit(TestContext context)
         {
-            _profile = new Profile(@"D67FECD43A49492C87EC845789255D641.gz", @"E:\Forensics\MxProfileCache", @"c:\temp", _model);
+            _profile = new Profile_Deprecated(@"D67FECD43A49492C87EC845789255D641.gz", @"E:\Forensics\MxProfileCache", @"c:\temp", _model);
             _profileDictionary = _profile.ProfileDictionary;
         }
         [ClassCleanup()]

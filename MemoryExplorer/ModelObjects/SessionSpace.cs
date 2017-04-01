@@ -6,7 +6,7 @@ namespace MemoryExplorer.ModelObjects
 {
     public class SessionSpace : StructureBase
     {
-        public SessionSpace(Profile profile, DataProviderBase dataProvider, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
+        public SessionSpace(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
         {
             Overlay("_MM_SESSION_SPACE");
 

@@ -1,9 +1,11 @@
-﻿using MemoryExplorer.Model;
+﻿using Library.LogFileHelper;
+using MemoryExplorer.Model;
 using MemoryExplorer.Worker;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading;
+using System.Windows;
 using System.Windows.Forms;
 
 namespace MemoryExplorer.WorkerThreads
@@ -48,6 +50,15 @@ namespace MemoryExplorer.WorkerThreads
                 if (_ingesterInbound.Count > 0)
                 {
                     Job j = _ingesterInbound.Dequeue();
+                    switch (j.Status)
+                    {
+                        case JobStatus.Failed:
+                            model.WriteToLogfile("Ingester Error from " + j.Action);
+                            model.WriteToLogfile("\t" + j.ErrorMessage);
+                            break;
+                        default:
+                            break;
+                    }
                     switch (j.Action)
                     {
 
@@ -58,17 +69,67 @@ namespace MemoryExplorer.WorkerThreads
                 else if (_processorInbound.Count > 0)
                 {
                     Job j = _processorInbound.Dequeue();
+                    switch(j.Status)
+                    {
+                        case JobStatus.Failed:
+                            model.WriteToLogfile("Processor Error from " + j.Action);
+                            model.WriteToLogfile("\t" + j.ErrorMessage);
+                            string messageBoxText = "There was a problem loading the data provider.\n" + j.ErrorMessage;
+                            System.Windows.MessageBox.Show(messageBoxText, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            break;
+                        default:
+                            break;
+                    }
                     switch (j.Action)
                     {
-
+                        case JobAction.SetDataProvider:
+                            if(j.Status == JobStatus.Complete)
+                            {
+                                Job j1 = new Job();
+                                j1.Action = JobAction.GetProfileIdentification;
+                                _processorOutbound.Enqueue(j1);
+                            }
+                            break;
+                        case JobAction.GetProfileIdentification:
+                            if (j.Status == JobStatus.Complete)
+                            {
+                                // there is a possibility that more than one guidage was identified
+                                // so I need to work out how to deal with that
+                                if(j.ActionMessage.Count > 1)
+                                {
+                                    string messageBoxText = "Memory Explorer has identified more than one GUIDAGE in the image.\nGoing to proceed with the first one.";
+                                    System.Windows.MessageBox.Show(messageBoxText, "Strangeness", MessageBoxButton.OK, MessageBoxImage.Information);
+                                }
+                                if (j.ActionMessage.Count > 0)
+                                { 
+                                    Job j1 = new Job();
+                                    j1.Action = JobAction.LoadProfile;
+                                    j1.ActionMessage.Add(j.ActionMessage[0]);
+                                    _processorOutbound.Enqueue(j1);
+                                }
+                                else
+                                {
+                                    string messageBoxText = "Processing Halted because Memory Explorer couldn't find a Profile from RSDS";
+                                    System.Windows.MessageBox.Show(messageBoxText, "Can't Proceed", MessageBoxButton.OK, MessageBoxImage.Error);
+                                }
+                            }
+                            break;
+                        case JobAction.LoadProfile:
+                            if (j.Status == JobStatus.Complete)
+                            {
+                                Job j1 = new Job();
+                                j1.Action = JobAction.FindKernelDtb;
+                                _processorOutbound.Enqueue(j1);
+                            }
+                            break;
                         default:
                             break;
                     }
                 }
                 else
                 {
-                    Debug.WriteLine("The queue manager is waiting");
-                    Thread.Sleep(5000);
+                    //Debug.WriteLine("The queue manager is waiting");
+                    Thread.Sleep(5);
                 }
             }
             // Assign the result of the computation
@@ -82,7 +143,7 @@ namespace MemoryExplorer.WorkerThreads
             // First, handle the case where an exception was thrown.
             if (e.Error != null)
             {
-                MessageBox.Show(e.Error.Message);
+                System.Windows.MessageBox.Show(e.Error.Message);
             }
             else if (e.Cancelled)
             {
