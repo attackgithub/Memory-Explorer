@@ -49,7 +49,7 @@ namespace MemoryExplorer.WorkerThreads
             {
                 if (_ingesterInbound.Count > 0)
                 {
-                    Job j = _ingesterInbound.Dequeue();
+                    Job j = _ingesterInbound.Dequeue();                    
                     switch (j.Status)
                     {
                         case JobStatus.Failed:
@@ -69,7 +69,8 @@ namespace MemoryExplorer.WorkerThreads
                 else if (_processorInbound.Count > 0)
                 {
                     Job j = _processorInbound.Dequeue();
-                    switch(j.Status)
+                    model.DecrementActiveJobs();
+                    switch (j.Status)
                     {
                         case JobStatus.Failed:
                             model.WriteToLogfile("Processor Error from " + j.Action);
@@ -77,54 +78,57 @@ namespace MemoryExplorer.WorkerThreads
                             string messageBoxText = "There was a problem loading the data provider.\n" + j.ErrorMessage;
                             System.Windows.MessageBox.Show(messageBoxText, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                             break;
-                        default:
-                            break;
-                    }
-                    switch (j.Action)
-                    {
-                        case JobAction.SetDataProvider:
-                            if(j.Status == JobStatus.Complete)
+                        case JobStatus.Complete:
+                            switch (j.Action)
                             {
-                                Job j1 = new Job();
-                                j1.Action = JobAction.GetProfileIdentification;
-                                _processorOutbound.Enqueue(j1);
-                            }
-                            break;
-                        case JobAction.GetProfileIdentification:
-                            if (j.Status == JobStatus.Complete)
-                            {
-                                // there is a possibility that more than one guidage was identified
-                                // so I need to work out how to deal with that
-                                if(j.ActionMessage.Count > 1)
-                                {
-                                    string messageBoxText = "Memory Explorer has identified more than one GUIDAGE in the image.\nGoing to proceed with the first one.";
-                                    System.Windows.MessageBox.Show(messageBoxText, "Strangeness", MessageBoxButton.OK, MessageBoxImage.Information);
-                                }
-                                if (j.ActionMessage.Count > 0)
-                                { 
+                                case JobAction.SetDataProvider:
+                                    Job j2 = new Job();
+                                    j2.Action = JobAction.GetProfileIdentification;
+                                    _processorOutbound.Enqueue(j2);
+                                    model.IncrementActiveJobs("Detecting Profile");
+                                    break;
+                                case JobAction.GetProfileIdentification:
+                                    // there is a possibility that more than one guidage was identified
+                                    // so I need to work out how to deal with that
+                                    if (j.ActionMessage.Count > 1)
+                                    {
+                                        messageBoxText = "Memory Explorer has identified more than one GUIDAGE in the image.\nGoing to proceed with the first one.";
+                                        System.Windows.MessageBox.Show(messageBoxText, "Strangeness", MessageBoxButton.OK, MessageBoxImage.Information);
+                                    }
+                                    if (j.ActionMessage.Count > 0)
+                                    {
+                                        Job j3 = new Job();
+                                        j3.Action = JobAction.LoadProfile;
+                                        j3.ActionMessage.Add(j.ActionMessage[0]);
+                                        _processorOutbound.Enqueue(j3);
+                                        model.IncrementActiveJobs("Loading Profile");
+                                    }
+                                    else
+                                    {
+                                        messageBoxText = "Processing Halted because Memory Explorer couldn't find a Profile from RSDS";
+                                        System.Windows.MessageBox.Show(messageBoxText, "Can't Proceed", MessageBoxButton.OK, MessageBoxImage.Error);
+                                    }
+                                    break;
+                                case JobAction.LoadProfile:
                                     Job j1 = new Job();
-                                    j1.Action = JobAction.LoadProfile;
-                                    j1.ActionMessage.Add(j.ActionMessage[0]);
+                                    j1.Action = JobAction.FindKernelDtb;
                                     _processorOutbound.Enqueue(j1);
-                                }
-                                else
-                                {
-                                    string messageBoxText = "Processing Halted because Memory Explorer couldn't find a Profile from RSDS";
-                                    System.Windows.MessageBox.Show(messageBoxText, "Can't Proceed", MessageBoxButton.OK, MessageBoxImage.Error);
-                                }
-                            }
-                            break;
-                        case JobAction.LoadProfile:
-                            if (j.Status == JobStatus.Complete)
-                            {
-                                Job j1 = new Job();
-                                j1.Action = JobAction.FindKernelDtb;
-                                _processorOutbound.Enqueue(j1);
+                                    model.IncrementActiveJobs("Detecting Kernel DTB");
+                                    break;
+                                case JobAction.FindKernelDtb:
+                                    Job j4 = new Job();
+                                    j4.Action = JobAction.LoadKernelAddressSpace;
+                                    _processorOutbound.Enqueue(j4);
+                                    model.IncrementActiveJobs("Loading Kernel Address Space");
+                                    break;
+                                case JobAction.LoadKernelAddressSpace:
+
+                                    break;
                             }
                             break;
                         default:
                             break;
-                    }
+                    }                    
                 }
                 else
                 {

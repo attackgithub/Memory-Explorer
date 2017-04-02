@@ -34,7 +34,7 @@ namespace MemoryExplorer.Tools
                 _processInfo = _profile.Model.FindProcess(_pid);
                 if (null == _processInfo)
                     return;
-                EProcess ep = new EProcess(_profile, _dataProvider, _processInfo.VirtualAddress);
+                EProcess_deprecated ep = new EProcess_deprecated(_profile, _dataProvider, _processInfo.VirtualAddress);
                 ulong vadRoot = ep.Members.VadRoot & 0xffffffffffff;
                 Traverse(vadRoot, 0);
             }

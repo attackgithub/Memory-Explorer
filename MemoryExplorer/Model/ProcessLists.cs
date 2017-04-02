@@ -22,7 +22,7 @@ namespace MemoryExplorer.Model
                     HashSet<ulong> results = psList.Run();
                     foreach (ulong address in results)
                     {
-                        EProcess ep = new EProcess(_profile_deprecated, _dataProvider, address);
+                        EProcess_deprecated ep = new EProcess_deprecated(_profile_deprecated, _dataProvider, address);
                         string name = ep.ImageFileName;
                         uint pid = ep.Pid;
                         if (pid == 0 || name == "")
@@ -31,7 +31,7 @@ namespace MemoryExplorer.Model
                         if (p == null)
                         {
                             p = new ProcessInfo();
-                            p.AddressSpace = _kernelAddressSpace;
+                            p.AddressSpace = KernelAddressSpace;
                             p.ProcessName = name;
                             p.Pid = pid;
                             p.Dtb = ep.DTB;
@@ -69,7 +69,7 @@ namespace MemoryExplorer.Model
                     HashSet<ulong> results = psList.Run();
                     foreach (ulong address in results)
                     {
-                        EProcess ep = new EProcess(_profile_deprecated, _dataProvider, address);
+                        EProcess_deprecated ep = new EProcess_deprecated(_profile_deprecated, _dataProvider, address);
                         string name = ep.ImageFileName;
                         uint pid = ep.Pid;
                         if (pid == 0 || name == "")
@@ -78,7 +78,7 @@ namespace MemoryExplorer.Model
                         if (p == null)
                         {
                             p = new ProcessInfo();
-                            p.AddressSpace = _kernelAddressSpace;
+                            p.AddressSpace = KernelAddressSpace;
                             p.ProcessName = name;
                             p.Pid = pid;
                             p.Dtb = ep.DTB;
@@ -116,7 +116,7 @@ namespace MemoryExplorer.Model
                     HashSet<ulong> results = psList.Run();
                     foreach (ulong address in results)
                     {
-                        EProcess ep = new EProcess(_profile_deprecated, _dataProvider, address);
+                        EProcess_deprecated ep = new EProcess_deprecated(_profile_deprecated, _dataProvider, address);
                         string name = ep.ImageFileName;
                         uint pid = ep.Pid;
                         if (pid == 0 || name == "")
@@ -125,7 +125,7 @@ namespace MemoryExplorer.Model
                         if (p == null)
                         {
                             p = new ProcessInfo();
-                            p.AddressSpace = _kernelAddressSpace;
+                            p.AddressSpace = KernelAddressSpace;
                             p.ProcessName = name;
                             p.Pid = pid;
                             p.Dtb = ep.DTB;
@@ -163,7 +163,7 @@ namespace MemoryExplorer.Model
                     HashSet<ulong> results = psList.Run();
                     foreach (ulong address in results)
                     {
-                        EProcess ep = new EProcess(_profile_deprecated, _dataProvider, address);
+                        EProcess_deprecated ep = new EProcess_deprecated(_profile_deprecated, _dataProvider, address);
                         string name = ep.ImageFileName;
                         uint pid = ep.Pid;
                         if (pid == 0 || name == "")
@@ -172,7 +172,7 @@ namespace MemoryExplorer.Model
                         if (p == null)
                         {
                             p = new ProcessInfo();
-                            p.AddressSpace = _kernelAddressSpace;
+                            p.AddressSpace = KernelAddressSpace;
                             p.ProcessName = name;
                             p.Pid = pid;
                             p.Dtb = ep.DTB;

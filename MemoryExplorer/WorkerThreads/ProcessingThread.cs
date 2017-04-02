@@ -1,5 +1,7 @@
-﻿using MemoryExplorer.Data;
+﻿using MemoryExplorer.Address;
+using MemoryExplorer.Data;
 using MemoryExplorer.Model;
+using MemoryExplorer.Processes;
 using MemoryExplorer.Profiles;
 using MemoryExplorer.Scanners;
 using MemoryExplorer.Worker;
@@ -74,6 +76,9 @@ namespace MemoryExplorer.WorkerThreads
                         case JobAction.FindKernelDtb:
                             FindIdleProcess(ref j);
                             break;
+                        case JobAction.LoadKernelAddressSpace:
+                            LoadKernelAddressSpace(ref j);
+                            break;
                         default:
                             break;
                     }
@@ -91,16 +96,62 @@ namespace MemoryExplorer.WorkerThreads
             // RunWorkerCompleted eventhandler.
             //e.Result = ComputeFibonacci((int)e.Argument, worker, e);
         }
+
+        private void LoadKernelAddressSpace(ref Job j)
+        {
+            try
+            {
+                if (_model.ActiveProfile.Architecture == "I386")
+                    _model.KernelAddressSpace = new AddressSpacex86Pae(_dataProvider, "idle", _model.KernelDtb, true);
+                else
+                    _model.KernelAddressSpace = new AddressSpacex64(_dataProvider, "idle", _model.KernelDtb, true);
+                _model.ActiveProfile.KernelAddressSpace = _model.KernelAddressSpace;
+                _dataProvider.ActiveAddressSpace = _model.KernelAddressSpace;
+                j.Status = JobStatus.Complete;
+            }
+            catch (Exception ex)
+            {
+                j.Status = JobStatus.Failed;
+                j.ErrorMessage = ex.Message;
+            }
+        }
+
         /// <summary>
         /// Find the Idle process in memory and at the same time
         /// make a note of the Directory Table Base (DTB)
         /// </summary>
         /// <param name="j"></param>
         /// <returns>PhysicalAddress of the Idle process</returns>
-        private ulong FindIdleProcess(ref Job j)
+        private void FindIdleProcess(ref Job j)
         {
+            // TODO - this function could find more than one hit, currently I'm stopping at the first one.
             bool escape = false;
             ulong physicalAddress = 0;
+            j.ActionMessage.Clear();
+            string archiveFile = Path.Combine(_dataProvider.CacheFolder, "1002.dat");
+            // have we already got the answer?
+            try
+            {
+                FileInfo fi = new FileInfo(archiveFile);
+                if (fi.Exists)
+                {
+                    string[] items = File.ReadAllLines(archiveFile);
+                    if(items.Length == 2)
+                    {
+                        physicalAddress = ulong.Parse(items[0]);
+                        _model.KernelDtb = ulong.Parse(items[1]);
+                        j.ActionMessage.Add(items[0]);
+                        j.ActionMessage.Add(items[1]);
+                        j.Status = JobStatus.Complete;
+                        return;
+                    }
+                }
+            }
+            catch
+            {
+                // something went wrong when reading the archive, so let's just delete it.
+                File.Delete(archiveFile);
+            }
             try
             {
                 // check if we already have it (from the live image)
@@ -117,15 +168,16 @@ namespace MemoryExplorer.WorkerThreads
                         foreach (ulong hit in hitList)
                         {
                             physicalAddress = hit - filenameOffset;
-                            dynamic ep = _model.ActiveProfile.GetStructure("_EPROCESS", physicalAddress);
-                            _model.KernelDtb = ep.DTB;
+                            //dynamic ep = _model.ActiveProfile.GetStructure("_EPROCESS", physicalAddress);
+                            Eprocess eproc = new Eprocess(physicalAddress, _model.ActiveProfile);
+                            _model.KernelDtb = eproc.DTB;
                             if (_model.KernelDtb > _dataProvider.ImageLength || _model.KernelDtb == 0)
                             {
                                 _model.KernelDtb = 0;
                                 physicalAddress = 0;
                                 continue;
                             }
-                            if (ep.Pid != 0 || ep.Ppid != 0)
+                            if (eproc.Pid != 0 || eproc.Ppid != 0)
                             {
                                 _model.KernelDtb = 0;
                                 physicalAddress = 0;
@@ -136,10 +188,24 @@ namespace MemoryExplorer.WorkerThreads
                         }
                     }
                 }
-                
+                if (physicalAddress == 0)
+                {
+                    j.Status = JobStatus.Failed;
+                    j.ErrorMessage = "Couldn't Find the Idle Process";
+                }
+                else
+                {
+                    j.ActionMessage.Add(physicalAddress.ToString());
+                    j.ActionMessage.Add(_model.KernelDtb.ToString());
+                    j.Status = JobStatus.Complete;
+                    File.WriteAllLines(Path.Combine(_dataProvider.CacheFolder, "1002.dat"), j.ActionMessage);
+                }
             }
-            catch {}
-            return physicalAddress;
+            catch(Exception ex)
+            {
+                j.Status = JobStatus.Failed;
+                j.ErrorMessage = ex.Message;
+            }
         }
 
         private void LoadProfile(ref Job j)
@@ -360,74 +426,74 @@ namespace MemoryExplorer.WorkerThreads
             // Disable the Cancel button.
             //cancelAsyncButton.Enabled = false;
         }
-        private bool GetProfileConstant(string name, ref uint constant)
-        {
-            if (_model.ProfileDll == null)
-                return false;
-            try
-            {
-                foreach (Type type in _model.ProfileDll.GetExportedTypes())
-                {
-                    if (type.FullName == @"LiveForensics.Symbols.MxSymbols")
-                    {
-                        dynamic c = Activator.CreateInstance(type);
-                        var cst = c.LookupConstant(name);
-                        if (cst == null)
-                            return false;
-                        constant = (uint)cst;
-                        return true;
-                    }
-                }
-                return false;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-        private dynamic GetProfileCatalogueInfo()
-        {
-            if (_model.ProfileDll == null)
-                return null;
-            try
-            {
-                foreach (Type type in _model.ProfileDll.GetExportedTypes())
-                {
-                    if (type.FullName == @"LiveForensics.Symbols.CatalogueInformation")
-                    {
-                        dynamic c = Activator.CreateInstance(type);
-                        return c;
-                    }
-                }
-                return null;
+        //private bool GetProfileConstant(string name, ref uint constant)
+        //{
+        //    if (_model.ProfileDll == null)
+        //        return false;
+        //    try
+        //    {
+        //        foreach (Type type in _model.ProfileDll.GetExportedTypes())
+        //        {
+        //            if (type.FullName == @"LiveForensics.Symbols.MxSymbols")
+        //            {
+        //                dynamic c = Activator.CreateInstance(type);
+        //                var cst = c.LookupConstant(name);
+        //                if (cst == null)
+        //                    return false;
+        //                constant = (uint)cst;
+        //                return true;
+        //            }
+        //        }
+        //        return false;
+        //    }
+        //    catch
+        //    {
+        //        return false;
+        //    }
+        //}
+        //private dynamic GetProfileCatalogueInfo()
+        //{
+        //    if (_model.ProfileDll == null)
+        //        return null;
+        //    try
+        //    {
+        //        foreach (Type type in _model.ProfileDll.GetExportedTypes())
+        //        {
+        //            if (type.FullName == @"LiveForensics.Symbols.CatalogueInformation")
+        //            {
+        //                dynamic c = Activator.CreateInstance(type);
+        //                return c;
+        //            }
+        //        }
+        //        return null;
 
-            }
-            catch
-            {
-                return null;
-            }
-        }
-        private dynamic GetProfileStructure(string name)
-        {
-            if (_model.ProfileDll == null)
-                return null;
-            try
-            {
-                string target = "LiveForensics.Symbols." + name;
-                foreach (Type type in _model.ProfileDll.GetExportedTypes())
-                {
-                    if (type.FullName == target)
-                    {
-                        dynamic c = Activator.CreateInstance(type);
-                        return c;
-                    }
-                }
-                return null;
-            }
-            catch
-            {
-                return null;
-            }
-        }
+        //    }
+        //    catch
+        //    {
+        //        return null;
+        //    }
+        //}
+        //private dynamic GetProfileStructure(string name)
+        //{
+        //    if (_model.ProfileDll == null)
+        //        return null;
+        //    try
+        //    {
+        //        string target = "LiveForensics.Symbols." + name;
+        //        foreach (Type type in _model.ProfileDll.GetExportedTypes())
+        //        {
+        //            if (type.FullName == target)
+        //            {
+        //                dynamic c = Activator.CreateInstance(type);
+        //                return c;
+        //            }
+        //        }
+        //        return null;
+        //    }
+        //    catch
+        //    {
+        //        return null;
+        //    }
+        //}
     }
 }

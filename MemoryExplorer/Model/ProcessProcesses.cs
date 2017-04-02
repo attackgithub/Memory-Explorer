@@ -84,14 +84,14 @@ namespace MemoryExplorer.Model
             Job job = e.Argument as Job;
             AddDebugMessage("Background Worker: " + job.ProcessInformation.ProcessName);
             // get the EPROCESS object
-            EProcess ep = null;
+            EProcess_deprecated ep = null;
             // pid 0 is special because it's the Idle process and has no virtual address
             lock(_profile_deprecated.AccessLock)
             {
                 if (job.ProcessInformation.Pid == 0)
-                    ep = new EProcess(_profile_deprecated, _dataProvider, physicalAddress: job.ProcessInformation.PhysicalAddress);
+                    ep = new EProcess_deprecated(_profile_deprecated, _dataProvider, physicalAddress: job.ProcessInformation.PhysicalAddress);
                 else
-                    ep = new EProcess(_profile_deprecated, _dataProvider, job.ProcessInformation.VirtualAddress);
+                    ep = new EProcess_deprecated(_profile_deprecated, _dataProvider, job.ProcessInformation.VirtualAddress);
             }
             if (ep.Pid != job.ProcessInformation.Pid)
             {

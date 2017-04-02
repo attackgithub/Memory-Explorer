@@ -94,7 +94,7 @@ namespace MemoryExplorer.Tools
                     continue;
                 if (entry.VirtualAddress == 0)
                     continue;
-                EProcess ep = new EProcess(_profile, _dataProvider, entry.VirtualAddress - apl);
+                EProcess_deprecated ep = new EProcess_deprecated(_profile, _dataProvider, entry.VirtualAddress - apl);
                 if (ep.ImageFileName == "csrss.exe")
                 {
                     ulong handleTableAddress = ep.ObjectTable;
