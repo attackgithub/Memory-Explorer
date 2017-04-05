@@ -17,6 +17,10 @@
         SetDataProvider = 0x03,
         LoadProfile = 0x04,
         FindKernelDtb = 0x05,
-        LoadKernelAddressSpace = 0x06
+        LoadKernelAddressSpace = 0x06,
+        FindKernelImage = 0x07,
+        // ingester jobs
+        LoadProfileId = 0x1000,
+        SetCacheFolder = 0x1001
     }
 }

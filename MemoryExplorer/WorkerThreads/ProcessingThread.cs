@@ -31,6 +31,8 @@ namespace MemoryExplorer.WorkerThreads
         private IProcessor _plugin;
         private DataModel _model;
         private DataProviderBase _dataProvider = null;
+        private AddressBase _kernelAddressSpace;
+        private Profile _profile = null;
         #endregion
 
         public ProcessingThread(DataModel model)
@@ -79,6 +81,9 @@ namespace MemoryExplorer.WorkerThreads
                         case JobAction.LoadKernelAddressSpace:
                             LoadKernelAddressSpace(ref j);
                             break;
+                        case JobAction.FindKernelImage:
+                            FindKernelImage(ref j);
+                            break;
                         default:
                             break;
                     }
@@ -97,22 +102,145 @@ namespace MemoryExplorer.WorkerThreads
             //e.Result = ComputeFibonacci((int)e.Argument, worker, e);
         }
 
-        private void LoadKernelAddressSpace(ref Job j)
+        private void FindKernelImage(ref Job j)
         {
+            ulong kernelBaseAddress = 0;
+            string buildString;
+            string buildStringEx;
+
             try
             {
-                if (_model.ActiveProfile.Architecture == "I386")
-                    _model.KernelAddressSpace = new AddressSpacex86Pae(_dataProvider, "idle", _model.KernelDtb, true);
-                else
-                    _model.KernelAddressSpace = new AddressSpacex64(_dataProvider, "idle", _model.KernelDtb, true);
-                _model.ActiveProfile.KernelAddressSpace = _model.KernelAddressSpace;
-                _dataProvider.ActiveAddressSpace = _model.KernelAddressSpace;
-                j.Status = JobStatus.Complete;
+                j.ActionMessage.Clear();
+                string archiveFile = Path.Combine(_dataProvider.CacheFolder, "1003.dat");
+                FileInfo fi = new FileInfo(archiveFile);
+                if (fi.Exists)
+                {
+                    string[] items = File.ReadAllLines(archiveFile);
+                    foreach(string s in items)
+                    {
+                        j.ActionMessage.Add(s);
+                    }
+                    j.Status = JobStatus.Complete;
+                    return;
+                }
+
+                uint buildOffset = 0;
+                try
+                {
+                    buildOffset = (uint)_profile.GetConstant("NtBuildLab");
+                }
+                catch
+                {
+                    buildOffset = (uint)_profile.GetConstant("_NtBuildLab");
+                }
+                StringSearch mySearch = new StringSearch(_dataProvider);
+                mySearch.AddNeedle("INITKDBG");
+                mySearch.AddNeedle("MISYSPTE");
+                mySearch.AddNeedle("PAGEKD");
+                byte[] buffer = null;
+                foreach (var answer in mySearch.Scan())
+                {
+                    foreach (var kvp in answer)
+                    {
+                        List<ulong> hitList = kvp.Value;
+                        foreach (ulong hit in hitList)
+                        {
+                            // the physical address must exist in the kernel address space space
+                            ulong vAddr = _kernelAddressSpace.ptov(hit);
+                            if (vAddr == 0)
+                                continue;
+                            //// let's grab the PE header while we're here
+                            ulong page = vAddr & 0xfffffffff000;
+                            // remember PE images are page aligned
+                            for (int i = 0; i < 10; i++) // need to think about 10 being enough
+                            {
+                                ulong tryAddress = _kernelAddressSpace.vtop(page, false);
+                                buffer = _dataProvider.ReadMemory(tryAddress, 1);
+                                string sig = Encoding.Default.GetString(buffer, 0, 2);
+                                if (sig == "MZ")
+                                {
+                                    PE peHeader = new PE(_dataProvider, _kernelAddressSpace, page);
+                                    RSDS debugSection = peHeader.DebugSection;
+                                    if (IsValidKernel(debugSection.Filename))
+                                    {
+                                        kernelBaseAddress = page;
+                                        j.ActionMessage.Add(kernelBaseAddress.ToString());
+                                        ulong pAddr = _kernelAddressSpace.vtop(kernelBaseAddress + buildOffset, false);
+                                        if (pAddr == 0)
+                                            continue;
+                                        buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
+                                        buildString = ReadString(buffer, (uint)(pAddr & 0xfff));
+                                        j.ActionMessage.Add(buildString);
+                                        try
+                                        {
+                                            uint buildOffset2 = (uint)_profile.GetConstant("NtBuildLabEx");
+                                            pAddr = _kernelAddressSpace.vtop(kernelBaseAddress + buildOffset2, true);
+                                            if (pAddr == 0)
+                                                continue;
+                                            buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
+                                            buildStringEx = ReadString(buffer, (uint)(pAddr & 0xfff));
+                                            j.ActionMessage.Add(buildStringEx);
+                                        }
+                                        catch { }
+                                        j.Status = JobStatus.Complete;
+                                        File.WriteAllLines(Path.Combine(_dataProvider.CacheFolder, "1003.dat"), j.ActionMessage);
+                                        return;
+                                    }
+                                }
+                                // move backwards one page at a time
+                                page -= 0x1000;
+                            }
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
                 j.Status = JobStatus.Failed;
                 j.ErrorMessage = ex.Message;
+                return;
+            }
+            j.Status = JobStatus.Failed;
+            j.ErrorMessage = "Couldn't match signatures for kernel image";
+        }
+        private string ReadString(byte[] buffer, uint offset)
+        {
+            string result = "";
+            while (buffer[offset] != 0)
+            {
+                result += (char)buffer[offset];
+                offset++;
+            }
+            return result;
+        }
+        private bool IsValidKernel(string name)
+        {
+            List<string> KernelNames = new List<string>();
+            KernelNames.Add("ntkrnlmp.pdb");
+            KernelNames.Add("ntkrnlpa.pdb");
+            KernelNames.Add("ntoskrnl.pdb");
+            KernelNames.Add("ntkrpamp.pdb");
+
+            return KernelNames.Contains(name);
+        }
+        private void LoadKernelAddressSpace(ref Job j)
+        {
+            try
+            {
+                if (_profile.Architecture == "I386")
+                    _model.KernelAddressSpace = new AddressSpacex86Pae(_dataProvider, "idle", _model.KernelDtb, true);
+                else
+                    _model.KernelAddressSpace = new AddressSpacex64(_dataProvider, "idle", _model.KernelDtb, true);
+                _profile.KernelAddressSpace = _model.KernelAddressSpace;
+                _dataProvider.ActiveAddressSpace = _model.KernelAddressSpace;
+                j.Status = JobStatus.Complete;
+                _kernelAddressSpace = _model.KernelAddressSpace;
+            }
+            catch (Exception ex)
+            {
+                j.Status = JobStatus.Failed;
+                j.ErrorMessage = ex.Message;
+                _model.KernelAddressSpace = null;
             }
         }
 
@@ -138,10 +266,10 @@ namespace MemoryExplorer.WorkerThreads
                     string[] items = File.ReadAllLines(archiveFile);
                     if(items.Length == 2)
                     {
-                        physicalAddress = ulong.Parse(items[0]);
-                        _model.KernelDtb = ulong.Parse(items[1]);
-                        j.ActionMessage.Add(items[0]);
-                        j.ActionMessage.Add(items[1]);
+                        //physicalAddress = ulong.Parse(items[0]);
+                        //_model.KernelDtb = ulong.Parse(items[1]);
+                        //j.ActionMessage.Add(items[0]);
+                        //j.ActionMessage.Add(items[1]);
                         j.Status = JobStatus.Complete;
                         return;
                     }
@@ -157,7 +285,7 @@ namespace MemoryExplorer.WorkerThreads
                 // check if we already have it (from the live image)
                 if (_model.KernelDtb == 0)
                 {
-                    uint filenameOffset = _model.ActiveProfile.GetMemberOffset("_EPROCESS", "ImageFileName"); // Pcb.Flags.ExecuteDisable
+                    uint filenameOffset = _profile.GetMemberOffset("_EPROCESS", "ImageFileName"); // Pcb.Flags.ExecuteDisable
                     StringSearch mySearch = new StringSearch(_dataProvider);
                     mySearch.AddNeedle("Idle\x00\x00\x00\x00\x00\x00\x00");
                     foreach (var answer in mySearch.Scan())
@@ -206,8 +334,7 @@ namespace MemoryExplorer.WorkerThreads
                 j.Status = JobStatus.Failed;
                 j.ErrorMessage = ex.Message;
             }
-        }
-
+        }    
         private void LoadProfile(ref Job j)
         {
             try
@@ -215,17 +342,18 @@ namespace MemoryExplorer.WorkerThreads
                 string targetProfile = Path.Combine(Path.Combine(_model.ProfileCacheLocation, j.ActionMessage[0]), "LiveForensics.Symbols.dll");
                 if (new FileInfo(targetProfile).Exists)
                 {
-                    _model.ActiveProfile = new Profile(targetProfile, _dataProvider, _model);
-                    if(_model.ActiveProfile.Architecture == "I386")
+                    _profile = new Profile(targetProfile, _dataProvider, _model);
+                    if(_profile.Architecture == "I386")
                         _model.KiUserSharedData = 0xFFDF0000;
-                    else if (_model.ActiveProfile.Architecture == "AMD64")
+                    else if (_profile.Architecture == "AMD64")
                         _model.KiUserSharedData = 0xFFFFF78000000000;
-
+                    _model.ActiveProfile = _profile;
                     j.Status = JobStatus.Complete;
                 }
                 else
                 {
                     _model.ActiveProfile = null;
+                    _profile = null;
                     j.Status = JobStatus.Failed;
                     j.ErrorMessage = "Failed to load requested profile: " + targetProfile;
                 }
@@ -233,6 +361,7 @@ namespace MemoryExplorer.WorkerThreads
             catch(Exception ex)
             {
                 _model.ActiveProfile = null;
+                _profile = null;
                 j.Status = JobStatus.Failed;
                 j.ErrorMessage = ex.Message;
             }
@@ -247,7 +376,9 @@ namespace MemoryExplorer.WorkerThreads
             if (!di.Exists)
                 di.Create();
             _dataProvider = new ImageDataProvider(_model, cacheLocation);
+            j.ActionMessage.Clear();
             j.Status = JobStatus.Complete;
+            j.ActionMessage.Add(cacheLocation);
         }
         private string GetMD5HashFromFile(string filename)
         {

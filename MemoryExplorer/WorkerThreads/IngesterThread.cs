@@ -19,6 +19,8 @@ namespace MemoryExplorer.WorkerThreads
         private Queue<Job> _outbound = null;
         private Assembly _pluginAssembly;
         private IIngester _plugin;
+        private string _cacheFolder;
+        private DataModel _model;
 
         public IngesterThread(DataModel model)
         {
@@ -39,9 +41,9 @@ namespace MemoryExplorer.WorkerThreads
         {
             // Get the BackgroundWorker that raised this event.
             BackgroundWorker worker = sender as BackgroundWorker;
-            DataModel model = (DataModel)e.Argument;
-            _inbound = model.IngesterOut; // the models out is my in.
-            _outbound = model.IngesterIn; // the models in is my out!
+            _model = (DataModel)e.Argument;
+            _inbound = _model.IngesterOut; // the models out is my in.
+            _outbound = _model.IngesterIn; // the models in is my out!
 
             while (!worker.CancellationPending)
             {
@@ -50,10 +52,21 @@ namespace MemoryExplorer.WorkerThreads
                     Job j = _inbound.Dequeue();
                     switch (j.Action)
                     {
+                        case JobAction.SetCacheFolder:
+                            _cacheFolder = j.ActionMessage[0];
+                            break;
                         case JobAction.LoadPlugin:
                             LoadPlugin(j);
                             break;
-
+                        case JobAction.LoadProfileId:
+                            LoadProfileId(ref j);
+                            break;
+                        case JobAction.FindKernelDtb:
+                            FindKernelDtb(ref j);
+                            break;
+                        case JobAction.FindKernelImage:
+                            FindKernelImage(ref j);
+                            break;
                         default:
                             break;
                     }
@@ -61,7 +74,7 @@ namespace MemoryExplorer.WorkerThreads
                 else
                 {
                     //Debug.WriteLine("The ingester is waiting");
-                    Thread.Sleep(5000);
+                    Thread.Sleep(15);
                 }
             }
             // Assign the result of the computation
@@ -70,6 +83,55 @@ namespace MemoryExplorer.WorkerThreads
             // RunWorkerCompleted eventhandler.
             //e.Result = ComputeFibonacci((int)e.Argument, worker, e);
         }
+
+        private void FindKernelDtb(ref Job j)
+        {
+            try
+            {
+                string archiveFile = Path.Combine(_cacheFolder, "1002.dat");
+                FileInfo fi = new FileInfo(archiveFile);
+                if (fi.Exists)
+                {
+                    string[] items = File.ReadAllLines(archiveFile);
+                    // item[0] is the physical address of the idle eprocess structure
+                    _model.KernelDtb = ulong.Parse(items[1]);
+                }
+            }
+            catch { }                            
+        }
+
+        private void FindKernelImage(ref Job j)
+        {
+            string buildString;
+            string buildStringEx;
+
+            try
+            {
+                string archiveFile = Path.Combine(_cacheFolder, "1003.dat");
+                FileInfo fi = new FileInfo(archiveFile);
+                if (fi.Exists)
+                {
+                    string[] items = File.ReadAllLines(archiveFile);
+                    _model.KernelBaseAddress = ulong.Parse(items[0]);
+                    // TODO use the following strings in a infohelper object
+                    if (items.Length > 1)
+                        buildString = items[1];
+                    if (items.Length > 2)
+                        buildStringEx = items[2];
+                }
+
+            }
+            catch { }
+        }
+
+        private void LoadProfileId(ref Job j)
+        {
+            string archiveFile = Path.Combine(_cacheFolder, "1001.dat");
+            string[] items = File.ReadAllLines(archiveFile);
+
+
+        }
+
         private void LoadPlugin(Job j)
         {
             try
