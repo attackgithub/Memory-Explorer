@@ -122,6 +122,10 @@ namespace MemoryExplorer.WorkerThreads
 
         private void FindKernelImage(ref Job j)
         {
+            Job j1 = new Job();
+            j1.Action = JobAction.FindUserSharedData;
+            _processorOutbound.Enqueue(j1);
+            _model.IncrementActiveJobs("Loading User Shared Data");
             Job j2 = new Job();
             j2.Action = JobAction.FindKernelImage;
             foreach (var item in j.ActionMessage)
