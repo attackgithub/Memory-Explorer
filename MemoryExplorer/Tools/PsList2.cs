@@ -27,11 +27,11 @@ namespace MemoryExplorer.Tools
         /// Project must contain the image file MD5 hash (fileHash)
         /// </prerequisites>
         List<ProcessInfo> _processList;
-        public PsList2(Profile_Deprecated profile, DataProviderBase dataProvider, List<ProcessInfo> processList=null) : base(profile, dataProvider)
+        public PsList2(Profile profile, DataProviderBase dataProvider, List<ProcessInfo> processList=null) : base(profile, dataProvider)
         {
             _processList = processList;
             // check pre-reqs
-            if (_profile == null || _profile.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
+            if (_profile == null || _dataProvider.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
                 throw new ArgumentException("Missing Prerequisites");
         }
         public HashSet<ulong> Run()
@@ -83,39 +83,39 @@ namespace MemoryExplorer.Tools
             }
             // either we didn't have a process list, or it didn't contain any CSRSS processes
             uint processHeadOffset = (uint)_profile.GetConstant("PsActiveProcessHead");
-            ulong vAddr = _profile.KernelBaseAddress + processHeadOffset;
+            ulong vAddr = _dataProvider.KernelBaseAddress + processHeadOffset;
             _dataProvider.ActiveAddressSpace = _profile.KernelAddressSpace;
             LIST_ENTRY le = new LIST_ENTRY(_dataProvider, vAddr);
-            ulong apl = (ulong)_profile.GetOffset("_EPROCESS", "ActiveProcessLinks");
-            List<LIST_ENTRY> lists = FindAllLists(_dataProvider, le);
-            foreach (LIST_ENTRY entry in lists)
-            {
-                if (entry.VirtualAddress == vAddr)
-                    continue;
-                if (entry.VirtualAddress == 0)
-                    continue;
-                EProcess_deprecated ep = new EProcess_deprecated(_profile, _dataProvider, entry.VirtualAddress - apl);
-                if (ep.ImageFileName == "csrss.exe")
-                {
-                    ulong handleTableAddress = ep.ObjectTable;
-                    HandleTable ht = new HandleTable(_profile, _dataProvider, handleTableAddress);
-                    List<HandleTableEntry> records = EnumerateHandles(ht.TableStartAddress, ht.Level);
-                    foreach (HandleTableEntry e in records)
-                    {
-                        try
-                        {
-                            ObjectHeader header = new ObjectHeader(_profile, _dataProvider, e.ObjectPointer);
-                            string objectName = GetObjectName(e.TypeInfo);
-                            if (objectName == "Process")
-                                results.Add(e.ObjectPointer + (ulong)header.Size);
-                        }
-                        catch (Exception)
-                        {
-                            continue;
-                        }                        
-                    }
-                }
-            }
+            //ulong apl = (ulong)_profile.GetOffset("_EPROCESS", "ActiveProcessLinks");
+            //List<LIST_ENTRY> lists = FindAllLists(_dataProvider, le);
+            //foreach (LIST_ENTRY entry in lists)
+            //{
+            //    if (entry.VirtualAddress == vAddr)
+            //        continue;
+            //    if (entry.VirtualAddress == 0)
+            //        continue;
+            //    EProcess_deprecated ep = new EProcess_deprecated(_profile, _dataProvider, entry.VirtualAddress - apl);
+            //    if (ep.ImageFileName == "csrss.exe")
+            //    {
+            //        ulong handleTableAddress = ep.ObjectTable;
+            //        HandleTable ht = new HandleTable(_profile, _dataProvider, handleTableAddress);
+            //        List<HandleTableEntry> records = EnumerateHandles(ht.TableStartAddress, ht.Level);
+            //        foreach (HandleTableEntry e in records)
+            //        {
+            //            try
+            //            {
+            //                ObjectHeader header = new ObjectHeader(_profile, _dataProvider, e.ObjectPointer);
+            //                string objectName = GetObjectName(e.TypeInfo);
+            //                if (objectName == "Process")
+            //                    results.Add(e.ObjectPointer + (ulong)header.Size);
+            //            }
+            //            catch (Exception)
+            //            {
+            //                continue;
+            //            }                        
+            //        }
+            //    }
+            //}
             return TrySave(results);
         }
         private HashSet<ulong> TrySave(HashSet<ulong> results)

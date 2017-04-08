@@ -20,6 +20,7 @@
         LoadKernelAddressSpace = 0x06,
         FindKernelImage = 0x07,
         FindUserSharedData = 0x08,
+        EnumerateObjectTypes = 0x09,
         // ingester jobs
         LoadProfileId = 0x1000,
         SetCacheFolder = 0x1001

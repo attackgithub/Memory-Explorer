@@ -29,11 +29,11 @@ namespace MemoryExplorer.Tools
         /// <param name="dataProvider"></param>
         /// <param name="processList"></param>
         List<ProcessInfo> _processList;
-        public PsList3(Profile_Deprecated profile, DataProviderBase dataProvider, List<ProcessInfo> processList = null) : base(profile, dataProvider)
+        public PsList3(Profile profile, DataProviderBase dataProvider, List<ProcessInfo> processList = null) : base(profile, dataProvider)
         {
             _processList = processList;
             // check pre-reqs
-            if (_profile == null || _profile.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
+            if (_profile == null || _dataProvider.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
                 throw new ArgumentException("Missing Prerequisites");
         }
         public HashSet<ulong> Run()
@@ -48,7 +48,7 @@ namespace MemoryExplorer.Tools
             }
             HashSet<ulong> results = new HashSet<ulong>();
             uint tableOffset = (uint)_profile.GetConstant("PspCidTable");
-            ulong vAddr = _profile.KernelBaseAddress + tableOffset;
+            ulong vAddr = _dataProvider.KernelBaseAddress + tableOffset;
             ulong tableAddress = 0;
             if (_isx64)
             {
@@ -66,22 +66,22 @@ namespace MemoryExplorer.Tools
             }
             HandleTable ht = new HandleTable(_profile, _dataProvider, tableAddress);
             List<HandleTableEntry> records = EnumerateHandles(ht.TableStartAddress, ht.Level);
-            ulong bodyOffset = (ulong)_profile.GetOffset("_OBJECT_HEADER", "Body");
-            foreach (HandleTableEntry e in records)
-            {
-                try
-                {
-                    vAddr = e.ObjectPointer - bodyOffset;
-                    ObjectHeader header = new ObjectHeader(_profile, _dataProvider, vAddr);
-                    string objectName = GetObjectName(header.TypeInfo);
-                    if (objectName == "Process")
-                        results.Add(e.ObjectPointer);
-                }
-                catch (Exception)
-                {
-                    continue;
-                }
-            }
+            //ulong bodyOffset = (ulong)_profile.GetOffset("_OBJECT_HEADER", "Body");
+            //foreach (HandleTableEntry e in records)
+            //{
+            //    try
+            //    {
+            //        vAddr = e.ObjectPointer - bodyOffset;
+            //        ObjectHeader header = new ObjectHeader(_profile, _dataProvider, vAddr);
+            //        string objectName = GetObjectName(header.TypeInfo);
+            //        if (objectName == "Process")
+            //            results.Add(e.ObjectPointer);
+            //    }
+            //    catch (Exception)
+            //    {
+            //        continue;
+            //    }
+            //}
             return TrySave(results);
         }
         private HashSet<ulong> TrySave(HashSet<ulong> results)

@@ -32,7 +32,6 @@ namespace MemoryExplorer.WorkerThreads
         private IProcessor _plugin;
         private DataModel _model;
         private DataProviderBase _dataProvider = null;
-        private AddressBase _kernelAddressSpace;
         private Profile _profile = null;
         #endregion
 
@@ -88,6 +87,9 @@ namespace MemoryExplorer.WorkerThreads
                         case JobAction.FindUserSharedData:
                             FindUserSharedData(ref j);
                             break;
+                        case JobAction.EnumerateObjectTypes:
+                            EnumerateObjectTypes(ref j);
+                            break;
                         default:
                             break;
                     }
@@ -96,7 +98,7 @@ namespace MemoryExplorer.WorkerThreads
                 else
                 {
                     //Debug.WriteLine("The processor is waiting");
-                    Thread.Sleep(500);
+                    Thread.Sleep(10);
                 }
             }
             // Assign the result of the computation
@@ -104,6 +106,19 @@ namespace MemoryExplorer.WorkerThreads
             // object. This is will be available to the 
             // RunWorkerCompleted eventhandler.
             //e.Result = ComputeFibonacci((int)e.Argument, worker, e);
+        }
+
+        private void EnumerateObjectTypes(ref Job j)
+        {
+            try
+            {
+                ObjectTypes objectTypes = new ObjectTypes(_dataProvider, _profile);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
         }
 
         private void FindUserSharedData(ref Job j)
@@ -124,7 +139,7 @@ namespace MemoryExplorer.WorkerThreads
                 }
 
 
-                ulong pAddr = _kernelAddressSpace.vtop(_model.KiUserSharedData);
+                ulong pAddr = _dataProvider.KernelAddressSpace.vtop(_model.KiUserSharedData);
                 if (pAddr == 0)
                 {
                     j.Status = JobStatus.Failed;
@@ -219,7 +234,7 @@ namespace MemoryExplorer.WorkerThreads
                         foreach (ulong hit in hitList)
                         {
                             // the physical address must exist in the kernel address space space
-                            ulong vAddr = _kernelAddressSpace.ptov(hit);
+                            ulong vAddr = _dataProvider.KernelAddressSpace.ptov(hit);
                             if (vAddr == 0)
                                 continue;
                             //// let's grab the PE header while we're here
@@ -227,18 +242,18 @@ namespace MemoryExplorer.WorkerThreads
                             // remember PE images are page aligned
                             for (int i = 0; i < 10; i++) // need to think about 10 being enough
                             {
-                                ulong tryAddress = _kernelAddressSpace.vtop(page, false);
+                                ulong tryAddress = _dataProvider.KernelAddressSpace.vtop(page, false);
                                 buffer = _dataProvider.ReadMemory(tryAddress, 1);
                                 string sig = Encoding.Default.GetString(buffer, 0, 2);
                                 if (sig == "MZ")
                                 {
-                                    PE peHeader = new PE(_dataProvider, _kernelAddressSpace, page);
+                                    PE peHeader = new PE(_dataProvider, _dataProvider.KernelAddressSpace, page);
                                     RSDS debugSection = peHeader.DebugSection;
                                     if (IsValidKernel(debugSection.Filename))
                                     {
                                         kernelBaseAddress = page;
                                         j.ActionMessage.Add(kernelBaseAddress.ToString());
-                                        ulong pAddr = _kernelAddressSpace.vtop(kernelBaseAddress + buildOffset, false);
+                                        ulong pAddr = _dataProvider.KernelAddressSpace.vtop(kernelBaseAddress + buildOffset, false);
                                         if (pAddr == 0)
                                             continue;
                                         buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
@@ -247,7 +262,7 @@ namespace MemoryExplorer.WorkerThreads
                                         try
                                         {
                                             uint buildOffset2 = (uint)_profile.GetConstant("NtBuildLabEx");
-                                            pAddr = _kernelAddressSpace.vtop(kernelBaseAddress + buildOffset2, true);
+                                            pAddr = _dataProvider.KernelAddressSpace.vtop(kernelBaseAddress + buildOffset2, true);
                                             if (pAddr == 0)
                                                 continue;
                                             buffer = _dataProvider.ReadMemory(pAddr & 0xfffffffff000, 2);
@@ -255,6 +270,8 @@ namespace MemoryExplorer.WorkerThreads
                                             j.ActionMessage.Add(buildStringEx);
                                         }
                                         catch { }
+                                        _dataProvider.KernelBaseAddress = kernelBaseAddress;
+                                        _dataProvider.ActiveAddressSpace = _dataProvider.KernelAddressSpace;
                                         j.Status = JobStatus.Complete;
                                         File.WriteAllLines(Path.Combine(_dataProvider.CacheFolder, "1003.dat"), j.ActionMessage);
                                         return;
@@ -298,16 +315,24 @@ namespace MemoryExplorer.WorkerThreads
         }
         private void LoadKernelAddressSpace(ref Job j)
         {
+            ulong kernelDtb;
+
             try
             {
-                if (_profile.Architecture == "I386")
-                    _model.KernelAddressSpace = new AddressSpacex86Pae(_dataProvider, "idle", _model.KernelDtb, true);
-                else
-                    _model.KernelAddressSpace = new AddressSpacex64(_dataProvider, "idle", _model.KernelDtb, true);
-                _profile.KernelAddressSpace = _model.KernelAddressSpace;
-                _dataProvider.ActiveAddressSpace = _model.KernelAddressSpace;
+                // get the kernel dtb from the storage files
+                string archiveFile = Path.Combine(_dataProvider.CacheFolder, "1002.dat");
+                FileInfo fi = new FileInfo(archiveFile);
+                if (fi.Exists)
+                {
+                    string[] items = File.ReadAllLines(archiveFile);
+                    kernelDtb = ulong.Parse(items[1]);
+                    if (_profile.Architecture == "I386")
+                        _dataProvider.KernelAddressSpace = new AddressSpacex86Pae(_dataProvider, "idle", kernelDtb, true);
+                    else
+                        _dataProvider.KernelAddressSpace = new AddressSpacex64(_dataProvider, "idle", kernelDtb, true);
+                    _dataProvider.ActiveAddressSpace = _dataProvider.KernelAddressSpace;
+                }
                 j.Status = JobStatus.Complete;
-                _kernelAddressSpace = _model.KernelAddressSpace;
             }
             catch (Exception ex)
             {
@@ -494,6 +519,8 @@ namespace MemoryExplorer.WorkerThreads
             List<string> todoList = new List<string>();
             todoList.Add("_EPROCESS");
             todoList.Add("_KUSER_SHARED_DATA");
+            todoList.Add("_OBJECT_TYPE");
+            
             int successCount = 0;
             mySearch.AddNeedle("RSDS");
             foreach (var answer in mySearch.Scan())

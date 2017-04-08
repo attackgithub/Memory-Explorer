@@ -3,6 +3,7 @@ using MemoryExplorer.Memory;
 using MemoryExplorer.Model;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,6 +17,8 @@ namespace MemoryExplorer.Data
         private bool _isLive;
         private string _cacheFolder;
         private AddressBase _activeAddressSpace;
+        private AddressBase _kernelAddressSpace;
+        private ulong _kernelBaseAddress = 0;
 
         public DataProviderBase(DataModel data, string cacheFolder)
         {
@@ -49,6 +52,31 @@ namespace MemoryExplorer.Data
             get { return _activeAddressSpace; }
             set { _activeAddressSpace = value; }
         }
+
+        public AddressBase KernelAddressSpace { get => _kernelAddressSpace; set => _kernelAddressSpace = value; }
+        public ulong KernelBaseAddress
+        {
+            get
+            {
+                if(_kernelBaseAddress == 0)
+                {
+                    try
+                    {
+                        string archiveFile = Path.Combine(CacheFolder, "1003.dat");
+                        FileInfo fi = new FileInfo(archiveFile);
+                        if (fi.Exists)
+                        {
+                            string[] items = File.ReadAllLines(archiveFile);
+                            _kernelBaseAddress = ulong.Parse(items[0]);
+                        }
+                    }
+                    catch { }                    
+                }
+                return _kernelBaseAddress;
+            }
+            set => _kernelBaseAddress = value;
+        }
+
         public byte[] ReadPhysicalMemory(ulong startAddress, uint byteCount)
         {
             uint pages = 1;

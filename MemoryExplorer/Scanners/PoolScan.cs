@@ -14,11 +14,11 @@ namespace MemoryExplorer.Scanners
         DataProviderBase _dataProvider;
         StringSearch _scanner;
         PoolType _poolType;
-        Profile_Deprecated _profile;
+        Profile _profile;
         ulong _objectTypeIndex = 0;
         string _poolTypeName;
 
-        public PoolScan(Profile_Deprecated profile, DataProviderBase dataProvider, PoolType poolType)
+        public PoolScan(Profile profile, DataProviderBase dataProvider, PoolType poolType)
         {
             _profile = profile;
             _dataProvider = dataProvider;
@@ -37,62 +37,62 @@ namespace MemoryExplorer.Scanners
         }
         public List<ulong> Scan()
         {            
-            ulong tagOffset = (ulong)_profile.GetOffset("_POOL_HEADER", "PoolTag");
-            ulong inforMaskOffset = (ulong)_profile.GetOffset("_OBJECT_HEADER", "InfoMask");
+            ////ulong tagOffset = (ulong)_profile.GetOffset("_POOL_HEADER", "PoolTag");
+            ////ulong inforMaskOffset = (ulong)_profile.GetOffset("_OBJECT_HEADER", "InfoMask");
             ulong poolAlign = _profile.PoolAlign;
             List<ulong> matches = new List<ulong>();
-            ulong maxHeader = GetMaximumHeaderSize();
-            foreach (var item in _scanner.Scan())
-            {
-                List<ulong> hitList = item[_poolTypeName];
-                foreach (ulong hit in hitList)
-                {
-                    ulong realHit = hit - tagOffset;
-                    PoolHeader h = new PoolHeader(_profile, _dataProvider, physicalAddress: realHit);
-                    var bs = h.BlockSize;
-                    var pt = h.PoolType;
-                    var tag = h.Tag;
-                    var index = h.PoolIndex;
-                    var ep = h.ProcessBilled;
-                    ulong allocationSize = bs * poolAlign;
-                    try
-                    {
-                        for (ulong i = realHit; i < realHit + maxHeader + inforMaskOffset; i += poolAlign)
-                        {
-                            ObjectHeader oh = new ObjectHeader(_profile, _dataProvider, physicalAddress: i);
-                            if (oh.TypeInfo != _objectTypeIndex)
-                                continue;
-                            if (oh.HeaderSize > i - realHit)
-                                continue;
-                            if (oh.PointerCount > 0x100000 || oh.HandleCount > 0x1000)
-                                continue;
-                            if (oh.TypeInfo > 50 || oh.TypeInfo < 1)
-                                continue;
-                            if (oh.HeaderNameInfo == null) // specific to driver type?
-                                continue;
-                            // there's a good chance we now have a valid ObjectHeader
-                            matches.Add(i);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        continue;
-                    }
+            //ulong maxHeader = GetMaximumHeaderSize();
+            //foreach (var item in _scanner.Scan())
+            //{
+            //    List<ulong> hitList = item[_poolTypeName];
+            //    foreach (ulong hit in hitList)
+            //    {
+            //        ////ulong realHit = hit - tagOffset;
+            //        PoolHeader h = new PoolHeader(_profile, _dataProvider, physicalAddress: realHit);
+            //        var bs = h.BlockSize;
+            //        var pt = h.PoolType;
+            //        var tag = h.Tag;
+            //        var index = h.PoolIndex;
+            //        var ep = h.ProcessBilled;
+            //        ulong allocationSize = bs * poolAlign;
+            //        try
+            //        {
+            //            for (ulong i = realHit; i < realHit + maxHeader + inforMaskOffset; i += poolAlign)
+            //            {
+            //                ObjectHeader oh = new ObjectHeader(_profile, _dataProvider, physicalAddress: i);
+            //                if (oh.TypeInfo != _objectTypeIndex)
+            //                    continue;
+            //                if (oh.HeaderSize > i - realHit)
+            //                    continue;
+            //                if (oh.PointerCount > 0x100000 || oh.HandleCount > 0x1000)
+            //                    continue;
+            //                if (oh.TypeInfo > 50 || oh.TypeInfo < 1)
+            //                    continue;
+            //                if (oh.HeaderNameInfo == null) // specific to driver type?
+            //                    continue;
+            //                // there's a good chance we now have a valid ObjectHeader
+            //                matches.Add(i);
+            //            }
+            //        }
+            //        catch (Exception ex)
+            //        {
+            //            continue;
+            //        }
                     
-                }            
-            }
+            //    }            
+            //}
             return matches;
         }
         ulong GetObjectTypeIndex(string name)
         {
             try
             {
-                List<ObjectTypeRecord> lookup = _profile.ObjectTypeList;
-                foreach (ObjectTypeRecord item in lookup)
-                {
-                    if (item.Name == name)
-                        return item.Index;
-                }
+                //List<ObjectTypeRecord> lookup = _profile.ObjectTypeList;
+                //foreach (ObjectTypeRecord item in lookup)
+                //{
+                //    if (item.Name == name)
+                //        return item.Index;
+                //}
                 return 0;
             }
             catch { return 0; }

@@ -1,4 +1,5 @@
-﻿using MemoryExplorer.Model;
+﻿using MemoryExplorer.Address;
+using MemoryExplorer.Model;
 using MemoryExplorer.Worker;
 using PluginContracts;
 using System;
@@ -67,6 +68,12 @@ namespace MemoryExplorer.WorkerThreads
                         case JobAction.FindKernelImage:
                             FindKernelImage(ref j);
                             break;
+                        case JobAction.FindUserSharedData:
+                            FindUserSharedData(ref j);
+                            break;
+                        case JobAction.LoadKernelAddressSpace:
+                            LoadKernelAddressSpace(ref j);
+                            break;
                         default:
                             break;
                     }
@@ -82,6 +89,44 @@ namespace MemoryExplorer.WorkerThreads
             // object. This is will be available to the 
             // RunWorkerCompleted eventhandler.
             //e.Result = ComputeFibonacci((int)e.Argument, worker, e);
+        }
+
+        private void LoadKernelAddressSpace(ref Job j)
+        {
+            try
+            {
+                // get the kernel dtb from the storage files
+                string archiveFile = Path.Combine(_model.DataProvider.CacheFolder, "1002.dat");
+                FileInfo fi = new FileInfo(archiveFile);
+                if (fi.Exists)
+                {
+                    string[] items = File.ReadAllLines(archiveFile);
+                    ulong kernelDtb = ulong.Parse(items[1]);
+                    if (_model.ActiveProfile.Architecture == "I386")
+                        _model.KernelAddressSpace = new AddressSpacex86Pae(_model.DataProvider, "idle", kernelDtb, true);
+                    else
+                        _model.KernelAddressSpace = new AddressSpacex64(_model.DataProvider, "idle", kernelDtb, true);
+                }
+            }
+            catch (Exception ex)
+            {
+                // message box warning
+                _model.KernelAddressSpace = null;
+            }
+            
+        }
+
+        private void FindUserSharedData(ref Job j)
+        {
+            try
+            {
+                string archiveFile = Path.Combine(_cacheFolder, "1004.dat");
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
         }
 
         private void FindKernelDtb(ref Job j)

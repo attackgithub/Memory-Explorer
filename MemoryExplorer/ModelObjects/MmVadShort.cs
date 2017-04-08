@@ -9,21 +9,21 @@ namespace MemoryExplorer.ModelObjects
     {
         private uint _flags;
         private uint _flags1;
-        public MmVadShort(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress, physicalAddress)
+        public MmVadShort(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress, physicalAddress)
         {
             Overlay("_MMVAD_SHORT");
             _flags = Members.u;
             _flags1 = Members.u1;
         }
-        public MmVadShort(Profile_Deprecated profile, DataProviderBase dataProvider, byte[] buffer) : base(profile, dataProvider, 0, 0)
+        public MmVadShort(Profile profile, DataProviderBase dataProvider, byte[] buffer) : base(profile, dataProvider, 0, 0)
         {
-            var dll = _profile.GetStructureAssembly("_MMVAD_SHORT");
-            Type t = dll.GetType("liveforensics.MMVAD_SHORT");
-            GCHandle pinedPacket = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            _members = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0), t);
-            pinedPacket.Free();
-            _flags = Members.u;
-            _flags1 = Members.u1;
+            //var dll = _profile.GetStructureAssembly("_MMVAD_SHORT");
+            //Type t = dll.GetType("liveforensics.MMVAD_SHORT");
+            //GCHandle pinedPacket = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+            //_members = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0), t);
+            //pinedPacket.Free();
+            //_flags = Members.u;
+            //_flags1 = Members.u1;
         }
         public VadProtection Protection { get { return (VadProtection)((_flags & 0xf8) >> 3); } }
         public VadType Type { get { return (VadType)(_flags & 0x03); } }

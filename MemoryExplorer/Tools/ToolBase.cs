@@ -21,11 +21,11 @@ namespace MemoryExplorer.Tools
     }
     public abstract class ToolBase
     {
-        protected Profile_Deprecated _profile = null;
+        protected Profile _profile = null;
         protected bool _isx64;
         protected DataProviderBase _dataProvider = null;
 
-        public ToolBase(Profile_Deprecated profile, DataProviderBase dataProvider)
+        public ToolBase(Profile profile, DataProviderBase dataProvider)
         {
             _profile = profile;
             _dataProvider = dataProvider;
@@ -250,12 +250,12 @@ namespace MemoryExplorer.Tools
         {
             try
             {
-                List<ObjectTypeRecord> lookup = _profile.ObjectTypeList;
-                foreach (ObjectTypeRecord t in lookup)
-                {
-                    if (t.Index == index)
-                        return t.Name;
-                }
+                //List<ObjectTypeRecord> lookup = _profile.ObjectTypeList;
+                //foreach (ObjectTypeRecord t in lookup)
+                //{
+                //    if (t.Index == index)
+                //        return t.Name;
+                //}
                 return "--";
             }
             catch { return "--"; }

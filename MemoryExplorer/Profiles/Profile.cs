@@ -11,6 +11,7 @@ namespace MemoryExplorer.Profiles
 {
     public class Profile
     {
+        public object AccessLock = new object();
         private string _profileDllLocation;
         private DataModel _model;
         private Assembly _profileDll;
@@ -143,6 +144,8 @@ namespace MemoryExplorer.Profiles
         }
 
         
+
+
         #endregion
         public dynamic GetStructure(string name, byte[] buffer, int offset)
         {

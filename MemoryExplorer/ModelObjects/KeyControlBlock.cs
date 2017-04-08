@@ -13,7 +13,7 @@ namespace MemoryExplorer.ModelObjects
         public CmNameControlBlock NameControlBlock { get { return _nameControlBlock; } }
         public KeyControlBlock Parent { get { return _parent; } }
 
-        public KeyControlBlock(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public KeyControlBlock(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0) : base(profile, dataProvider, virtualAddress)
         {
             Overlay("_CM_KEY_CONTROL_BLOCK");
             ulong nameBlockPtr = Members.NameBlock & 0xffffffffffff;

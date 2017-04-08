@@ -33,9 +33,9 @@ namespace MemoryExplorer.ModelObjects
         public ulong HeaderSize { get { return _headerSize; } }
         public byte InfoMask { get { return _infoMask; } }
 
-        public ObjectHeader(Profile_Deprecated profile) : base(profile, null, 0)
+        public ObjectHeader(Profile profile) : base(profile, null, 0)
         {
-            _structure = profile.GetEntries("_OBJECT_HEADER");
+            ////_structure = profile.GetEntries("_OBJECT_HEADER");
             Structure s = GetStructureMember("Body");
             if (s != null)
                 _structureSize = (long)s.Offset;
@@ -49,7 +49,7 @@ namespace MemoryExplorer.ModelObjects
         /// <param name="dataProvider"></param>
         /// <param name="virtualAddress"></param>
         /// <param name="physicalAddress"></param>
-        public ObjectHeader(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
+        public ObjectHeader(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
         {
             _physicalAddress = physicalAddress;
             if (virtualAddress == 0 && physicalAddress == 0)
@@ -73,7 +73,7 @@ namespace MemoryExplorer.ModelObjects
         {
             try
             {
-                _structure = _profile.GetEntries("_OBJECT_HEADER");
+                ////_structure = _profile.GetEntries("_OBJECT_HEADER");
                 Structure s = GetStructureMember("InfoMask");
                 _infoMask = _buffer[s.Offset];
                 ulong offsetMarker = _physicalAddress;

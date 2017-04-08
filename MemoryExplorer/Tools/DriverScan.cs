@@ -13,10 +13,10 @@ namespace MemoryExplorer.Tools
 {
     public class DriverScan : ToolBase
     {
-        public DriverScan(Profile_Deprecated profile, DataProviderBase dataProvider) : base(profile, dataProvider)
+        public DriverScan(Profile profile, DataProviderBase dataProvider) : base(profile, dataProvider)
         {
             // check pre-reqs
-            if (_profile == null || _profile.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
+            if (_profile == null || _dataProvider.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
                 throw new ArgumentException("Missing Prerequisites");
         }
         public List<DriverObject> Run()

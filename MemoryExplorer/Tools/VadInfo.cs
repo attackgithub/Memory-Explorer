@@ -17,11 +17,11 @@ namespace MemoryExplorer.Tools
         private ulong _pid;
         private MmVadBase _vadItem;
         private HashSet<ulong> _seen = new HashSet<ulong>();
-        public VadInfo(Profile_Deprecated profile, DataProviderBase dataProvider, ulong pid) : base(profile, dataProvider)
+        public VadInfo(Profile profile, DataProviderBase dataProvider, ulong pid) : base(profile, dataProvider)
         {
             _pid = pid;
             // check pre-reqs
-            if (_profile == null || _profile.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
+            if (_profile == null || _dataProvider.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
                 throw new ArgumentException("Missing Prerequisites");
         }
         public void Run()
@@ -31,7 +31,7 @@ namespace MemoryExplorer.Tools
                 if (0 == _pid)
                     return;
                 _isx64 = (_profile.Architecture == "AMD64");
-                _processInfo = _profile.Model.FindProcess(_pid);
+                ////_processInfo = _profile.Model.FindProcess(_pid);
                 if (null == _processInfo)
                     return;
                 EProcess_deprecated ep = new EProcess_deprecated(_profile, _dataProvider, _processInfo.VirtualAddress);

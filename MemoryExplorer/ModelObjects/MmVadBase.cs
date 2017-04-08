@@ -51,7 +51,7 @@ namespace MemoryExplorer.ModelObjects
     }
     public class MmVadBase : StructureBase
     {
-        public MmVadBase(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
+        public MmVadBase(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
         {
 
         }

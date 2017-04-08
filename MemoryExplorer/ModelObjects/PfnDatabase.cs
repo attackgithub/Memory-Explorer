@@ -40,7 +40,7 @@ namespace MemoryExplorer.ModelObjects
     {
         private List<PfnRecord> _pfnDatabaseList = new List<PfnRecord>();
 
-        public PfnDatabase(DataProviderBase dataProvider, Profile_Deprecated profile, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
+        public PfnDatabase(DataProviderBase dataProvider, Profile profile, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
         {
             _is64 = (_profile.Architecture == "AMD64");
             // there's no point if the system is live

@@ -7,9 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace MemoryExplorer.ModelObjects
 {
@@ -30,7 +28,7 @@ namespace MemoryExplorer.ModelObjects
         //List<ObjectTypeRecord> _records = new List<ObjectTypeRecord>();
         ObjectTypeMap _objectMap = null;
 
-        public ObjectTypes(DataProviderBase dataProvider, Profile_Deprecated profile) : base(profile, dataProvider, 0)
+        public ObjectTypes(DataProviderBase dataProvider, Profile profile) : base(profile, dataProvider, 0)
         {
             _is64 = (_profile.Architecture == "AMD64");
             _objectMap = new ObjectTypeMap();
@@ -50,11 +48,11 @@ namespace MemoryExplorer.ModelObjects
 
             AddressBase kernelAS;
             if (_is64)
-                kernelAS = _profile.KernelAddressSpace as AddressSpacex64;
+                kernelAS = _dataProvider.KernelAddressSpace as AddressSpacex64;
             else
-                kernelAS = _profile.KernelAddressSpace as AddressSpacex86Pae;
+                kernelAS = _dataProvider.KernelAddressSpace as AddressSpacex86Pae;
             uint indexTableOffset = (uint)_profile.GetConstant("ObpObjectTypes");
-            ulong startOffset = _profile.KernelBaseAddress + indexTableOffset;
+            ulong startOffset = _dataProvider.KernelBaseAddress + indexTableOffset;
             ulong pAddr = kernelAS.vtop(startOffset, _dataProvider.IsLive);
             if (pAddr == 0)
                 return;
@@ -72,12 +70,12 @@ namespace MemoryExplorer.ModelObjects
                 {
                     if (_is64)
                     {
-                        startOffset = _profile.KernelBaseAddress + indexTableOffset + (uint)(i * 8);
+                        startOffset = _dataProvider.KernelBaseAddress + indexTableOffset + (uint)(i * 8);
                         ptr = (BitConverter.ToUInt64(_dataProvider.ReadMemoryBlock(startOffset, 8), 0) & 0xffffffffffff);
                     }
                     else
                     {
-                        startOffset = _profile.KernelBaseAddress + indexTableOffset + (uint)(i * 4);
+                        startOffset = _dataProvider.KernelBaseAddress + indexTableOffset + (uint)(i * 4);
                         ptr = (BitConverter.ToUInt32(_dataProvider.ReadMemoryBlock(startOffset, 4), 0));
                     }
                     ot = new ObjectType(_profile, _dataProvider, ptr);
@@ -88,8 +86,8 @@ namespace MemoryExplorer.ModelObjects
                         continue;
                     _objectMap.ObjectTypeRecords.Add(otr);
                 }
-                if (!dataProvider.IsLive)
-                    PersistObjectMap(_objectMap, _dataProvider.CacheFolder + "\\object_type_map.gz");
+                //if (!dataProvider.IsLive)
+                //    PersistObjectMap(_objectMap, _dataProvider.CacheFolder + "\\object_type_map.gz");
             }
             catch (Exception ex)
             {
@@ -133,38 +131,111 @@ namespace MemoryExplorer.ModelObjects
         private ulong _totalNumberOfHandles;
         private ulong _highWaterNumberOfHandles;
         private ulong _highWaterNumberOfObjects;
+        private dynamic _ot;
 
-
-        public ObjectType(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
+        public ObjectType(Profile profile, DataProviderBase dataProvider, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
         {
             _is64 = (_profile.Architecture == "AMD64");
             int structureSize = (int)_profile.GetStructureSize("_OBJECT_TYPE");
             if (structureSize == -1)
                 throw new ArgumentException("Error - Profile didn't contain a definition for _OBJECT_TYPE");
-            _structure = _profile.GetEntries("_OBJECT_TYPE");            
             _buffer = _dataProvider.ReadMemoryBlock(virtualAddress, (uint)structureSize);
-            //_buffer = _dataProvider.ReadMemory(virtualAddress & 0xfffffffff000, 1);
-            //_index = _buffer[(int)s.Offset + (int)(virtualAddress & 0xfff)];
-            Structure s = GetStructureMember("Index");
-            _index = _buffer[(int)s.Offset];
-            s = GetStructureMember("Name");
-            UnicodeString us = new UnicodeString(_profile, _dataProvider, virtualAddress + s.Offset);
-            _name = us.Name;
-            s = GetStructureMember("TotalNumberOfObjects");
-            _totalNumberOfObjects = BitConverter.ToUInt64(_buffer, (int)s.Offset);
-            s = GetStructureMember("TotalNumberOfHandles");
-            _totalNumberOfHandles = BitConverter.ToUInt64(_buffer, (int)s.Offset);
-            s = GetStructureMember("HighWaterNumberOfHandles");
-            _highWaterNumberOfHandles = BitConverter.ToUInt64(_buffer, (int)s.Offset);
-            s = GetStructureMember("HighWaterNumberOfObjects");
-            _highWaterNumberOfObjects = BitConverter.ToUInt64(_buffer, (int)s.Offset);
-
+            _ot = profile.GetStructure("_OBJECT_TYPE", _buffer, 0);
         }
-        public ulong Index { get { return _index; } }
-        public string Name { get { return _name; } }
-        public ulong TotalNumberOfObjects { get { return _totalNumberOfObjects; } }
-        public ulong TotalNumberOfHandles { get { return _totalNumberOfObjects; } }
-        public ulong HighWaterNumberOfHandles { get { return _highWaterNumberOfHandles; } }
-        public ulong HighWaterNumberOfObjects { get { return _highWaterNumberOfObjects; } }
+        public dynamic dynamicObject
+        {
+            get { return _ot; }
+        }
+        public ulong Index
+        {
+            get
+            {
+                try
+                {
+                    var index = _ot.Index;
+                    return (ulong)index;
+                }
+                catch (Exception)
+                {
+                    throw new ArgumentException("Couldn't extract Index from current OBJECT_TYPE structure.");
+                }
+            }
+        }
+        public string Name
+        {
+            get
+            {
+                try
+                {
+                    var name = _ot.Name;
+                    UnicodeString us = new UnicodeString(_profile, _dataProvider, name.Buffer, name.Length, name.MaximumLength);
+                    return us.Name;
+                }
+                catch (Exception)
+                {
+                    throw new ArgumentException("Couldn't extract Name from current OBJECT_TYPE structure.");
+                }                
+            }
+        }
+        public ulong TotalNumberOfObjects
+        {
+            get
+            {
+                try
+                {
+                    var totalNumberOfObjects = _ot.TotalNumberOfObjects;
+                    return (ulong)totalNumberOfObjects;
+                }
+                catch (Exception)
+                {
+                    throw new ArgumentException("Couldn't extract TotalNumberOfObjects from current OBJECT_TYPE structure.");
+                }
+            }
+        }
+        public ulong TotalNumberOfHandles
+        {
+            get
+            {
+                try
+                {
+                    var totalNumberOfHandles = _ot.TotalNumberOfHandles;
+                    return (ulong)totalNumberOfHandles;
+                }
+                catch (Exception)
+                {
+                    throw new ArgumentException("Couldn't extract TotalNumberOfHandles from current OBJECT_TYPE structure.");
+                }
+            }
+        }
+        public ulong HighWaterNumberOfHandles
+        {
+            get
+            {
+                try
+                {
+                    var highWaterNumberOfHandles = _ot.HighWaterNumberOfHandles;
+                    return (ulong)highWaterNumberOfHandles;
+                }
+                catch (Exception)
+                {
+                    throw new ArgumentException("Couldn't extract HighWaterNumberOfHandles from current OBJECT_TYPE structure.");
+                }
+            }
+        }
+        public ulong HighWaterNumberOfObjects
+        {
+            get
+            {
+                try
+                {
+                    var highWaterNumberOfObjects = _ot.HighWaterNumberOfObjects;
+                    return (ulong)highWaterNumberOfObjects;
+                }
+                catch (Exception)
+                {
+                    throw new ArgumentException("Couldn't extract HighWaterNumberOfObjects from current OBJECT_TYPE structure.");
+                }
+            }
+        }
     }
 }

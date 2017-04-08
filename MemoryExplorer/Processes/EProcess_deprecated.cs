@@ -22,7 +22,7 @@ namespace MemoryExplorer.Processes
         private object _eprocess;
         //private HandleTable _hndTable = null;
 
-        public EProcess_deprecated(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public EProcess_deprecated(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
         {
             ObjectHeader oh = new ObjectHeader(_profile);
             if (virtualAddress == 0)
@@ -43,22 +43,22 @@ namespace MemoryExplorer.Processes
         }
         private void Initialise()
         {
-            _is64 = (_profile.Architecture == "AMD64");
-            _structureSize = (uint)_profile.GetStructureSize("_EPROCESS");
-            if (_structureSize == -1)
-                throw new ArgumentException("Error - Profile didn't contain a definition for _EPROCESS");
-            _structure = _profile.GetEntries("_EPROCESS");
-            if (_virtualAddress == 0)
-                _buffer = _dataProvider.ReadPhysicalMemory(_physicalAddress, (uint)_structureSize);
-            else
-                _buffer = _dataProvider.ReadMemoryBlock(_virtualAddress, (uint)_structureSize);
+            //_is64 = (_profile.Architecture == "AMD64");
+            //_structureSize = (uint)_profile.GetStructureSize("_EPROCESS");
+            //if (_structureSize == -1)
+            //    throw new ArgumentException("Error - Profile didn't contain a definition for _EPROCESS");
+            //_structure = _profile.GetEntries("_EPROCESS");
+            //if (_virtualAddress == 0)
+            //    _buffer = _dataProvider.ReadPhysicalMemory(_physicalAddress, (uint)_structureSize);
+            //else
+            //    _buffer = _dataProvider.ReadMemoryBlock(_virtualAddress, (uint)_structureSize);
 
-            var dll = _profile.GetStructureAssembly("_EPROCESS");
-            Type t = dll.GetType("liveforensics.EPROCESS");
-            //_eprocess = Activator.CreateInstance(t);
-            GCHandle pinnedPacket = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
-            _eprocess = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(_buffer, 0), t);
-            pinnedPacket.Free();
+            //var dll = _profile.GetStructureAssembly("_EPROCESS");
+            //Type t = dll.GetType("liveforensics.EPROCESS");
+            ////_eprocess = Activator.CreateInstance(t);
+            //GCHandle pinnedPacket = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
+            //_eprocess = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(_buffer, 0), t);
+            //pinnedPacket.Free();
 
 
             //_offset = _physicalAddress - (_physicalAddress & 0xfffffffff000);
@@ -117,19 +117,19 @@ namespace MemoryExplorer.Processes
         {
             get
             {
-                MemberInfo mi = _profile.GetMemberInfo("_EPROCESS", "Pcb.DirectoryTableBase");
-                if (mi.IsArray && mi.Count == 2 && mi.Size == 4)
-                {
-                    var a = BitConverter.ToUInt32(_buffer, (int)(mi.Offset));
-                    var b = BitConverter.ToUInt32(_buffer, (int)(mi.Offset + 4));
-                    return a;
-                }
-                if (!mi.IsArray && mi.Size == 8)
-                {
-                    var a = BitConverter.ToUInt64(_buffer, (int)(mi.Offset));
-                    var b = BitConverter.ToUInt64(_buffer, (int)(mi.Offset + 4));
-                    return a;
-                }
+                //MemberInfo mi = _profile.GetMemberInfo("_EPROCESS", "Pcb.DirectoryTableBase");
+                //if (mi.IsArray && mi.Count == 2 && mi.Size == 4)
+                //{
+                //    var a = BitConverter.ToUInt32(_buffer, (int)(mi.Offset));
+                //    var b = BitConverter.ToUInt32(_buffer, (int)(mi.Offset + 4));
+                //    return a;
+                //}
+                //if (!mi.IsArray && mi.Size == 8)
+                //{
+                //    var a = BitConverter.ToUInt64(_buffer, (int)(mi.Offset));
+                //    var b = BitConverter.ToUInt64(_buffer, (int)(mi.Offset + 4));
+                //    return a;
+                //}
                 return 0;
             }
         }

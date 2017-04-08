@@ -25,10 +25,10 @@ namespace MemoryExplorer.Tools
         /// Profile must contain a valid KernelAddressSpace
         /// </prerequisites>
         /// <param name="profile"></param>
-        public PsList1(Profile_Deprecated profile, DataProviderBase dataProvider) : base(profile, dataProvider)
+        public PsList1(Profile profile, DataProviderBase dataProvider) : base(profile, dataProvider)
         {
             // check pre-reqs
-            if (_profile == null || _profile.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
+            if (_profile == null || _dataProvider.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
                 throw new ArgumentException("Missing Prerequisites");
         }
         public HashSet<ulong> Run()
@@ -44,10 +44,10 @@ namespace MemoryExplorer.Tools
                 
             HashSet<ulong> results = new HashSet<ulong>();
             uint processHeadOffset = (uint)_profile.GetConstant("PsActiveProcessHead");
-            ulong vAddr = _profile.KernelBaseAddress + processHeadOffset;
+            ulong vAddr = _dataProvider.KernelBaseAddress + processHeadOffset;
             _dataProvider.ActiveAddressSpace = _profile.KernelAddressSpace;
             LIST_ENTRY le = new LIST_ENTRY(_dataProvider, vAddr);
-            ulong apl = (ulong)_profile.GetOffset("_EPROCESS", "ActiveProcessLinks");
+            ////ulong apl = (ulong)_profile.GetOffset("_EPROCESS", "ActiveProcessLinks");
             List<LIST_ENTRY> lists = FindAllLists(_dataProvider, le);
             foreach (LIST_ENTRY entry in lists)
             {
@@ -55,7 +55,7 @@ namespace MemoryExplorer.Tools
                     continue;
                 if (entry.VirtualAddress == 0)
                     continue;
-                results.Add(entry.VirtualAddress - apl);
+                ////results.Add(entry.VirtualAddress - apl);
             }
             
             return TrySave(results);

@@ -13,7 +13,7 @@ namespace MemoryExplorer.ModelObjects
     {
         string _name;
         ulong _referenceCount;
-        public HeaderNameInfo(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
+        public HeaderNameInfo(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
         {
             _physicalAddress = physicalAddress;
             _is64 = (_profile.Architecture == "AMD64");
@@ -30,7 +30,7 @@ namespace MemoryExplorer.ModelObjects
                 _physicalAddress = addressSpace.vtop(_virtualAddress);
                 _buffer = _dataProvider.ReadMemoryBlock(_virtualAddress, (uint)_structureSize);
             }            
-            _structure = _profile.GetEntries("_OBJECT_HEADER_NAME_INFO");
+            ////_structure = _profile.GetEntries("_OBJECT_HEADER_NAME_INFO");
             Structure s = GetStructureMember("ReferenceCount");
             _referenceCount = BitConverter.ToUInt32(_buffer, (int)s.Offset);
             s = GetStructureMember("Name");

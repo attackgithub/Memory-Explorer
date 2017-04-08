@@ -6,11 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace MemoryExplorer
 {
@@ -43,7 +40,7 @@ namespace MemoryExplorer
     }
     public abstract class StructureBase
     {
-        protected Profile_Deprecated _profile;
+        protected Profile _profile;
         protected string _imageFile;
         protected ulong _physicalAddress;
         protected ulong _virtualAddress;
@@ -56,7 +53,7 @@ namespace MemoryExplorer
         protected dynamic _members;
         protected AddressBase _addressSpace;
 
-        protected StructureBase(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress = 0)
+        protected StructureBase(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0)
         {
             _profile = profile;
             _dataProvider = dataProvider;
@@ -172,26 +169,26 @@ namespace MemoryExplorer
         }
         protected void Overlay(string name)
         {
-            string shorterVersion = name.TrimStart(new char[] { '_' });
-            _is64 = (_profile.Architecture == "AMD64");
-            _addressSpace = _dataProvider.ActiveAddressSpace;
-            _structureSize = (int)_profile.GetStructureSize(name);
-            if (_structureSize == -1)
-                throw new ArgumentException("Error: Profile didn't contain a definition for " + name);
-            if (_virtualAddress == 0)
-                _buffer = _dataProvider.ReadPhysicalMemory(_physicalAddress, (uint)_structureSize);
-            else
-            {
-                _physicalAddress = _addressSpace.vtop(_virtualAddress);
-                _buffer = _dataProvider.ReadMemoryBlock(_virtualAddress, (uint)_structureSize);
-            }
-            if (_buffer == null)
-                throw new ArgumentException("Invallid address " + _virtualAddress.ToString("x12"));
-            var dll = _profile.GetStructureAssembly(name);
-            Type t = dll.GetType("liveforensics." + shorterVersion);
-            GCHandle pinedPacket = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
-            _members = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(_buffer, 0), t);
-            pinedPacket.Free();
+            //string shorterVersion = name.TrimStart(new char[] { '_' });
+            //_is64 = (_profile.Architecture == "AMD64");
+            //_addressSpace = _dataProvider.ActiveAddressSpace;
+            //_structureSize = (int)_profile.GetStructureSize(name);
+            //if (_structureSize == -1)
+            //    throw new ArgumentException("Error: Profile didn't contain a definition for " + name);
+            //if (_virtualAddress == 0)
+            //    _buffer = _dataProvider.ReadPhysicalMemory(_physicalAddress, (uint)_structureSize);
+            //else
+            //{
+            //    _physicalAddress = _addressSpace.vtop(_virtualAddress);
+            //    _buffer = _dataProvider.ReadMemoryBlock(_virtualAddress, (uint)_structureSize);
+            //}
+            //if (_buffer == null)
+            //    throw new ArgumentException("Invallid address " + _virtualAddress.ToString("x12"));
+            //var dll = _profile.GetStructureAssembly(name);
+            //Type t = dll.GetType("liveforensics." + shorterVersion);
+            //GCHandle pinedPacket = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
+            //_members = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(_buffer, 0), t);
+            //pinedPacket.Free();
         }
         public dynamic Members {get { return _members;} }
     }

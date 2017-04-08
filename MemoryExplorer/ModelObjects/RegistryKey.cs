@@ -10,7 +10,7 @@ namespace MemoryExplorer.ModelObjects
         KeyControlBlock _kcb = null;
         string _name = "";
 
-        public RegistryKey(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public RegistryKey(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
         {
             _physicalAddress = physicalAddress;            
             Initialise();
@@ -19,7 +19,7 @@ namespace MemoryExplorer.ModelObjects
             if (headerSize != -1)
                 _header = new ObjectHeader(_profile, _dataProvider, _virtualAddress - (uint)headerSize);
         }
-        public RegistryKey(Profile_Deprecated profile, DataProviderBase dataProvider, ObjectHeader header, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public RegistryKey(Profile profile, DataProviderBase dataProvider, ObjectHeader header, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
         {
             _physicalAddress = physicalAddress;            
             Initialise();

@@ -30,10 +30,10 @@ namespace MemoryExplorer.Tools
         private int _index = 1;
         ObjectTreeMap _objectMap = null;
 
-        public ObjectTree(Profile_Deprecated profile, DataProviderBase dataProvider) : base(profile, dataProvider)
+        public ObjectTree(Profile profile, DataProviderBase dataProvider) : base(profile, dataProvider)
         {
             // check pre-reqs
-            if (_profile == null || _profile.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null || _dataProvider == null || _dataProvider.CacheFolder == "")
+            if (_profile == null || _dataProvider.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null || _dataProvider == null || _dataProvider.CacheFolder == "")
                 throw new ArgumentException("Missing Prerequisites");
             _objectMap = new ObjectTreeMap();
             _objectMap.ObjectTreeRecords = new List<ObjectTreeRecord>();
@@ -60,7 +60,7 @@ namespace MemoryExplorer.Tools
             }
 
             uint rootDirectoryOffset = (uint)_profile.GetConstant("ObpRootDirectoryObject");
-            ulong vAddr = _profile.KernelBaseAddress + rootDirectoryOffset;
+            ulong vAddr = _dataProvider.KernelBaseAddress + rootDirectoryOffset;
             _dataProvider.ActiveAddressSpace = _profile.KernelAddressSpace;
             ulong tableAddress = 0;
             if(_isx64)
@@ -138,23 +138,23 @@ namespace MemoryExplorer.Tools
             //GCHandle pinnedPacket = GCHandle.Alloc(buffer, GCHandleType.Pinned);
             //objectDirectoryEntry = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0), t);
             //pinnedPacket.Free();
-            ulong addr = (objectDirectoryEntry.Members.Object - _objectMap.ObjectHeaderSize) & 0xffffffffffff;
-            ObjectHeader oh = new ObjectHeader(_profile, _dataProvider, addr);
-            string name = _profile.GetObjectName(oh.TypeInfo);
-            int index = _index++;
-            if(name == "Directory")
-            {
-                ProcessDirectory(objectDirectoryEntry.Members.Object & 0xffffffffffff, index);
-            }
+            //ulong addr = (objectDirectoryEntry.Members.Object - _objectMap.ObjectHeaderSize) & 0xffffffffffff;
+            //ObjectHeader oh = new ObjectHeader(_profile, _dataProvider, addr);
+            //string name = _profile.GetObjectName(oh.TypeInfo);
+            //int index = _index++;
+            //if(name == "Directory")
+            //{
+            //    ProcessDirectory(objectDirectoryEntry.Members.Object & 0xffffffffffff, index);
+            //}
             //if (oh.HeaderNameInfo != null)
             //    name += ("\t" + oh.HeaderNameInfo.Name);
             //Debug.WriteLine("[" + parent + "][" + index + "]" + addr.ToString("X08") + " (0x" + oh.PhysicalAddress.ToString("X08") + ")(p)\t" + name);
-            _objectMap.ObjectTreeRecords.Add(new ObjectTreeRecord() { ObjectHeaderVirtualAddress = addr, Parent = parent, Index = index });
-            ulong chainlinkPtr = (objectDirectoryEntry.Members.ChainLink) & 0xffffffffffff;
-            if (chainlinkPtr != 0)
-            {
-                BuildTree(chainlinkPtr, parent);
-            }
+            //_objectMap.ObjectTreeRecords.Add(new ObjectTreeRecord() { ObjectHeaderVirtualAddress = addr, Parent = parent, Index = index });
+            //ulong chainlinkPtr = (objectDirectoryEntry.Members.ChainLink) & 0xffffffffffff;
+            //if (chainlinkPtr != 0)
+            //{
+            //    BuildTree(chainlinkPtr, parent);
+            //}
         }
         public List<ObjectTreeRecord> Records { get { return _objectMap.ObjectTreeRecords; } }
     }

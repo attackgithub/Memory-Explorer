@@ -10,11 +10,11 @@ namespace MemoryExplorer.ModelObjects
 {
     public class PoolHeader : StructureBase
     {
-        public PoolHeader(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
+        public PoolHeader(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
         {
             _physicalAddress = physicalAddress;
             Overlay("_POOL_HEADER");
-            _structure = _profile.GetEntries("_POOL_HEADER");            
+            ////_structure = _profile.GetEntries("_POOL_HEADER");            
         }
         public ulong BlockSize
         {

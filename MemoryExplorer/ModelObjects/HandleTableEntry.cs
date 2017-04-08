@@ -15,7 +15,7 @@ namespace MemoryExplorer.ModelObjects
         private ulong _typeInfo;
         private ulong _grantedAccess;
         private ulong _eprocess;
-        public HandleTableEntry(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress, int index) : base(profile, dataProvider, virtualAddress)
+        public HandleTableEntry(Profile profile, DataProviderBase dataProvider, ulong virtualAddress, int index) : base(profile, dataProvider, virtualAddress)
         {
             Overlay("_HANDLE_TABLE_ENTRY");
 
@@ -30,14 +30,14 @@ namespace MemoryExplorer.ModelObjects
             //    throw new ArgumentException("Error - Invalid Virtual Address");
             Parse();
         }
-        public HandleTableEntry(Profile_Deprecated profile, byte[] buffer, int index) : base(profile, null, 0)
+        public HandleTableEntry(Profile profile, byte[] buffer, int index) : base(profile, null, 0)
         {
-            _index = index * 4;
-            var dll = _profile.GetStructureAssembly("_HANDLE_TABLE_ENTRY");
-            Type t = dll.GetType("liveforensics.HANDLE_TABLE_ENTRY");
-            GCHandle pinedPacket = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            _members = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0), t);
-            pinedPacket.Free();
+            //_index = index * 4;
+            //var dll = _profile.GetStructureAssembly("_HANDLE_TABLE_ENTRY");
+            //Type t = dll.GetType("liveforensics.HANDLE_TABLE_ENTRY");
+            //GCHandle pinedPacket = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+            //_members = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0), t);
+            //pinedPacket.Free();
 
             //_is64 = (_profile.Architecture == "AMD64");
             //int structureSize = (int)_profile.GetStructureSize("_HANDLE_TABLE_ENTRY");

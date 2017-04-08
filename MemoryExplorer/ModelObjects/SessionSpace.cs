@@ -6,7 +6,7 @@ namespace MemoryExplorer.ModelObjects
 {
     public class SessionSpace : StructureBase
     {
-        public SessionSpace(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
+        public SessionSpace(Profile profile, DataProviderBase dataProvider, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
         {
             Overlay("_MM_SESSION_SPACE");
 
@@ -17,7 +17,7 @@ namespace MemoryExplorer.ModelObjects
             if (_structureSize == -1)
                 throw new ArgumentException("Error - Profile didn't contain a definition for _MM_SESSION_SPACE");
             _buffer = _dataProvider.ReadMemoryBlock(_virtualAddress, (uint)_structureSize);
-            _structure = _profile.GetEntries("_MM_SESSION_SPACE");
+            ////_structure = _profile.GetEntries("_MM_SESSION_SPACE");
         }
         public LIST_ENTRY ProcessList
         {

@@ -11,18 +11,18 @@ namespace MemoryExplorer.ModelObjects
 {
     public class Subsection :StructureBase
     {
-        public Subsection(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public Subsection(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
         {
             _physicalAddress = physicalAddress;
             Overlay("_SUBSECTION");
         }
-        public Subsection(Profile_Deprecated profile, DataProviderBase dataProvider, byte[] buffer) : base(profile, dataProvider, 0)
+        public Subsection(Profile profile, DataProviderBase dataProvider, byte[] buffer) : base(profile, dataProvider, 0)
         {
-            var dll = _profile.GetStructureAssembly("_SUBSECTION");
-            Type t = dll.GetType("liveforensics.SUBSECTION");
-            GCHandle pinedPacket = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            _members = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0), t);
-            pinedPacket.Free();
+            //var dll = _profile.GetStructureAssembly("_SUBSECTION");
+            //Type t = dll.GetType("liveforensics.SUBSECTION");
+            //GCHandle pinedPacket = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+            //_members = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0), t);
+            //pinedPacket.Free();
         }
     }
 }

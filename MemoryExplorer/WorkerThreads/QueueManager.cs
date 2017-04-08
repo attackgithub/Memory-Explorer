@@ -101,6 +101,11 @@ namespace MemoryExplorer.WorkerThreads
                                 case JobAction.FindKernelImage:
                                     FindKernelImage(ref j);
                                     break;
+                                case JobAction.FindUserSharedData:
+                                    FindUserSharedData(ref j);
+                                    break;
+                                default:
+                                    break;
                             }
                             break;
                         default:
@@ -118,6 +123,21 @@ namespace MemoryExplorer.WorkerThreads
             // object. This is will be available to the 
             // RunWorkerCompleted eventhandler.
             //e.Result = ComputeFibonacci((int)e.Argument, worker, e);
+        }
+
+        private void FindUserSharedData(ref Job j)
+        {
+            Job j1 = new Job();
+            j1.Action = JobAction.EnumerateObjectTypes;
+            _processorOutbound.Enqueue(j1);
+            _model.IncrementActiveJobs("Detecting Object Types");
+            Job j2 = new Job();
+            j2.Action = JobAction.FindUserSharedData;
+            foreach (var item in j.ActionMessage)
+            {
+                j2.ActionMessage.Add(item);
+            }
+            _ingesterOutbound.Enqueue(j2);
         }
 
         private void FindKernelImage(ref Job j)
@@ -141,6 +161,9 @@ namespace MemoryExplorer.WorkerThreads
             j1.Action = JobAction.FindKernelImage;
             _processorOutbound.Enqueue(j1);
             _model.IncrementActiveJobs("Finding Kernel Image");
+            Job j2 = new Job();
+            j2.Action = JobAction.LoadKernelAddressSpace;
+            _ingesterOutbound.Enqueue(j2);
         }
 
         private void FindKernelDtb(ref Job j)

@@ -29,11 +29,11 @@ namespace MemoryExplorer.Tools
         /// <param name="dataProvider"></param>
         /// <param name="processList"></param>
         List<ProcessInfo> _processList;
-        public PsList4(Profile_Deprecated profile, DataProviderBase dataProvider, List<ProcessInfo> processList = null) : base(profile, dataProvider)
+        public PsList4(Profile profile, DataProviderBase dataProvider, List<ProcessInfo> processList = null) : base(profile, dataProvider)
         {
             _processList = processList;
             // check pre-reqs
-            if (_profile == null || _profile.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
+            if (_profile == null || _dataProvider.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
                 throw new ArgumentException("Missing Prerequisites");
         }
         public HashSet<ulong> Run()
@@ -56,8 +56,8 @@ namespace MemoryExplorer.Tools
                         sessionList.Add(info.Session);
                 }
             }
-            ulong sOffset = (ulong)_profile.GetOffset("_EPROCESS", "SessionProcessLinks");
-            ulong plOffset = (ulong)_profile.GetOffset("_MM_SESSION_SPACE", "ProcessList");
+            ////ulong sOffset = (ulong)_profile.GetOffset("_EPROCESS", "SessionProcessLinks");
+            ////ulong plOffset = (ulong)_profile.GetOffset("_MM_SESSION_SPACE", "ProcessList");
             foreach (ulong item in sessionList)
             {
                 SessionSpace ss = new SessionSpace(_profile, _dataProvider, item);
@@ -69,14 +69,14 @@ namespace MemoryExplorer.Tools
                     tempList.Add(entry.Blink);
                     tempList.Add(entry.Flink);
                 }
-                foreach (ulong ul in tempList)
-                {
-                    if (ul - plOffset == item)
-                        continue;
-                    if (ul == 0)
-                        continue;
-                    results.Add(ul - sOffset);
-                }
+                //foreach (ulong ul in tempList)
+                //{
+                //    if (ul - plOffset == item)
+                //        continue;
+                //    if (ul == 0)
+                //        continue;
+                //    results.Add(ul - sOffset);
+                //}
             }
 
             return TrySave(results);

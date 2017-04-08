@@ -9,11 +9,11 @@ namespace MemoryExplorer.ModelObjects
     public class CmNameControlBlock : StructureBase
     {
         string _name = "";
-        public CmNameControlBlock(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public CmNameControlBlock(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0) : base(profile, dataProvider, virtualAddress)
         {
             Overlay("_CM_NAME_CONTROL_BLOCK");
             int nameLength = Members.NameLength;
-            _structure = _profile.GetEntries("_CM_NAME_CONTROL_BLOCK");
+            //_structure = _profile.GetEntries("_CM_NAME_CONTROL_BLOCK");
             _structureSize = (uint)_profile.GetStructureSize("_CM_NAME_CONTROL_BLOCK");
             if (_virtualAddress == 0)
                 _buffer = _dataProvider.ReadPhysicalMemory(_physicalAddress, (uint)(_structureSize + nameLength));

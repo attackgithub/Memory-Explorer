@@ -16,7 +16,7 @@ namespace MemoryExplorer.ModelObjects
         private const ulong LEVEL_MASK = 7;
 
 
-        public HandleTable(Profile_Deprecated profile, DataProviderBase dataProvider, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
+        public HandleTable(Profile profile, DataProviderBase dataProvider, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
         {
             Overlay("_HANDLE_TABLE");
             _tableCode = Members.TableCode & 0xffffffffffff;

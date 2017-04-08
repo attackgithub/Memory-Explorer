@@ -86,12 +86,12 @@ namespace MemoryExplorer.Model
             // get the EPROCESS object
             EProcess_deprecated ep = null;
             // pid 0 is special because it's the Idle process and has no virtual address
-            lock(_profile_deprecated.AccessLock)
+            lock(_profile.AccessLock)
             {
                 if (job.ProcessInformation.Pid == 0)
-                    ep = new EProcess_deprecated(_profile_deprecated, _dataProvider, physicalAddress: job.ProcessInformation.PhysicalAddress);
+                    ep = new EProcess_deprecated(_profile, _dataProvider, physicalAddress: job.ProcessInformation.PhysicalAddress);
                 else
-                    ep = new EProcess_deprecated(_profile_deprecated, _dataProvider, job.ProcessInformation.VirtualAddress);
+                    ep = new EProcess_deprecated(_profile, _dataProvider, job.ProcessInformation.VirtualAddress);
             }
             if (ep.Pid != job.ProcessInformation.Pid)
             {
@@ -104,7 +104,7 @@ namespace MemoryExplorer.Model
 
             //lock (_profile.AccessLock)
             {
-                Handles handles = new Handles(_profile_deprecated, _dataProvider, job.ProcessInformation.Pid, job.ProcessInformation.HandleTableAddress);
+                Handles handles = new Handles(_profile, _dataProvider, job.ProcessInformation.Pid, job.ProcessInformation.HandleTableAddress);
                 job.ProcessInformation.HandleTable = handles.Run();
             }
             if(job.ProcessInformation.HandleTable != null && job.ProcessInformation.HandleTable.Count > 0)
@@ -129,7 +129,7 @@ namespace MemoryExplorer.Model
                 HandleRecord record = new HandleRecord();
                 //lock (_profile.AccessLock)
                 {
-                    record.objectHeader = new ObjectHeader(_profile_deprecated, _dataProvider, virtualAddress: e.ObjectPointer);
+                    record.objectHeader = new ObjectHeader(_profile, _dataProvider, virtualAddress: e.ObjectPointer);
                 }
                 if (record.objectHeader.HeaderNameInfo != null)
                     record.Name = record.objectHeader.HeaderNameInfo.Name;
@@ -141,7 +141,7 @@ namespace MemoryExplorer.Model
                     case "Key":
                         //lock (_profile.AccessLock)
                         {
-                            RegistryKey rk = new RegistryKey(_profile_deprecated, _dataProvider, record.objectHeader, (e.ObjectPointer + (ulong)record.objectHeader.Size));
+                            RegistryKey rk = new RegistryKey(_profile, _dataProvider, record.objectHeader, (e.ObjectPointer + (ulong)record.objectHeader.Size));
                             record.Details = rk.Name;
                         }
                         break;
