@@ -1,8 +1,10 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Model;
+using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Worker;
 using PluginContracts;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -16,8 +18,8 @@ namespace MemoryExplorer.WorkerThreads
     public class IngesterThread
     {
         private BackgroundWorker _backgroundWorker = new BackgroundWorker();
-        private Queue<Job> _inbound = null;
-        private Queue<Job> _outbound = null;
+        private BlockingCollection<Job> _inbound = null;
+        private BlockingCollection<Job> _outbound = null;
         private Assembly _pluginAssembly;
         private IIngester _plugin;
         private string _cacheFolder;
@@ -46,51 +48,78 @@ namespace MemoryExplorer.WorkerThreads
             _inbound = _model.IngesterOut; // the models out is my in.
             _outbound = _model.IngesterIn; // the models in is my out!
 
-            while (!worker.CancellationPending)
+            foreach (var item in _inbound.GetConsumingEnumerable())
             {
-                if (_inbound.Count > 0)
+                Job j = (Job)item;
+                switch (j.Action)
                 {
-                    Job j = _inbound.Dequeue();
-                    switch (j.Action)
-                    {
-                        case JobAction.SetCacheFolder:
-                            _cacheFolder = j.ActionMessage[0];
-                            break;
-                        case JobAction.LoadPlugin:
-                            LoadPlugin(j);
-                            break;
-                        case JobAction.LoadProfileId:
-                            LoadProfileId(ref j);
-                            break;
-                        case JobAction.FindKernelDtb:
-                            FindKernelDtb(ref j);
-                            break;
-                        case JobAction.FindKernelImage:
-                            FindKernelImage(ref j);
-                            break;
-                        case JobAction.FindUserSharedData:
-                            FindUserSharedData(ref j);
-                            break;
-                        case JobAction.LoadKernelAddressSpace:
-                            LoadKernelAddressSpace(ref j);
-                            break;
-                        default:
-                            break;
-                    }
+                    case JobAction.SetCacheFolder:
+                        _cacheFolder = j.ActionMessage[0];
+                        break;
+                    case JobAction.LoadPlugin:
+                        LoadPlugin(j);
+                        break;
+                    case JobAction.LoadProfileId:
+                        LoadProfileId(ref j);
+                        break;
+                    case JobAction.FindKernelDtb:
+                        FindKernelDtb(ref j);
+                        break;
+                    case JobAction.FindKernelImage:
+                        FindKernelImage(ref j);
+                        break;
+                    case JobAction.FindUserSharedData:
+                        FindUserSharedData(ref j);
+                        break;
+                    case JobAction.LoadKernelAddressSpace:
+                        LoadKernelAddressSpace(ref j);
+                        break;
+                    case JobAction.EnumerateObjectTypes:
+                        EnumerateObjectTypes(ref j);
+                        break;
+                    default:
+                        break;
                 }
-                else
-                {
-                    //Debug.WriteLine("The ingester is waiting");
-                    Thread.Sleep(15);
-                }
-            }
-            // Assign the result of the computation
-            // to the Result property of the DoWorkEventArgs
-            // object. This is will be available to the 
-            // RunWorkerCompleted eventhandler.
-            //e.Result = ComputeFibonacci((int)e.Argument, worker, e);
+                if (worker.CancellationPending)
+                    break;
+            }               
         }
 
+        private void EnumerateObjectTypes(ref Job j)
+        {
+            try
+            {
+                string archiveFile = Path.Combine(_model.DataProvider.CacheFolder, "object_type_map.gz");
+                FileInfo fi = new FileInfo(archiveFile);
+                if (fi.Exists)
+                {
+                    ObjectTypes objectTypes = new ObjectTypes(_model.DataProvider, _model.ActiveProfile);
+                    if (objectTypes.Records != null && objectTypes.Records.Count > 0)
+                    {
+                        foreach (var record in objectTypes.Records)
+                        {
+                            AddObjectType(record);
+                        }
+                        _model.NotifyPropertyChange("ObjectTypeList"); // this forces the set property / INotifyPropertyCHange
+                    }
+                }
+
+            }
+            catch (Exception)
+            {
+                // message box warning
+                return;
+            }
+        }
+        private void AddObjectType(ObjectTypeRecord record)
+        {
+            lock (_model.AccessLock)
+            {
+                _model.ActiveProfile.ObjectTypeList.Add(record);
+            }
+
+        }
+        
         private void LoadKernelAddressSpace(ref Job j)
         {
             try
@@ -197,14 +226,14 @@ namespace MemoryExplorer.WorkerThreads
                         if (_plugin != null)
                         {
                             j.Status = JobStatus.Complete;
-                            _outbound.Enqueue(j);
+                            _outbound.Add(j);
                             Debug.WriteLine("Loaded Plugin Says: " + _plugin.Name);
                         }
                         else
                         {
                             j.Status = JobStatus.Failed;
                             j.ErrorMessage = "Incompatible Plugin";
-                            _outbound.Enqueue(j);
+                            _outbound.Add(j);
                         }
                         return;
                     }
@@ -214,7 +243,7 @@ namespace MemoryExplorer.WorkerThreads
             {
                 j.Status = JobStatus.Failed;
                 j.ErrorMessage = ex.Message;
-                _outbound.Enqueue(j);
+                _outbound.Add(j);
             }
         }
         private void IngestingThread_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)

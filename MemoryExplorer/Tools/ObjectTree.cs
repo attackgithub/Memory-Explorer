@@ -33,7 +33,7 @@ namespace MemoryExplorer.Tools
         public ObjectTree(Profile profile, DataProviderBase dataProvider) : base(profile, dataProvider)
         {
             // check pre-reqs
-            if (_profile == null || _dataProvider.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null || _dataProvider == null || _dataProvider.CacheFolder == "")
+            if (_profile == null || _dataProvider == null || _dataProvider.KernelBaseAddress == 0 || _dataProvider.KernelAddressSpace == null || _dataProvider.CacheFolder == "")
                 throw new ArgumentException("Missing Prerequisites");
             _objectMap = new ObjectTreeMap();
             _objectMap.ObjectTreeRecords = new List<ObjectTreeRecord>();
@@ -59,9 +59,19 @@ namespace MemoryExplorer.Tools
                 }
             }
 
-            uint rootDirectoryOffset = (uint)_profile.GetConstant("ObpRootDirectoryObject");
+            uint rootDirectoryOffset = 0;
+            try
+            {
+                rootDirectoryOffset = (uint)_profile.GetConstant("ObpRootDirectoryObject");
+            }
+            catch (Exception)
+            {
+                rootDirectoryOffset = (uint)_profile.GetConstant("_ObpRootDirectoryObject");
+            }
+                
+                
             ulong vAddr = _dataProvider.KernelBaseAddress + rootDirectoryOffset;
-            _dataProvider.ActiveAddressSpace = _profile.KernelAddressSpace;
+            _profile.KernelAddressSpace = _dataProvider.ActiveAddressSpace;
             ulong tableAddress = 0;
             if(_isx64)
             {
@@ -78,8 +88,8 @@ namespace MemoryExplorer.Tools
                 tableAddress = (ulong)v;
             }
             ProcessDirectory(tableAddress, 0);
-            if (!_dataProvider.IsLive)
-                PersistObjectMap(_objectMap, _dataProvider.CacheFolder + "\\object_tree_map.gz");
+            //if (!_dataProvider.IsLive)
+            //    PersistObjectMap(_objectMap, _dataProvider.CacheFolder + "\\object_tree_map.gz");
             return Records;
         }
         private void PersistObjectMap(ObjectTreeMap source, string fileName)
@@ -109,7 +119,15 @@ namespace MemoryExplorer.Tools
         private void ProcessDirectory(ulong tableAddress, int parent)
         {
             ObjectDirectory objectDirectory = new ObjectDirectory(_profile, _dataProvider, virtualAddress: tableAddress);
-            
+            if(objectDirectory.HashBuckets != null)
+            {
+                foreach(var ptr in objectDirectory.HashBuckets)
+                {
+                    if (ptr == 0)
+                        continue;
+                    BuildTree((ulong)ptr, parent);
+                }
+            }
             //byte[] buffer = _dataProvider.ReadMemoryBlock(tableAddress, _objectMap.ObjectDirectorySize);
             //var dll = _profile.GetStructureAssembly("_OBJECT_DIRECTORY");
             //Type t = dll.GetType("liveforensics.OBJECT_DIRECTORY");
@@ -117,16 +135,16 @@ namespace MemoryExplorer.Tools
             //objectDirectory = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0), t);
             //pinnedPacket.Free();
 
-            byte[] hashBucket = objectDirectory.Members.HashBuckets;
-            int count = hashBucket.Length / 8;
+            //byte[] hashBucket = objectDirectory.Members.HashBuckets;
+            //int count = hashBucket.Length / 8;
 
-            for (int i = 0; i < count; i++)
-            {
-                ulong ptr = (BitConverter.ToUInt64(hashBucket, i * 8)) & 0xffffffffffff;
-                if (ptr == 0)
-                    continue;
-                BuildTree(ptr, parent);
-            }
+            //for (int i = 0; i < count; i++)
+            //{
+            //    ulong ptr = (BitConverter.ToUInt64(hashBucket, i * 8)) & 0xffffffffffff;
+            //    if (ptr == 0)
+            //        continue;
+            //    BuildTree(ptr, parent);
+            //}
         }
         private void BuildTree(ulong ptr, int parent)
         {

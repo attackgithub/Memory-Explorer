@@ -23,6 +23,7 @@ namespace MemoryExplorer.ModelObjects
             HEADER_PADDING_INFO = 0x40
         }
 
+        private dynamic _oh;
         private byte _infoMask;
         private ulong _headerSize = 0;
         private HeaderNameInfo _headerNameInfo = null;
@@ -35,10 +36,11 @@ namespace MemoryExplorer.ModelObjects
 
         public ObjectHeader(Profile profile) : base(profile, null, 0)
         {
+            _structureSize = (long)profile.GetStructureSize("_OBJECT_HEADER");
             ////_structure = profile.GetEntries("_OBJECT_HEADER");
-            Structure s = GetStructureMember("Body");
-            if (s != null)
-                _structureSize = (long)s.Offset;
+            //Structure s = GetStructureMember("Body");
+            //if (s != null)
+            //    _structureSize = (long)s.Offset;
         }
         /// <summary>
         /// You should normally be using the virtual address

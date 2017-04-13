@@ -5,10 +5,12 @@ using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Processes;
 using MemoryExplorer.Profiles;
 using MemoryExplorer.Scanners;
+using MemoryExplorer.Tools;
 using MemoryExplorer.Worker;
 using Pdb_Magician;
 using PluginContracts;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -26,8 +28,8 @@ namespace MemoryExplorer.WorkerThreads
     {
         #region globals
         private BackgroundWorker _backgroundWorker = new BackgroundWorker();
-        private Queue<Job> _inbound = null;
-        private Queue<Job> _outbound = null;
+        private BlockingCollection<Job> _inbound = null;
+        private BlockingCollection<Job> _outbound = null;
         private Assembly _pluginAssembly;
         private IProcessor _plugin;
         private DataModel _model;
@@ -55,69 +57,78 @@ namespace MemoryExplorer.WorkerThreads
             _model = (DataModel)e.Argument;
             _inbound = _model.ProcessorOut; // the models out is my in.
             _outbound = _model.ProcessorIn; // the models in is my out!
-            
-            while (!worker.CancellationPending)
+
+            foreach (var item in _inbound.GetConsumingEnumerable())
             {
-                if (_inbound.Count > 0)
+                Job j = (Job)item;
+                switch (j.Action)
                 {
-                    Job j = _inbound.Dequeue();
-                    switch (j.Action)
-                    {
-                        case JobAction.GetProfileIdentification:
-                            GetProfileIdentifier(ref j);
-                            break;
-                        case JobAction.LoadPlugin:
-                            LoadPlugin(ref j);
-                            break;
-                        case JobAction.LoadProfile:
-                            LoadProfile(ref j);
-                            break;
-                        case JobAction.SetDataProvider:
-                            SetDataProvider(ref j);
-                            break;
-                        case JobAction.FindKernelDtb:
-                            FindIdleProcess(ref j);
-                            break;
-                        case JobAction.LoadKernelAddressSpace:
-                            LoadKernelAddressSpace(ref j);
-                            break;
-                        case JobAction.FindKernelImage:
-                            FindKernelImage(ref j);
-                            break;
-                        case JobAction.FindUserSharedData:
-                            FindUserSharedData(ref j);
-                            break;
-                        case JobAction.EnumerateObjectTypes:
-                            EnumerateObjectTypes(ref j);
-                            break;
-                        default:
-                            break;
-                    }
-                    _outbound.Enqueue(j);
+                    case JobAction.GetProfileIdentification:
+                        GetProfileIdentifier(ref j);
+                        break;
+                    case JobAction.LoadPlugin:
+                        LoadPlugin(ref j);
+                        break;
+                    case JobAction.LoadProfile:
+                        LoadProfile(ref j);
+                        break;
+                    case JobAction.SetDataProvider:
+                        SetDataProvider(ref j);
+                        break;
+                    case JobAction.FindKernelDtb:
+                        FindIdleProcess(ref j);
+                        break;
+                    case JobAction.LoadKernelAddressSpace:
+                        LoadKernelAddressSpace(ref j);
+                        break;
+                    case JobAction.FindKernelImage:
+                        FindKernelImage(ref j);
+                        break;
+                    case JobAction.FindUserSharedData:
+                        FindUserSharedData(ref j);
+                        break;
+                    case JobAction.EnumerateObjectTypes:
+                        EnumerateObjectTypes(ref j);
+                        break;
+                    case JobAction.EnumerateObjectTree:
+                        EnumerateObjectTree(ref j);
+                        break;
+                    default:
+                        break;
                 }
-                else
-                {
-                    //Debug.WriteLine("The processor is waiting");
-                    Thread.Sleep(10);
-                }
+                _outbound.Add(j);
+
+                if (worker.CancellationPending)
+                    break;
             }
-            // Assign the result of the computation
-            // to the Result property of the DoWorkEventArgs
-            // object. This is will be available to the 
-            // RunWorkerCompleted eventhandler.
-            //e.Result = ComputeFibonacci((int)e.Argument, worker, e);
+        }
+
+        private void EnumerateObjectTree(ref Job j)
+        {
+            try
+            {
+                ObjectTree ot = new ObjectTree(_profile, _dataProvider);
+                List<ObjectTreeRecord> records = ot.Run();
+            }
+            catch (Exception ex)
+            {
+                j.Status = JobStatus.Failed;
+                j.ErrorMessage = ex.Message;
+            }
         }
 
         private void EnumerateObjectTypes(ref Job j)
         {
             try
             {
-                ObjectTypes objectTypes = new ObjectTypes(_dataProvider, _profile);
+                j.ActionMessage.Clear();
+                ObjectTypes objectTypes = new ObjectTypes(_dataProvider, _profile);                
+                j.Status = JobStatus.Complete;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                throw;
+                j.Status = JobStatus.Failed;
+                j.ErrorMessage = ex.Message;
             }
         }
 
@@ -520,7 +531,9 @@ namespace MemoryExplorer.WorkerThreads
             todoList.Add("_EPROCESS");
             todoList.Add("_KUSER_SHARED_DATA");
             todoList.Add("_OBJECT_TYPE");
-            
+            todoList.Add("_OBJECT_HEADER");
+            todoList.Add("_OBJECT_DIRECTORY_ENTRY");
+            todoList.Add("_OBJECT_DIRECTORY");
             int successCount = 0;
             mySearch.AddNeedle("RSDS");
             foreach (var answer in mySearch.Scan())
@@ -605,14 +618,12 @@ namespace MemoryExplorer.WorkerThreads
                         if(_plugin != null)
                         {
                             j.Status = JobStatus.Complete;
-                            //_outbound.Enqueue(j);
                             Debug.WriteLine("Loaded Plugin Says: " + _plugin.Name);
                         }
                         else
                         {
                             j.Status = JobStatus.Failed;
                             j.ErrorMessage = "Incompatible Plugin";
-                            //_outbound.Enqueue(j);
                         }
                         return;
                     }
@@ -622,7 +633,6 @@ namespace MemoryExplorer.WorkerThreads
             {
                 j.Status = JobStatus.Failed;
                 j.ErrorMessage = ex.Message;
-                //_outbound.Enqueue(j);
             }            
         }
         private void ProcessingThread_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)

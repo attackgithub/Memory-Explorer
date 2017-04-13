@@ -21,6 +21,7 @@
         FindKernelImage = 0x07,
         FindUserSharedData = 0x08,
         EnumerateObjectTypes = 0x09,
+        EnumerateObjectTree = 0x0a,
         // ingester jobs
         LoadProfileId = 0x1000,
         SetCacheFolder = 0x1001

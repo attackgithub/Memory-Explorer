@@ -1,6 +1,7 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Data;
 using MemoryExplorer.Model;
+using MemoryExplorer.ModelObjects;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -23,6 +24,7 @@ namespace MemoryExplorer.Profiles
         private ulong _poolAlign = 0;
         private byte[] _dummyBuffer = null;
         private AddressBase _kernelAddressSpace;
+        private List<ObjectTypeRecord> _objectTypeList = new List<ObjectTypeRecord>();
 
         public bool IsActive { get { return _active; } }
         public string Architecture { get { return _architecture; } }
@@ -143,7 +145,9 @@ namespace MemoryExplorer.Profiles
             }
         }
 
-        
+        public List<ObjectTypeRecord> ObjectTypeList { get => _objectTypeList; set => _objectTypeList = value; }
+
+
 
 
         #endregion

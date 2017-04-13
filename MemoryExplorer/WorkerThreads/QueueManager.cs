@@ -8,16 +8,17 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Forms;
 using System;
+using System.Collections.Concurrent;
 
 namespace MemoryExplorer.WorkerThreads
 {
     public class QueueManagerThread
     {
         private BackgroundWorker _backgroundWorker = new BackgroundWorker();
-        private Queue<Job> _ingesterInbound = null;
-        private Queue<Job> _ingesterOutbound = null;
-        private Queue<Job> _processorInbound = null;
-        private Queue<Job> _processorOutbound = null;
+        private BlockingCollection<Job> _ingesterInbound = null;
+        private BlockingCollection<Job> _ingesterOutbound = null;
+        private BlockingCollection<Job> _processorInbound = null;
+        private BlockingCollection<Job> _processorOutbound = null;
         private DataModel _model;
 
         public QueueManagerThread(DataModel model)
@@ -46,90 +47,73 @@ namespace MemoryExplorer.WorkerThreads
             _processorInbound = _model.ProcessorIn;
             _processorOutbound = _model.ProcessorOut;
 
-
-            while (!worker.CancellationPending)
+            foreach (var item in _processorInbound.GetConsumingEnumerable())
             {
-                if (_ingesterInbound.Count > 0)
+                Job j = (Job)item;
+                _model.DecrementActiveJobs();
+                switch (j.Status)
                 {
-                    Job j = _ingesterInbound.Dequeue();                    
-                    switch (j.Status)
-                    {
-                        case JobStatus.Failed:
-                            _model.WriteToLogfile("Ingester Error from " + j.Action);
-                            _model.WriteToLogfile("\t" + j.ErrorMessage);
-                            break;
-                        default:
-                            break;
-                    }
-                    switch (j.Action)
-                    {
+                    case JobStatus.Failed:
+                        _model.WriteToLogfile("Processor Error from " + j.Action);
+                        _model.WriteToLogfile("\t" + j.ErrorMessage);
+                        string messageBoxText = "There was a problem loading the data provider.\n" + j.ErrorMessage;
+                        System.Windows.MessageBox.Show(messageBoxText, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        break;
+                    case JobStatus.Complete:
+                        switch (j.Action)
+                        {
+                            case JobAction.SetDataProvider:
+                                SetDataProvider(ref j);
+                                break;
+                            case JobAction.GetProfileIdentification:
+                                GetProfileIdentification(ref j);
+                                break;
+                            case JobAction.LoadProfile:
+                                LoadProfile(ref j);
+                                break;
+                            case JobAction.FindKernelDtb:
+                                FindKernelDtb(ref j);
+                                break;
+                            case JobAction.LoadKernelAddressSpace:
+                                LoadKernelAddressSpace(ref j);
+                                break;
+                            case JobAction.FindKernelImage:
+                                FindKernelImage(ref j);
+                                break;
+                            case JobAction.FindUserSharedData:
+                                FindUserSharedData(ref j);
+                                break;
+                            case JobAction.EnumerateObjectTypes:
+                                EnumerateObjectTypes(ref j);
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                if (worker.CancellationPending)
+                    break;
+            }                
+        }
 
-                        default:
-                            break;
-                    }
-                }
-                else if (_processorInbound.Count > 0)
-                {
-                    Job j = _processorInbound.Dequeue();
-                    _model.DecrementActiveJobs();
-                    switch (j.Status)
-                    {
-                        case JobStatus.Failed:
-                            _model.WriteToLogfile("Processor Error from " + j.Action);
-                            _model.WriteToLogfile("\t" + j.ErrorMessage);
-                            string messageBoxText = "There was a problem loading the data provider.\n" + j.ErrorMessage;
-                            System.Windows.MessageBox.Show(messageBoxText, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                            break;
-                        case JobStatus.Complete:
-                            switch (j.Action)
-                            {
-                                case JobAction.SetDataProvider:
-                                    SetDataProvider(ref j);                                    
-                                    break;
-                                case JobAction.GetProfileIdentification:
-                                    GetProfileIdentification(ref j);                                    
-                                    break;
-                                case JobAction.LoadProfile:
-                                    LoadProfile(ref j);                                    
-                                    break;
-                                case JobAction.FindKernelDtb:
-                                    FindKernelDtb(ref j);
-                                    break;
-                                case JobAction.LoadKernelAddressSpace:
-                                    LoadKernelAddressSpace(ref j);
-                                    break;
-                                case JobAction.FindKernelImage:
-                                    FindKernelImage(ref j);
-                                    break;
-                                case JobAction.FindUserSharedData:
-                                    FindUserSharedData(ref j);
-                                    break;
-                                default:
-                                    break;
-                            }
-                            break;
-                        default:
-                            break;
-                    }                    
-                }
-                else
-                {
-                    //Debug.WriteLine("The queue manager is waiting");
-                    Thread.Sleep(5);
-                }
-            }
-            // Assign the result of the computation
-            // to the Result property of the DoWorkEventArgs
-            // object. This is will be available to the 
-            // RunWorkerCompleted eventhandler.
-            //e.Result = ComputeFibonacci((int)e.Argument, worker, e);
+        private void EnumerateObjectTypes(ref Job j)
+        {
+            Job j1 = new Job();
+            j1.Action = JobAction.EnumerateObjectTree;
+            _processorOutbound.Add(j1);
+            _model.IncrementActiveJobs("Building Object Tree");
+            Job j2 = new Job();
+            j2.Action = JobAction.EnumerateObjectTypes;
+            _ingesterOutbound.Add(j2);
         }
 
         private void FindUserSharedData(ref Job j)
         {
             Job j1 = new Job();
             j1.Action = JobAction.EnumerateObjectTypes;
-            _processorOutbound.Enqueue(j1);
+            _processorOutbound.Add(j1);
             _model.IncrementActiveJobs("Detecting Object Types");
             Job j2 = new Job();
             j2.Action = JobAction.FindUserSharedData;
@@ -137,14 +121,14 @@ namespace MemoryExplorer.WorkerThreads
             {
                 j2.ActionMessage.Add(item);
             }
-            _ingesterOutbound.Enqueue(j2);
+            _ingesterOutbound.Add(j2);
         }
 
         private void FindKernelImage(ref Job j)
         {
             Job j1 = new Job();
             j1.Action = JobAction.FindUserSharedData;
-            _processorOutbound.Enqueue(j1);
+            _processorOutbound.Add(j1);
             _model.IncrementActiveJobs("Loading User Shared Data");
             Job j2 = new Job();
             j2.Action = JobAction.FindKernelImage;
@@ -152,36 +136,36 @@ namespace MemoryExplorer.WorkerThreads
             {
                 j2.ActionMessage.Add(item);
             }            
-            _ingesterOutbound.Enqueue(j2);
+            _ingesterOutbound.Add(j2);
         }
 
         private void LoadKernelAddressSpace(ref Job j)
         {
             Job j1 = new Job();
             j1.Action = JobAction.FindKernelImage;
-            _processorOutbound.Enqueue(j1);
+            _processorOutbound.Add(j1);
             _model.IncrementActiveJobs("Finding Kernel Image");
             Job j2 = new Job();
             j2.Action = JobAction.LoadKernelAddressSpace;
-            _ingesterOutbound.Enqueue(j2);
+            _ingesterOutbound.Add(j2);
         }
 
         private void FindKernelDtb(ref Job j)
         {
             Job j1 = new Job();
             j1.Action = JobAction.LoadKernelAddressSpace;
-            _processorOutbound.Enqueue(j1);
+            _processorOutbound.Add(j1);
             _model.IncrementActiveJobs("Loading Kernel Address Space");
             Job j2 = new Job();
             j2.Action = JobAction.FindKernelDtb;
-            _ingesterOutbound.Enqueue(j2);
+            _ingesterOutbound.Add(j2);
         }
 
         private void LoadProfile(ref Job j)
         {
             Job j1 = new Job();
             j1.Action = JobAction.FindKernelDtb;
-            _processorOutbound.Enqueue(j1);
+            _processorOutbound.Add(j1);
             _model.IncrementActiveJobs("Detecting Kernel DTB");
         }
 
@@ -199,10 +183,10 @@ namespace MemoryExplorer.WorkerThreads
                 Job j1 = new Job();
                 j1.Action = JobAction.LoadProfile;
                 j1.ActionMessage.Add(j.ActionMessage[0]);
-                _processorOutbound.Enqueue(j1);
+                _processorOutbound.Add(j1);
                 Job j2 = new Job();
                 j2.Action = JobAction.LoadProfileId;
-                _ingesterOutbound.Enqueue(j2);
+                _ingesterOutbound.Add(j2);
                 _model.IncrementActiveJobs("Loading Profile");
             }
             else
@@ -216,11 +200,11 @@ namespace MemoryExplorer.WorkerThreads
         {
             Job j1 = new Job();
             j1.Action = JobAction.GetProfileIdentification;
-            _processorOutbound.Enqueue(j1);
+            _processorOutbound.Add(j1);
             Job j2 = new Job();
             j2.Action = JobAction.SetCacheFolder;
             j2.ActionMessage.Add(j.ActionMessage[0]);
-            _ingesterOutbound.Enqueue(j2);
+            _ingesterOutbound.Add(j2);
             _model.IncrementActiveJobs("Detecting Profile");
         }
 

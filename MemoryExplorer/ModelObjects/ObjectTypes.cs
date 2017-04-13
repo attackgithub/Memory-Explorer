@@ -51,7 +51,15 @@ namespace MemoryExplorer.ModelObjects
                 kernelAS = _dataProvider.KernelAddressSpace as AddressSpacex64;
             else
                 kernelAS = _dataProvider.KernelAddressSpace as AddressSpacex86Pae;
-            uint indexTableOffset = (uint)_profile.GetConstant("ObpObjectTypes");
+            uint indexTableOffset = 0;
+            try
+            {
+                indexTableOffset = (uint)_profile.GetConstant("ObpObjectTypes");
+            }
+            catch
+            {            
+                indexTableOffset = (uint)_profile.GetConstant("_ObpObjectTypes");
+            }
             ulong startOffset = _dataProvider.KernelBaseAddress + indexTableOffset;
             ulong pAddr = kernelAS.vtop(startOffset, _dataProvider.IsLive);
             if (pAddr == 0)
@@ -78,6 +86,8 @@ namespace MemoryExplorer.ModelObjects
                         startOffset = _dataProvider.KernelBaseAddress + indexTableOffset + (uint)(i * 4);
                         ptr = (BitConverter.ToUInt32(_dataProvider.ReadMemoryBlock(startOffset, 4), 0));
                     }
+                    if (ptr == 0)
+                        break;
                     ot = new ObjectType(_profile, _dataProvider, ptr);
                     ObjectTypeRecord otr = new ObjectTypeRecord();
                     otr.Name = ot.Name;
@@ -86,8 +96,8 @@ namespace MemoryExplorer.ModelObjects
                         continue;
                     _objectMap.ObjectTypeRecords.Add(otr);
                 }
-                //if (!dataProvider.IsLive)
-                //    PersistObjectMap(_objectMap, _dataProvider.CacheFolder + "\\object_type_map.gz");
+                if (!dataProvider.IsLive)
+                    PersistObjectMap(_objectMap, _dataProvider.CacheFolder + "\\object_type_map.gz");
             }
             catch (Exception ex)
             {
