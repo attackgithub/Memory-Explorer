@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Processes;
 using MemoryExplorer.Profiles;
@@ -17,11 +18,11 @@ namespace MemoryExplorer.Tools
         private ulong _pid;
         private MmVadBase _vadItem;
         private HashSet<ulong> _seen = new HashSet<ulong>();
-        public VadInfo(Profile profile, DataProviderBase dataProvider, ulong pid) : base(profile, dataProvider)
+        public VadInfo(DataModel model, ulong pid) : base(model)
         {
             _pid = pid;
-            // check pre-reqs
-            if (_profile == null || _dataProvider.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
+            // check pre-reqs  
+            if (_profile == null || _model.KernelBaseAddress == 0 || model.KernelAddressSpace == null)
                 throw new ArgumentException("Missing Prerequisites");
         }
         public void Run()
@@ -34,7 +35,7 @@ namespace MemoryExplorer.Tools
                 ////_processInfo = _profile.Model.FindProcess(_pid);
                 if (null == _processInfo)
                     return;
-                EProcess_deprecated ep = new EProcess_deprecated(_profile, _dataProvider, _processInfo.VirtualAddress);
+                EProcess_deprecated ep = new EProcess_deprecated(_model, _processInfo.VirtualAddress);
                 ulong vadRoot = ep.Members.VadRoot & 0xffffffffffff;
                 Traverse(vadRoot, 0);
             }
@@ -52,7 +53,7 @@ namespace MemoryExplorer.Tools
                 if (vadRoot % _profile.PoolAlign > 0)
                     return;
                 _seen.Add(vadRoot);
-                RtlBalancedNode node = new RtlBalancedNode(_profile, _dataProvider, virtualAddress: vadRoot);
+                RtlBalancedNode node = new RtlBalancedNode(_model, virtualAddress: vadRoot);
                 // the node will map to one of the MMVAD types
                 // these change depending on the version of Windows
                 // I can use the _POOL_HEADER to determine the type from the pool tag
@@ -82,7 +83,7 @@ namespace MemoryExplorer.Tools
                 }
                 if(tagType == "_MMVAD")
                 {
-                    _vadItem = new MmVad(_profile, _dataProvider, virtualAddress: vadRoot);
+                    _vadItem = new MmVad(_model, virtualAddress: vadRoot);
                     MmVad output = _vadItem as MmVad;
                     string pr = output.Core.Protection.ToString();
                     string result = "0x" + output.VirtualAddress.ToString("x12");
@@ -115,7 +116,7 @@ namespace MemoryExplorer.Tools
                 }
                 else if(tagType == "_MMVAD_SHORT")
                 {
-                    _vadItem = new MmVadShort(_profile, _dataProvider, virtualAddress: vadRoot);
+                    _vadItem = new MmVadShort(_model, virtualAddress: vadRoot);
                     MmVadShort output = _vadItem as MmVadShort;
                     string pr = output.Protection.ToString();
                     string result = "ﬁx" +output.VirtualAddress.ToString("x12");

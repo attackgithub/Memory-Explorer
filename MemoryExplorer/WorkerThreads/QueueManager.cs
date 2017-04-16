@@ -9,6 +9,8 @@ using System.Windows;
 using System.Windows.Forms;
 using System;
 using System.Collections.Concurrent;
+using MemoryExplorer.Profiles;
+using MemoryExplorer.Data;
 
 namespace MemoryExplorer.WorkerThreads
 {
@@ -20,15 +22,20 @@ namespace MemoryExplorer.WorkerThreads
         private BlockingCollection<Job> _processorInbound = null;
         private BlockingCollection<Job> _processorOutbound = null;
         private DataModel _model;
+        private DataProviderBase _dataProvider = null;
+        private Profile _profile = null;
 
         public QueueManagerThread(DataModel model)
         {
+            _model = model;
+            _profile = model.ActiveProfile;
+            _dataProvider = model.DataProvider;
             _backgroundWorker.DoWork += new DoWorkEventHandler(QueueManagerThread_DoWork);
             _backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(QueueManagerThread_RunWorkerCompleted);
             _backgroundWorker.WorkerSupportsCancellation = true;
 
             // Start the asynchronous operation.
-            _backgroundWorker.RunWorkerAsync(model);
+            _backgroundWorker.RunWorkerAsync();
 
         }
         public void Stop()
@@ -40,8 +47,7 @@ namespace MemoryExplorer.WorkerThreads
         private void QueueManagerThread_DoWork(object sender, DoWorkEventArgs e)
         {
             // Get the BackgroundWorker that raised this event.
-            BackgroundWorker worker = sender as BackgroundWorker;
-            _model = (DataModel)e.Argument;
+            BackgroundWorker worker = sender as BackgroundWorker;            
             _ingesterOutbound = _model.IngesterOut; 
             _ingesterInbound = _model.IngesterIn;
             _processorInbound = _model.ProcessorIn;
@@ -100,13 +106,14 @@ namespace MemoryExplorer.WorkerThreads
 
         private void EnumerateObjectTypes(ref Job j)
         {
+            Job j2 = new Job();
+            j2.Action = JobAction.EnumerateObjectTypes;
+            _ingesterOutbound.Add(j2);
+            Thread.Sleep(1000);
             Job j1 = new Job();
             j1.Action = JobAction.EnumerateObjectTree;
             _processorOutbound.Add(j1);
             _model.IncrementActiveJobs("Building Object Tree");
-            Job j2 = new Job();
-            j2.Action = JobAction.EnumerateObjectTypes;
-            _ingesterOutbound.Add(j2);
         }
 
         private void FindUserSharedData(ref Job j)

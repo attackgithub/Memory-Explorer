@@ -1,5 +1,6 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 using System;
 
@@ -13,14 +14,14 @@ namespace MemoryExplorer.ModelObjects
         public CmNameControlBlock NameControlBlock { get { return _nameControlBlock; } }
         public KeyControlBlock Parent { get { return _parent; } }
 
-        public KeyControlBlock(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public KeyControlBlock(DataModel model, ulong virtualAddress = 0) : base(model, virtualAddress)
         {
             Overlay("_CM_KEY_CONTROL_BLOCK");
             ulong nameBlockPtr = Members.NameBlock & 0xffffffffffff;
-            _nameControlBlock = new CmNameControlBlock(_profile, _dataProvider, nameBlockPtr);
+            _nameControlBlock = new CmNameControlBlock(_model, nameBlockPtr);
             ulong parentKcbPtr = Members.ParentKcb & 0xffffffffffff;
             if (parentKcbPtr != 0)
-                _parent = new KeyControlBlock(_profile, _dataProvider, virtualAddress: parentKcbPtr );
+                _parent = new KeyControlBlock(_model, virtualAddress: parentKcbPtr );
 
             //_is64 = (_profile.Architecture == "AMD64");
             //AddressBase addressSpace = _dataProvider.ActiveAddressSpace;

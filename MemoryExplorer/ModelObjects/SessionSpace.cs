@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 using System;
 
@@ -6,7 +7,7 @@ namespace MemoryExplorer.ModelObjects
 {
     public class SessionSpace : StructureBase
     {
-        public SessionSpace(Profile profile, DataProviderBase dataProvider, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
+        public SessionSpace(DataModel model, ulong virtualAddress) : base(model, virtualAddress)
         {
             Overlay("_MM_SESSION_SPACE");
 
@@ -24,7 +25,7 @@ namespace MemoryExplorer.ModelObjects
             get
             {
                 Structure s = GetStructureMember("ProcessList");
-                LIST_ENTRY le = new LIST_ENTRY(_buffer, s.Offset, _is64);
+                LIST_ENTRY le = new LIST_ENTRY(_model, _buffer, s.Offset, _is64);
                 return le;
             }
         }

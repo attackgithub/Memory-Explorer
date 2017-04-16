@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Profiles;
 using MemoryExplorer.Scanners;
@@ -13,10 +14,10 @@ namespace MemoryExplorer.Tools
 {
     public class DriverScan : ToolBase
     {
-        public DriverScan(Profile profile, DataProviderBase dataProvider) : base(profile, dataProvider)
+        public DriverScan(DataModel model) : base(model)
         {
             // check pre-reqs
-            if (_profile == null || _dataProvider.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
+            if (_profile == null || _model.KernelBaseAddress == 0 || model.KernelAddressSpace == null)
                 throw new ArgumentException("Missing Prerequisites");
         }
         public List<DriverObject> Run()
@@ -43,10 +44,10 @@ namespace MemoryExplorer.Tools
             List<DriverObject> drivers = new List<DriverObject>();
             foreach (var item in records)
             {
-                ObjectHeader oh = new ObjectHeader(_profile, _dataProvider, physicalAddress: item);
+                ObjectHeader oh = new ObjectHeader(_model, physicalAddress: item);
                 string name = oh.HeaderNameInfo.Name;
                 ulong offset = (ulong)oh.Size + item;
-                DriverObject drvObj = new DriverObject(_profile, _dataProvider, oh, physicalAddress: offset);
+                DriverObject drvObj = new DriverObject(_model, oh, physicalAddress: offset);
                 drvObj.Name = name;
                 drivers.Add(drvObj);
             }

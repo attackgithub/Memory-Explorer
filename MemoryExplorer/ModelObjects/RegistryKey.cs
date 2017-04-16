@@ -1,5 +1,6 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 using System;
 
@@ -10,16 +11,16 @@ namespace MemoryExplorer.ModelObjects
         KeyControlBlock _kcb = null;
         string _name = "";
 
-        public RegistryKey(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public RegistryKey(DataModel model, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(model, virtualAddress)
         {
             _physicalAddress = physicalAddress;            
             Initialise();
-            ObjectHeader oh = new ObjectHeader(_profile);
+            ObjectHeader oh = new ObjectHeader(_model);
             long headerSize = oh.Size;
             if (headerSize != -1)
-                _header = new ObjectHeader(_profile, _dataProvider, _virtualAddress - (uint)headerSize);
+                _header = new ObjectHeader(_model, _virtualAddress - (uint)headerSize);
         }
-        public RegistryKey(Profile profile, DataProviderBase dataProvider, ObjectHeader header, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public RegistryKey(DataModel model, ObjectHeader header, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(model, virtualAddress)
         {
             _physicalAddress = physicalAddress;            
             Initialise();
@@ -29,7 +30,7 @@ namespace MemoryExplorer.ModelObjects
         {
             Overlay("_CM_KEY_BODY");
             ulong keyControlBlockPtr = Members.KeyControlBlock & 0xffffffffffff;
-            _kcb = new KeyControlBlock(_profile, _dataProvider, virtualAddress: keyControlBlockPtr);
+            _kcb = new KeyControlBlock(_model, virtualAddress: keyControlBlockPtr);
             KeyControlBlock temp = _kcb;
             string name = "";
             while (temp != null)

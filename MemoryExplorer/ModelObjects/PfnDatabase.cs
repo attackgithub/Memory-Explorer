@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 using Newtonsoft.Json;
 using System;
@@ -40,7 +41,7 @@ namespace MemoryExplorer.ModelObjects
     {
         private List<PfnRecord> _pfnDatabaseList = new List<PfnRecord>();
 
-        public PfnDatabase(DataProviderBase dataProvider, Profile profile, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
+        public PfnDatabase(DataModel model, ulong virtualAddress) : base(model, virtualAddress)
         {
             _is64 = (_profile.Architecture == "AMD64");
             // there's no point if the system is live
@@ -48,7 +49,7 @@ namespace MemoryExplorer.ModelObjects
                 return;
             // first let's see if it already exists
             FileInfo cachedFile = new FileInfo(_dataProvider.CacheFolder + "\\pfn_database_map.gz");
-            if (cachedFile.Exists && !dataProvider.IsLive)
+            if (cachedFile.Exists && !_dataProvider.IsLive)
             {
                 PfnDatabaseMap dbm = RetrievePfnMap(cachedFile);
                 if (dbm != null)
@@ -82,7 +83,7 @@ namespace MemoryExplorer.ModelObjects
             }
             PfnDatabaseMap map = new PfnDatabaseMap();
             map.PfnDatabaseRecords = _pfnDatabaseList;
-            if (!dataProvider.IsLive)
+            if (!_dataProvider.IsLive)
                 PersistPfnMap(map, _dataProvider.CacheFolder + "\\pfn_database_map.gz");
         }
         private byte[] NextBlock(ulong startAddress, uint pageCount)

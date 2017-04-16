@@ -1,5 +1,6 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Profiles;
 using System;
@@ -14,17 +15,12 @@ namespace MemoryExplorer.Processes
 {
     public class EProcess_deprecated : StructureBase
     {
-        private ulong _objectTable;
-        private ulong _dtbOffset;
-        private uint _dtbSize;
         //private ulong _offset;
-        private AddressBase _addressSpace;
-        private object _eprocess;
         //private HandleTable _hndTable = null;
 
-        public EProcess_deprecated(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public EProcess_deprecated(DataModel model, ulong virtualAddress=0, ulong physicalAddress = 0) : base(model, virtualAddress)
         {
-            ObjectHeader oh = new ObjectHeader(_profile);
+            ObjectHeader oh = new ObjectHeader(model);
             if (virtualAddress == 0)
             {
                 _physicalAddress = physicalAddress;
@@ -32,12 +28,12 @@ namespace MemoryExplorer.Processes
             }
             else
             {
-                _addressSpace = _dataProvider.ActiveAddressSpace;
+                _addressSpace = _model.ActiveAddressSpace;
                 _physicalAddress = _addressSpace.vtop(_virtualAddress, _dataProvider.IsLive);
                 Initialise();
                 long headerSize = oh.Size;
                 if (headerSize != -1)
-                    _header = new ObjectHeader(_profile, _dataProvider, _virtualAddress - (uint)headerSize);
+                    _header = new ObjectHeader(_model, _virtualAddress - (uint)headerSize);
             }
             
         }
@@ -74,7 +70,6 @@ namespace MemoryExplorer.Processes
             //    }
             //}
         }
-        public dynamic Members { get { return _eprocess;  } }
         public object Get(string member)
         {
             try

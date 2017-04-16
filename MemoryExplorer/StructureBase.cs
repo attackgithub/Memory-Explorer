@@ -1,5 +1,6 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Profiles;
 using System;
@@ -52,12 +53,21 @@ namespace MemoryExplorer
         protected ObjectHeader _header = null;
         protected dynamic _members;
         protected AddressBase _addressSpace;
+        protected DataModel _model = null;
+        
 
-        protected StructureBase(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0)
+        protected StructureBase(DataModel model, ulong virtualAddress = 0, ulong physicalAddress = 0)
         {
-            _profile = profile;
-            _dataProvider = dataProvider;
-            _virtualAddress = virtualAddress;
+            _model = model;
+            _profile = model.ActiveProfile;
+            _dataProvider = model.DataProvider;
+            _is64 = (_profile.Architecture == "AMD64");
+            _virtualAddress = (virtualAddress & 0xffffffffffff);
+            _physicalAddress = physicalAddress;
+            if (virtualAddress != 0 && physicalAddress == 0)
+                _physicalAddress = model.ActiveAddressSpace.vtop(_virtualAddress);
+            if (virtualAddress == 0 && physicalAddress != 0)
+                _virtualAddress = model.ActiveAddressSpace.ptov(_physicalAddress);
         }
 
         protected Structure GetStructureMember(string member)

@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 using System;
 using System.Runtime.InteropServices;
@@ -15,7 +16,7 @@ namespace MemoryExplorer.ModelObjects
         private ulong _typeInfo;
         private ulong _grantedAccess;
         private ulong _eprocess;
-        public HandleTableEntry(Profile profile, DataProviderBase dataProvider, ulong virtualAddress, int index) : base(profile, dataProvider, virtualAddress)
+        public HandleTableEntry(DataModel model, ulong virtualAddress, int index) : base(model, virtualAddress)
         {
             Overlay("_HANDLE_TABLE_ENTRY");
 
@@ -30,7 +31,7 @@ namespace MemoryExplorer.ModelObjects
             //    throw new ArgumentException("Error - Invalid Virtual Address");
             Parse();
         }
-        public HandleTableEntry(Profile profile, byte[] buffer, int index) : base(profile, null, 0)
+        public HandleTableEntry(DataModel model, byte[] buffer, int index) : base(model, 0)
         {
             //_index = index * 4;
             //var dll = _profile.GetStructureAssembly("_HANDLE_TABLE_ENTRY");

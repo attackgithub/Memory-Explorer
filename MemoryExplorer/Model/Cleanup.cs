@@ -11,6 +11,8 @@ namespace MemoryExplorer.Model
             try
             {
                 Debug.WriteLine("Cleanup Called");
+                _processorOut.CompleteAdding();
+                _ingesterOut.CompleteAdding();
                 if (_processingThread != null)
                     _processingThread.Stop();
                 if (_ingestingThread != null)

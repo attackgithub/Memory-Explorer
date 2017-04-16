@@ -1,5 +1,6 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,21 +10,17 @@ using System.Threading.Tasks;
 
 namespace MemoryExplorer.ModelObjects
 {
-    public class LIST_ENTRY
+    public class LIST_ENTRY : StructureBase
     {
         private string _targetFile;
-        private ulong _physicalAddress;
-        private ulong _virtualAddress;
         private ulong _blink;
         private ulong _flink;
         private bool _x64;
 
         public ulong Blink { get { return _blink & 0xffffffffffff; } }
         public ulong Flink { get { return _flink & 0xffffffffffff; } }
-        public ulong PhysicalAddress { get { return _physicalAddress; } }
-        public ulong VirtualAddress { get { return _virtualAddress; } }
 
-        public LIST_ENTRY(byte[] buffer, ulong offset, bool isX64)
+        public LIST_ENTRY(DataModel model, byte[] buffer, ulong offset, bool isX64) : base(model, 0)
         {
             _x64 = isX64;
             if (_x64)
@@ -37,14 +34,11 @@ namespace MemoryExplorer.ModelObjects
                 _flink = BitConverter.ToUInt32(buffer, (int)offset + 4);
             }
         }
-        public LIST_ENTRY(string targetFile, ulong physicalAddress, ulong virtualAddress, bool isX64)
+        public LIST_ENTRY(DataModel model, string targetFile, ulong physicalAddress, ulong virtualAddress, bool isX64) : base(model, virtualAddress)
         {
             try
             {
                 _targetFile = targetFile;
-                _physicalAddress = physicalAddress;
-                _virtualAddress = virtualAddress;
-                _x64 = isX64;
                 using (FileStream stream = new FileStream(_targetFile, FileMode.Open, FileAccess.Read))
                 using (BinaryReader reader = new BinaryReader(stream))
                 {
@@ -68,32 +62,32 @@ namespace MemoryExplorer.ModelObjects
                 throw new ArgumentException("Error Creating LIST_ENTRY: " + ex.Message);
             }
         }
-        public LIST_ENTRY(DataProviderBase dataProvider, ulong vAddress)
+        public LIST_ENTRY(DataModel model, ulong virtualAddress) : base(model, virtualAddress)
         {
             try
             {
-                AddressBase addressSpace = dataProvider.ActiveAddressSpace;
-                _virtualAddress = vAddress;
-                _physicalAddress = addressSpace.vtop(vAddress, dataProvider.IsLive);
+                AddressBase addressSpace = model.ActiveAddressSpace;
+                _virtualAddress = virtualAddress;
+                _physicalAddress = addressSpace.vtop(virtualAddress, _dataProvider.IsLive);
                 _x64 = addressSpace.Is64;
                 if (_x64)
                 {
-                    var checkFirst = dataProvider.ReadUInt64(_virtualAddress);
+                    var checkFirst = _dataProvider.ReadUInt64(_virtualAddress);
                     if (checkFirst == null)
                         throw new ArgumentException("Invalid Address");
                     _blink = (ulong)checkFirst;
-                    checkFirst = dataProvider.ReadUInt64(_virtualAddress + 8);
+                    checkFirst = _dataProvider.ReadUInt64(_virtualAddress + 8);
                     if (checkFirst == null)
                         throw new ArgumentException("Invalid Address");
                     _flink = (ulong)checkFirst;
                 }
                 else
                 {
-                    var checkFirst = dataProvider.ReadUInt32(_virtualAddress);
+                    var checkFirst = _dataProvider.ReadUInt32(_virtualAddress);
                     if (checkFirst == null)
                         throw new ArgumentException("Invalid Address");
                     _blink = (ulong)checkFirst;
-                    checkFirst = dataProvider.ReadUInt32(_virtualAddress + 4);
+                    checkFirst = _dataProvider.ReadUInt32(_virtualAddress + 4);
                     if (checkFirst == null)
                         throw new ArgumentException("Invalid Address");
                     _flink = (ulong)checkFirst;

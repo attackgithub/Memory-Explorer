@@ -1,9 +1,11 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Profiles;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
@@ -17,6 +19,7 @@ namespace MemoryExplorer.Tools
         public ulong ObjectHeaderSize;
         public uint ObjectDirectorySize;
         public uint ObjectDirectoryEntrySize;
+        public byte ObjectTypeCookie;
         public List<ObjectTreeRecord> ObjectTreeRecords;
     }
     public class ObjectTreeRecord
@@ -30,21 +33,30 @@ namespace MemoryExplorer.Tools
         private int _index = 1;
         ObjectTreeMap _objectMap = null;
 
-        public ObjectTree(Profile profile, DataProviderBase dataProvider) : base(profile, dataProvider)
+        public ObjectTree(DataModel model) : base(model)
         {
             // check pre-reqs
-            if (_profile == null || _dataProvider == null || _dataProvider.KernelBaseAddress == 0 || _dataProvider.KernelAddressSpace == null || _dataProvider.CacheFolder == "")
+            if (_profile == null || _dataProvider == null || model.KernelBaseAddress == 0 || model.KernelAddressSpace == null || _dataProvider.CacheFolder == "")
                 throw new ArgumentException("Missing Prerequisites");
             _objectMap = new ObjectTreeMap();
             _objectMap.ObjectTreeRecords = new List<ObjectTreeRecord>();
-            ObjectHeader oh = new ObjectHeader(_profile);
-            _objectMap.ObjectHeaderSize = (ulong)oh.Size;
+            ObjectHeader oh = new ObjectHeader(_model);            
+            _objectMap.ObjectHeaderSize = (ulong)oh.Size; // this is wrong, but will be corrected later
             _objectMap.ObjectDirectoryEntrySize = (uint)_profile.GetStructureSize("_OBJECT_DIRECTORY_ENTRY");
             _objectMap.ObjectDirectorySize = (uint)_profile.GetStructureSize("_OBJECT_DIRECTORY");
-            
-
+            // in Windows 10 they obfuscate the object types with this cookie and some jiggery pokery
+            try
+            {
+                ulong offset = (ulong)_profile.GetConstant("ObHeaderCookie");
+                ulong location = model.KernelBaseAddress + offset;
+                var c = _dataProvider.ReadByte(location);
+                if (c != null)
+                    _objectMap.ObjectTypeCookie = (byte)c;
+            }
+            catch { }
+            Run();
         }
-        public List<ObjectTreeRecord> Run()
+        private void Run()
         {
             _isx64 = (_profile.Architecture == "AMD64");
             // first let's see if it already exists
@@ -55,7 +67,7 @@ namespace MemoryExplorer.Tools
                 if (otm != null)
                 {
                     _objectMap = otm;
-                    return Records;
+                    return;
                 }
             }
 
@@ -68,29 +80,29 @@ namespace MemoryExplorer.Tools
             {
                 rootDirectoryOffset = (uint)_profile.GetConstant("_ObpRootDirectoryObject");
             }
-                
-                
-            ulong vAddr = _dataProvider.KernelBaseAddress + rootDirectoryOffset;
-            _profile.KernelAddressSpace = _dataProvider.ActiveAddressSpace;
+            
+
+            ulong vAddr = _model.KernelBaseAddress + rootDirectoryOffset;
+            _model.KernelAddressSpace = _model.ActiveAddressSpace;
             ulong tableAddress = 0;
             if(_isx64)
             {
                 var v = _dataProvider.ReadUInt64(vAddr);
                 if (v == null)
-                    return null;
+                    return;
                 tableAddress = (ulong)v & 0xffffffffffff;
             }
             else
             {
                 var v = _dataProvider.ReadUInt32(vAddr);
                 if (v == null)
-                    return null;
+                    return;
                 tableAddress = (ulong)v;
             }
             ProcessDirectory(tableAddress, 0);
             //if (!_dataProvider.IsLive)
             //    PersistObjectMap(_objectMap, _dataProvider.CacheFolder + "\\object_tree_map.gz");
-            return Records;
+            return;
         }
         private void PersistObjectMap(ObjectTreeMap source, string fileName)
         {
@@ -118,7 +130,7 @@ namespace MemoryExplorer.Tools
         }
         private void ProcessDirectory(ulong tableAddress, int parent)
         {
-            ObjectDirectory objectDirectory = new ObjectDirectory(_profile, _dataProvider, virtualAddress: tableAddress);
+            ObjectDirectory objectDirectory = new ObjectDirectory(_model, virtualAddress: tableAddress);
             if(objectDirectory.HashBuckets != null)
             {
                 foreach(var ptr in objectDirectory.HashBuckets)
@@ -128,38 +140,20 @@ namespace MemoryExplorer.Tools
                     BuildTree((ulong)ptr, parent);
                 }
             }
-            //byte[] buffer = _dataProvider.ReadMemoryBlock(tableAddress, _objectMap.ObjectDirectorySize);
-            //var dll = _profile.GetStructureAssembly("_OBJECT_DIRECTORY");
-            //Type t = dll.GetType("liveforensics.OBJECT_DIRECTORY");
-            //GCHandle pinnedPacket = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            //objectDirectory = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0), t);
-            //pinnedPacket.Free();
-
-            //byte[] hashBucket = objectDirectory.Members.HashBuckets;
-            //int count = hashBucket.Length / 8;
-
-            //for (int i = 0; i < count; i++)
-            //{
-            //    ulong ptr = (BitConverter.ToUInt64(hashBucket, i * 8)) & 0xffffffffffff;
-            //    if (ptr == 0)
-            //        continue;
-            //    BuildTree(ptr, parent);
-            //}
         }
         private void BuildTree(ulong ptr, int parent)
         {
-            ObjectDirectoryEntry objectDirectoryEntry = new ObjectDirectoryEntry(_profile, _dataProvider, virtualAddress: ptr);            
-            //uint objectDirectoryEntrySize = (uint)_profile.GetStructureSize("_OBJECT_DIRECTORY_ENTRY");
-            //var dll = _profile.GetStructureAssembly("_OBJECT_DIRECTORY_ENTRY");
-            //Type t = dll.GetType("liveforensics.OBJECT_DIRECTORY_ENTRY");
-            //byte[] buffer = _dataProvider.ReadMemoryBlock(ptr, _objectMap.ObjectDirectoryEntrySize);
-            //GCHandle pinnedPacket = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            //objectDirectoryEntry = Marshal.PtrToStructure(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0), t);
-            //pinnedPacket.Free();
-            //ulong addr = (objectDirectoryEntry.Members.Object - _objectMap.ObjectHeaderSize) & 0xffffffffffff;
-            //ObjectHeader oh = new ObjectHeader(_profile, _dataProvider, addr);
-            //string name = _profile.GetObjectName(oh.TypeInfo);
-            //int index = _index++;
+            ObjectDirectoryEntry objectDirectoryEntry = new ObjectDirectoryEntry(_model, virtualAddress: ptr);            
+            // some jiggery to get the real object header size
+            ulong addr = (objectDirectoryEntry.Object - _objectMap.ObjectHeaderSize) & 0xffffffffffff;
+            ObjectHeader oh = new ObjectHeader(_model, addr);
+            _objectMap.ObjectHeaderSize = oh.HeaderSize;
+            addr = (objectDirectoryEntry.Object - _objectMap.ObjectHeaderSize) & 0xffffffffffff;
+            oh = new ObjectHeader(_model, addr);
+            string name = oh.Name;
+            string objectType = GetObjectName(oh.TypeInfo, addr, _objectMap.ObjectTypeCookie);
+            int index = _index++;
+            Debug.WriteLine("Object Tree: 0x" + addr.ToString("X8") + "\tType: " + oh.TypeInfo + "\tName: " + name);
             //if(name == "Directory")
             //{
             //    ProcessDirectory(objectDirectoryEntry.Members.Object & 0xffffffffffff, index);
@@ -167,13 +161,14 @@ namespace MemoryExplorer.Tools
             //if (oh.HeaderNameInfo != null)
             //    name += ("\t" + oh.HeaderNameInfo.Name);
             //Debug.WriteLine("[" + parent + "][" + index + "]" + addr.ToString("X08") + " (0x" + oh.PhysicalAddress.ToString("X08") + ")(p)\t" + name);
-            //_objectMap.ObjectTreeRecords.Add(new ObjectTreeRecord() { ObjectHeaderVirtualAddress = addr, Parent = parent, Index = index });
-            //ulong chainlinkPtr = (objectDirectoryEntry.Members.ChainLink) & 0xffffffffffff;
-            //if (chainlinkPtr != 0)
-            //{
-            //    BuildTree(chainlinkPtr, parent);
-            //}
+            _objectMap.ObjectTreeRecords.Add(new ObjectTreeRecord() { ObjectHeaderVirtualAddress = addr, Parent = parent, Index = index });
+            ulong chainlinkPtr = (objectDirectoryEntry.ChainLink) & 0xffffffffffff;
+            if (chainlinkPtr != 0)
+            {
+                BuildTree(chainlinkPtr, parent);
+            }
         }
+        
         public List<ObjectTreeRecord> Records { get { return _objectMap.ObjectTreeRecords; } }
     }
 }

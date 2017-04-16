@@ -1,5 +1,6 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 using System;
 using System.Collections.Generic;
@@ -28,19 +29,20 @@ namespace MemoryExplorer.ModelObjects
         private ulong _headerSize = 0;
         private HeaderNameInfo _headerNameInfo = null;
         private HeaderHandleInfo _headerHandleInfo = null;
+        private HeaderCreatorInfo _headerCreatorInfo = null;
+        private HeaderQuotaInfo _headerQuotaInfo = null;
+        private HeaderProcessInfo _headerProcessInfo = null;
+        private HeaderAuditInfo _headerAuditInfo = null;
 
         public HeaderNameInfo HeaderNameInfo { get { return _headerNameInfo; } }
         public HeaderHandleInfo HeaderHandleInfo { get { return _headerHandleInfo; } }
         public ulong HeaderSize { get { return _headerSize; } }
         public byte InfoMask { get { return _infoMask; } }
 
-        public ObjectHeader(Profile profile) : base(profile, null, 0)
+        public ObjectHeader(DataModel model) : base(model, 0)
         {
-            _structureSize = (long)profile.GetStructureSize("_OBJECT_HEADER");
-            ////_structure = profile.GetEntries("_OBJECT_HEADER");
-            //Structure s = GetStructureMember("Body");
-            //if (s != null)
-            //    _structureSize = (long)s.Offset;
+            _structureSize = (long)_profile.GetStructureSize("_OBJECT_HEADER");
+            
         }
         /// <summary>
         /// You should normally be using the virtual address
@@ -51,24 +53,21 @@ namespace MemoryExplorer.ModelObjects
         /// <param name="dataProvider"></param>
         /// <param name="virtualAddress"></param>
         /// <param name="physicalAddress"></param>
-        public ObjectHeader(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
+        public ObjectHeader(DataModel model, ulong virtualAddress=0, ulong physicalAddress=0) : base(model, virtualAddress, physicalAddress)
         {
-            _physicalAddress = physicalAddress;
             if (virtualAddress == 0 && physicalAddress == 0)
                 throw new ArgumentException("Error - Offset is ZERO for _OBJECT_HEADER");
+            _oh = _profile.GetStructure("_OBJECT_HEADER", _physicalAddress);
+
+
             _is64 = (_profile.Architecture == "AMD64");
-            _structureSize = (uint)_profile.GetStructureSize("_OBJECT_HEADER");
-            if (_structureSize == -1)
-                throw new ArgumentException("Error - Profile didn't contain a definition for _OBJECT_HEADER");
-            AddressBase addressSpace = dataProvider.ActiveAddressSpace;
-            if (virtualAddress == 0)
-                _buffer = _dataProvider.ReadPhysicalMemory(_physicalAddress, (uint)_structureSize);
-            else
+            _headerSize = (uint)_profile.GetStructureSize("_OBJECT_HEADER");
+            try
             {
-                _physicalAddress = addressSpace.vtop(_virtualAddress);
-                _buffer = _dataProvider.ReadMemoryBlock(_virtualAddress, (uint)_structureSize);
+                _headerSize -= (uint)_oh.Body.MxStructureSize;
             }
-            //Debug.WriteLine("PADDR: " + _physicalAddress.ToString("X08"));
+            catch { }
+            
             Initialise();
         }
         private void Initialise()
@@ -76,56 +75,68 @@ namespace MemoryExplorer.ModelObjects
             try
             {
                 ////_structure = _profile.GetEntries("_OBJECT_HEADER");
-                Structure s = GetStructureMember("InfoMask");
-                _infoMask = _buffer[s.Offset];
+                var s = _oh.InfoMask;
+                _infoMask = (byte)s;
                 ulong offsetMarker = _physicalAddress;
+                Debug.WriteLine("_OBJECT_HEADER starts at: 0x" + offsetMarker.ToString("X8"));
                 if ((_infoMask & (byte)Mask.HEADER_CREATOR_INFO) > 0)
                 {
                     uint size = (uint)_profile.GetStructureSize("_OBJECT_HEADER_CREATOR_INFO");
                     offsetMarker -= size;
+                    Debug.WriteLine("\tHeaderCreatorInfo found at: 0x" + offsetMarker.ToString("X8") + " Size: " + size);
+                    _headerCreatorInfo = new HeaderCreatorInfo(_model, physicalAddress: offsetMarker);
                     _headerSize += size;
                 }
                 if ((_infoMask & (byte)Mask.HEADER_NAME_INFO) > 0)
                 {
                     uint size = (uint)_profile.GetStructureSize("_OBJECT_HEADER_NAME_INFO");
                     offsetMarker -= size;
-                    _headerNameInfo = new HeaderNameInfo(_profile, _dataProvider, physicalAddress: offsetMarker);
+                    Debug.WriteLine("\tHeaderNameInfo found at: 0x" + offsetMarker.ToString("X8") + " Size: " + size);
+                    _headerNameInfo = new HeaderNameInfo(_model, physicalAddress: offsetMarker);
                     _headerSize += size;
                 }
                 if ((_infoMask & (byte)Mask.HEADER_HANDLE_INFO) > 0)
                 {
                     uint size = (uint)_profile.GetStructureSize("_OBJECT_HEADER_HANDLE_INFO");
                     offsetMarker -= size;
-                    _headerHandleInfo = new HeaderHandleInfo(_profile, _dataProvider, physicalAddress: offsetMarker);
+                    Debug.WriteLine("\tHeaderHandleInfo found at: 0x" + offsetMarker.ToString("X8") + " Size: " + size);
+                    _headerHandleInfo = new HeaderHandleInfo(_model, physicalAddress: offsetMarker);
                     _headerSize += size;
                 }
                 if ((_infoMask & (byte)Mask.HEADER_QUOTA_INFO) > 0)
                 {
                     uint size = (uint)_profile.GetStructureSize("_OBJECT_HEADER_QUOTA_INFO");
                     offsetMarker -= size;
+                    Debug.WriteLine("\tHeaderQuotaInfo found at: 0x" + offsetMarker.ToString("X8") + " Size: " + size);
+                    _headerQuotaInfo = new HeaderQuotaInfo(_model, physicalAddress: offsetMarker);
                     _headerSize += size;
                 }
                 if ((_infoMask & (byte)Mask.HEADER_PROCESS_INFO) > 0)
                 {
                     uint size = (uint)_profile.GetStructureSize("_OBJECT_HEADER_PROCESS_INFO");
                     offsetMarker -= size;
+                    Debug.WriteLine("\tHeaderProcessInfo found at: 0x" + offsetMarker.ToString("X8") + " Size: " + size);
+                    _headerProcessInfo = new HeaderProcessInfo(_model, physicalAddress: offsetMarker);
                     _headerSize += size;
                 }
                 if ((_infoMask & (byte)Mask.HEADER_AUDIT_INFO) > 0)
                 {
                     uint size = (uint)_profile.GetStructureSize("_OBJECT_HEADER_AUDIT_INFO");
                     offsetMarker -= size;
+                    Debug.WriteLine("\tHeaderAuditInfo found at: 0x" + offsetMarker.ToString("X8") + " Size: " + size);
+                    _headerAuditInfo = new HeaderAuditInfo(_model, physicalAddress: offsetMarker);
                     _headerSize += size;
                 }
-                s = GetStructureMember("Body");
-                if (s != null)
-                    _structureSize = (long)s.Offset;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return;
             }
             
+        }
+        public dynamic dynamicObject
+        {
+            get { return _oh; }
         }
         public ulong TypeInfo
         {
@@ -133,8 +144,8 @@ namespace MemoryExplorer.ModelObjects
             {
                 try
                 {
-                    Structure s = GetStructureMember("TypeIndex");
-                    return (ulong)_buffer[(int)s.Offset];
+                    var s = _oh.TypeIndex;
+                    return (ulong)s;
                 }
                 catch { return 0; }
             }
@@ -145,8 +156,8 @@ namespace MemoryExplorer.ModelObjects
             {
                 try
                 {
-                    Structure s = GetStructureMember("PointerCount");
-                    return BitConverter.ToUInt64(_buffer, (int)s.Offset);
+                    var s = _oh.PointerCount;
+                    return (ulong)s;
                 }
                 catch { return 0; }
             }
@@ -157,10 +168,26 @@ namespace MemoryExplorer.ModelObjects
             {
                 try
                 {
-                    Structure s = GetStructureMember("HandleCount");
-                    return BitConverter.ToUInt64(_buffer, (int)s.Offset);
+                    var s = _oh.HandleCount;
+                    return (ulong)s;
                 }
                 catch { return 0; }
+            }
+        }
+        public string Name
+        {
+            get
+            {
+                try
+                {
+                    if (_headerNameInfo != null)
+                        return _headerNameInfo.Name;
+                    return "";
+                }
+                catch (Exception)
+                {
+                    return "";
+                }
             }
         }
     }

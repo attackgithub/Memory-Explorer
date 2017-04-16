@@ -1,5 +1,6 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 using System;
 using System.Diagnostics;
@@ -19,13 +20,13 @@ namespace MemoryExplorer.ModelObjects
 
         // this will fail if the string runs off the end of the page
         // remember to set the dataProvider.ActiveAddressSpace before you call
-        public UnicodeString(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
+        public UnicodeString(DataModel model, ulong virtualAddress=0, ulong physicalAddress=0) : base(model, virtualAddress)
         {
             try
             {
                 _physicalAddress = physicalAddress;
                 _is64 = (_profile.Architecture == "AMD64");
-                _addressSpace = dataProvider.ActiveAddressSpace;
+                _addressSpace = _model.ActiveAddressSpace;
                 _structureSize = (int)_profile.GetStructureSize("_UNICODE_STRING");
                 if (_structureSize == -1)
                     throw new ArgumentException("Error - Profile didn't contain a definition for _OBJECT_TYPE");
@@ -65,7 +66,7 @@ namespace MemoryExplorer.ModelObjects
             }
             
         }
-        public UnicodeString(Profile profile, DataProviderBase dataProvider, byte[] buffer) : base(profile, dataProvider, 0)
+        public UnicodeString(DataModel model, byte[] buffer) : base(model, 0)
         {
             //var dll = _profile.GetStructureAssembly("_UNICODE_STRING");
             //Type t = dll.GetType("liveforensics.UNICODE_STRING");
@@ -81,10 +82,10 @@ namespace MemoryExplorer.ModelObjects
             //    _name = Encoding.Unicode.GetString(nameBuffer, 0, (int)_length);
             //}
         }
-        public UnicodeString(Profile profile, DataProviderBase dataProvider, ulong virtualAddress, ulong length, ulong maxLength=0) : base(profile, dataProvider, 0)
+        public UnicodeString(DataModel model, ulong virtualAddress, ulong length, ulong maxLength=0) : base(model, 0)
         {
             _is64 = (_profile.Architecture == "AMD64");
-            _addressSpace = dataProvider.ActiveAddressSpace;
+            _addressSpace = _model.ActiveAddressSpace;
             ulong pAddress = _addressSpace.vtop(virtualAddress);
             if (pAddress != 0)
             {

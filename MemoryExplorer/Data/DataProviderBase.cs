@@ -12,17 +12,14 @@ namespace MemoryExplorer.Data
 {
     public abstract class DataProviderBase
     {
-        protected DataModel _data;
+        protected DataModel _model;
         protected List<MemoryRange> _memoryRangeList = new List<MemoryRange>();
         private bool _isLive;
         private string _cacheFolder;
-        private AddressBase _activeAddressSpace;
-        private AddressBase _kernelAddressSpace;
-        private ulong _kernelBaseAddress = 0;
 
-        public DataProviderBase(DataModel data, string cacheFolder)
+        public DataProviderBase(DataModel model, string cacheFolder)
         {
-            _data = data;
+            _model = model;
             _cacheFolder = cacheFolder;
         }
         protected abstract byte[] ReadMemoryPage(ulong address);
@@ -47,36 +44,6 @@ namespace MemoryExplorer.Data
             get { return _cacheFolder; }
         }
 
-        public AddressBase ActiveAddressSpace
-        {
-            get { return _activeAddressSpace; }
-            set { _activeAddressSpace = value; }
-        }
-
-        public AddressBase KernelAddressSpace { get => _kernelAddressSpace; set => _kernelAddressSpace = value; }
-        public ulong KernelBaseAddress
-        {
-            get
-            {
-                if(_kernelBaseAddress == 0)
-                {
-                    try
-                    {
-                        string archiveFile = Path.Combine(CacheFolder, "1003.dat");
-                        FileInfo fi = new FileInfo(archiveFile);
-                        if (fi.Exists)
-                        {
-                            string[] items = File.ReadAllLines(archiveFile);
-                            _kernelBaseAddress = ulong.Parse(items[0]);
-                        }
-                    }
-                    catch { }                    
-                }
-                return _kernelBaseAddress;
-            }
-            set => _kernelBaseAddress = value;
-        }
-
         public byte[] ReadPhysicalMemory(ulong startAddress, uint byteCount)
         {
             uint pages = 1;
@@ -95,7 +62,7 @@ namespace MemoryExplorer.Data
         {
             byte[] buffer = new byte[byteCount];
             ulong startPage;
-            if(_activeAddressSpace.Is64)
+            if(_model.ActiveAddressSpace.Is64)
                 startPage = startAddress & 0xfffffffff000;
             else
                 startPage = startAddress & 0xfffff000;
@@ -107,7 +74,7 @@ namespace MemoryExplorer.Data
             byte[] bigBuffer = new byte[pageCount * 0x1000];
             for (int i = 0; i < pageCount; i++)
             {
-                ulong pAddr = _activeAddressSpace.vtop(startPage + (ulong)(i * 0x1000));
+                ulong pAddr = _model.ActiveAddressSpace.vtop(startPage + (ulong)(i * 0x1000));
                 if (pAddr == 0)
                     return null;
                 byte[] pageBuffer = ReadMemory(pAddr, 1);
@@ -117,6 +84,13 @@ namespace MemoryExplorer.Data
             }
             Array.Copy(bigBuffer, (int)(startAddress - startPage), buffer, 0, byteCount);
             return buffer;
+        }
+        public byte? ReadByte(ulong startAddress)
+        {
+            byte[] buffer = ReadMemoryBlock(startAddress, 1);
+            if (buffer == null)
+                return null;
+            return buffer[0];
         }
         public uint? ReadUInt32(ulong startAddress)
         {

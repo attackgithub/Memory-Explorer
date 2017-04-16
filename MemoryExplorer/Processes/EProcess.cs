@@ -1,4 +1,5 @@
-﻿using MemoryExplorer.Profiles;
+﻿using MemoryExplorer.Model;
+using MemoryExplorer.Profiles;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,17 +8,14 @@ using System.Threading.Tasks;
 
 namespace MemoryExplorer.Processes
 {
-    public class Eprocess
+    public class Eprocess : StructureBase
     {
         private dynamic _ep;
-        private Profile _profile;
-        private ulong _physicalAddress;
 
-        public Eprocess(ulong physicalAddress, Profile profile)
+        public Eprocess(DataModel model, ulong physicalAddress) : base(model, 0)
         {
-            _profile = profile;
             _physicalAddress = physicalAddress;
-            _ep = profile.GetStructure("_EPROCESS", physicalAddress);
+            _ep = _profile.GetStructure("_EPROCESS", physicalAddress);
         }
         public dynamic dynamicObject
         {

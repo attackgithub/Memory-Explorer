@@ -1,5 +1,6 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 using Newtonsoft.Json;
 using System;
@@ -22,21 +23,23 @@ namespace MemoryExplorer.ModelObjects
     {
         public ulong Index;
         public string Name;
+        public ulong TotalNumberOfObjects;
+        public ulong vAddress;
     }
-    public class ObjectTypes : StructureBase
+    public class MxObjectTypes : StructureBase
     {
         //List<ObjectTypeRecord> _records = new List<ObjectTypeRecord>();
         ObjectTypeMap _objectMap = null;
 
-        public ObjectTypes(DataProviderBase dataProvider, Profile profile) : base(profile, dataProvider, 0)
+        public MxObjectTypes(DataModel model) : base(model, 0, 0)
         {
             _is64 = (_profile.Architecture == "AMD64");
             _objectMap = new ObjectTypeMap();
             _objectMap.ObjectTypeRecords = new List<ObjectTypeRecord>();
 
             // first let's see if it already exists
-            FileInfo cachedFile = new FileInfo(_dataProvider.CacheFolder + "\\object_type_map.gz");
-            if (cachedFile.Exists && !dataProvider.IsLive)
+            FileInfo cachedFile = new FileInfo(_dataProvider.CacheFolder + "\\1005.dat");
+            if (cachedFile.Exists && !_dataProvider.IsLive)
             {
                 ObjectTypeMap otm = RetrieveObjectMap(cachedFile);
                 if (otm != null)
@@ -48,9 +51,9 @@ namespace MemoryExplorer.ModelObjects
 
             AddressBase kernelAS;
             if (_is64)
-                kernelAS = _dataProvider.KernelAddressSpace as AddressSpacex64;
+                kernelAS = _model.KernelAddressSpace as AddressSpacex64;
             else
-                kernelAS = _dataProvider.KernelAddressSpace as AddressSpacex86Pae;
+                kernelAS = _model.KernelAddressSpace as AddressSpacex86Pae;
             uint indexTableOffset = 0;
             try
             {
@@ -60,7 +63,7 @@ namespace MemoryExplorer.ModelObjects
             {            
                 indexTableOffset = (uint)_profile.GetConstant("_ObpObjectTypes");
             }
-            ulong startOffset = _dataProvider.KernelBaseAddress + indexTableOffset;
+            ulong startOffset = _model.KernelBaseAddress + indexTableOffset;
             ulong pAddr = kernelAS.vtop(startOffset, _dataProvider.IsLive);
             if (pAddr == 0)
                 return;
@@ -70,7 +73,7 @@ namespace MemoryExplorer.ModelObjects
                 ptr = ReadUInt64((int)(pAddr & 0xfff));
             else
                 ptr = ReadUInt32((int)(pAddr & 0xfff));
-            ObjectType ot = new ObjectType(_profile, _dataProvider, ptr);
+            ObjectType ot = new ObjectType(_model, ptr);
             try
             {
                 int count = (int)ot.TotalNumberOfObjects;
@@ -78,26 +81,28 @@ namespace MemoryExplorer.ModelObjects
                 {
                     if (_is64)
                     {
-                        startOffset = _dataProvider.KernelBaseAddress + indexTableOffset + (uint)(i * 8);
+                        startOffset = _model.KernelBaseAddress + indexTableOffset + (uint)(i * 8);
                         ptr = (BitConverter.ToUInt64(_dataProvider.ReadMemoryBlock(startOffset, 8), 0) & 0xffffffffffff);
                     }
                     else
                     {
-                        startOffset = _dataProvider.KernelBaseAddress + indexTableOffset + (uint)(i * 4);
+                        startOffset = _model.KernelBaseAddress + indexTableOffset + (uint)(i * 4);
                         ptr = (BitConverter.ToUInt32(_dataProvider.ReadMemoryBlock(startOffset, 4), 0));
                     }
                     if (ptr == 0)
                         break;
-                    ot = new ObjectType(_profile, _dataProvider, ptr);
+                    ot = new ObjectType(_model, ptr);
                     ObjectTypeRecord otr = new ObjectTypeRecord();
                     otr.Name = ot.Name;
                     otr.Index = ot.Index;
+                    otr.vAddress = ptr;
+                    otr.TotalNumberOfObjects = ot.TotalNumberOfObjects;
                     if (otr.Index == 0 || otr.Name == "")
                         continue;
                     _objectMap.ObjectTypeRecords.Add(otr);
                 }
-                if (!dataProvider.IsLive)
-                    PersistObjectMap(_objectMap, _dataProvider.CacheFolder + "\\object_type_map.gz");
+                if (!_dataProvider.IsLive)
+                    PersistObjectMap(_objectMap, _dataProvider.CacheFolder + "\\1005.dat");
             }
             catch (Exception ex)
             {
@@ -135,22 +140,16 @@ namespace MemoryExplorer.ModelObjects
     
     public class ObjectType : StructureBase
     {
-        private ulong _index;
-        private string _name;
-        private ulong _totalNumberOfObjects;
-        private ulong _totalNumberOfHandles;
-        private ulong _highWaterNumberOfHandles;
-        private ulong _highWaterNumberOfObjects;
         private dynamic _ot;
 
-        public ObjectType(Profile profile, DataProviderBase dataProvider, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
+        public ObjectType(DataModel model, ulong virtualAddress) : base(model, virtualAddress)
         {
             _is64 = (_profile.Architecture == "AMD64");
             int structureSize = (int)_profile.GetStructureSize("_OBJECT_TYPE");
             if (structureSize == -1)
                 throw new ArgumentException("Error - Profile didn't contain a definition for _OBJECT_TYPE");
             _buffer = _dataProvider.ReadMemoryBlock(virtualAddress, (uint)structureSize);
-            _ot = profile.GetStructure("_OBJECT_TYPE", _buffer, 0);
+            _ot = _profile.GetStructure("_OBJECT_TYPE", _buffer, 0);
         }
         public dynamic dynamicObject
         {
@@ -178,7 +177,7 @@ namespace MemoryExplorer.ModelObjects
                 try
                 {
                     var name = _ot.Name;
-                    UnicodeString us = new UnicodeString(_profile, _dataProvider, name.Buffer, name.Length, name.MaximumLength);
+                    UnicodeString us = new UnicodeString(_model, name.Buffer, name.Length, name.MaximumLength);
                     return us.Name;
                 }
                 catch (Exception)

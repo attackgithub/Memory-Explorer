@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 
 namespace MemoryExplorer.ModelObjects
@@ -6,12 +7,12 @@ namespace MemoryExplorer.ModelObjects
     public class DriverExtension : StructureBase
     {
         private string _serviceKeyName;
-        public DriverExtension(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public DriverExtension(DataModel model, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(model, virtualAddress)
         {            
             _physicalAddress = physicalAddress;
             Overlay("_DRIVER_EXTENSION");
             byte[] sknBuffer = Members.ServiceKeyName;
-            UnicodeString us = new UnicodeString(_profile, _dataProvider, sknBuffer);
+            UnicodeString us = new UnicodeString(_model, sknBuffer);
             _serviceKeyName = us.Name;
 
             //_is64 = (_profile.Architecture == "AMD64");

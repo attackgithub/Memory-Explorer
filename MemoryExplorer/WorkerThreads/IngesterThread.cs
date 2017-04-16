@@ -1,6 +1,8 @@
 ﻿using MemoryExplorer.Address;
+using MemoryExplorer.Data;
 using MemoryExplorer.Model;
 using MemoryExplorer.ModelObjects;
+using MemoryExplorer.Profiles;
 using MemoryExplorer.Worker;
 using PluginContracts;
 using System;
@@ -24,15 +26,21 @@ namespace MemoryExplorer.WorkerThreads
         private IIngester _plugin;
         private string _cacheFolder;
         private DataModel _model;
+        private DataProviderBase _dataProvider = null;
+        private Profile _profile = null;
+
 
         public IngesterThread(DataModel model)
         {
+            _model = model;
+            _profile = model.ActiveProfile;
+            _dataProvider = model.DataProvider;
             _backgroundWorker.DoWork += new DoWorkEventHandler(IngestingThread_DoWork);
             _backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(IngestingThread_RunWorkerCompleted);
             _backgroundWorker.WorkerSupportsCancellation = true;
 
             // Start the asynchronous operation.
-            _backgroundWorker.RunWorkerAsync(model);
+            _backgroundWorker.RunWorkerAsync();
         }
         public void Stop()
         {
@@ -44,7 +52,6 @@ namespace MemoryExplorer.WorkerThreads
         {
             // Get the BackgroundWorker that raised this event.
             BackgroundWorker worker = sender as BackgroundWorker;
-            _model = (DataModel)e.Argument;
             _inbound = _model.IngesterOut; // the models out is my in.
             _outbound = _model.IngesterIn; // the models in is my out!
 
@@ -89,11 +96,11 @@ namespace MemoryExplorer.WorkerThreads
         {
             try
             {
-                string archiveFile = Path.Combine(_model.DataProvider.CacheFolder, "object_type_map.gz");
+                string archiveFile = Path.Combine(_model.DataProvider.CacheFolder, "1005.dat");
                 FileInfo fi = new FileInfo(archiveFile);
                 if (fi.Exists)
                 {
-                    ObjectTypes objectTypes = new ObjectTypes(_model.DataProvider, _model.ActiveProfile);
+                    MxObjectTypes objectTypes = new MxObjectTypes(_model);
                     if (objectTypes.Records != null && objectTypes.Records.Count > 0)
                     {
                         foreach (var record in objectTypes.Records)
@@ -115,7 +122,7 @@ namespace MemoryExplorer.WorkerThreads
         {
             lock (_model.AccessLock)
             {
-                _model.ActiveProfile.ObjectTypeList.Add(record);
+                _model.ObjectTypeList.Add(record);
             }
 
         }
@@ -137,7 +144,7 @@ namespace MemoryExplorer.WorkerThreads
                         _model.KernelAddressSpace = new AddressSpacex64(_model.DataProvider, "idle", kernelDtb, true);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // message box warning
                 _model.KernelAddressSpace = null;
@@ -150,11 +157,16 @@ namespace MemoryExplorer.WorkerThreads
             try
             {
                 string archiveFile = Path.Combine(_cacheFolder, "1004.dat");
+                FileInfo fi = new FileInfo(archiveFile);
+                if (fi.Exists)
+                {
+                    string[] items = File.ReadAllLines(archiveFile);
+                    _model.OsVersion = double.Parse(items[0]);
+                }
             }
             catch (Exception)
             {
-
-                throw;
+                // message box warning
             }
         }
 

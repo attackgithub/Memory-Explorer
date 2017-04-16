@@ -22,13 +22,13 @@ namespace MemoryExplorer.Data
         {
             _imageFilename = "";
             ImageLength = 0;
-            if (_data.MemoryImageFilename == "")
+            if (_model.MemoryImageFilename == "")
                 throw new ArgumentException("Memory Image Name Isn't Set");
             IsLive = false;
             // check to see if we are looking at a new image file
-            if (_data.MemoryImageFilename != _imageFilename)
+            if (_model.MemoryImageFilename != _imageFilename)
             {
-                _imageFilename = _data.MemoryImageFilename;
+                _imageFilename = _model.MemoryImageFilename;
                 FileInfo fiCheck = new FileInfo(_imageFilename);
                 if (!fiCheck.Exists)
                 {
@@ -107,7 +107,7 @@ namespace MemoryExplorer.Data
                 }
                 return buffer;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return null;
             }

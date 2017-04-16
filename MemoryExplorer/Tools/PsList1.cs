@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Profiles;
 using System;
@@ -25,10 +26,10 @@ namespace MemoryExplorer.Tools
         /// Profile must contain a valid KernelAddressSpace
         /// </prerequisites>
         /// <param name="profile"></param>
-        public PsList1(Profile profile, DataProviderBase dataProvider) : base(profile, dataProvider)
+        public PsList1(DataModel model) : base(model)
         {
             // check pre-reqs
-            if (_profile == null || _dataProvider.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
+            if (_profile == null || _model.KernelBaseAddress == 0 || model.KernelAddressSpace == null)
                 throw new ArgumentException("Missing Prerequisites");
         }
         public HashSet<ulong> Run()
@@ -44,9 +45,9 @@ namespace MemoryExplorer.Tools
                 
             HashSet<ulong> results = new HashSet<ulong>();
             uint processHeadOffset = (uint)_profile.GetConstant("PsActiveProcessHead");
-            ulong vAddr = _dataProvider.KernelBaseAddress + processHeadOffset;
-            _dataProvider.ActiveAddressSpace = _profile.KernelAddressSpace;
-            LIST_ENTRY le = new LIST_ENTRY(_dataProvider, vAddr);
+            ulong vAddr = _model.KernelBaseAddress + processHeadOffset;
+            _model.ActiveAddressSpace = _model.KernelAddressSpace;
+            LIST_ENTRY le = new LIST_ENTRY(_model, vAddr);
             ////ulong apl = (ulong)_profile.GetOffset("_EPROCESS", "ActiveProcessLinks");
             List<LIST_ENTRY> lists = FindAllLists(_dataProvider, le);
             foreach (LIST_ENTRY entry in lists)

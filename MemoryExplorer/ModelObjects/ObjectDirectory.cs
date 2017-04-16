@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 
 namespace MemoryExplorer.ModelObjects
@@ -6,12 +7,12 @@ namespace MemoryExplorer.ModelObjects
     public class ObjectDirectory : StructureBase
     {
         private dynamic _od;
-        public ObjectDirectory(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public ObjectDirectory(DataModel model, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(model, virtualAddress)
         {
             _physicalAddress = physicalAddress;
             if(_physicalAddress == 0 && virtualAddress != 0)
-                _physicalAddress = dataProvider.ActiveAddressSpace.vtop(virtualAddress);
-            _od = profile.GetStructure("_OBJECT_DIRECTORY", _physicalAddress);
+                _physicalAddress = _model.ActiveAddressSpace.vtop(virtualAddress);
+            _od = _profile.GetStructure("_OBJECT_DIRECTORY", _physicalAddress);
         }
         public dynamic dynamicObject
         {

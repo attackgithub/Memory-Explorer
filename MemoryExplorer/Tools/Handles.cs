@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Profiles;
 using Newtonsoft.Json;
@@ -24,10 +25,10 @@ namespace MemoryExplorer.Tools
         private ulong _handleTableAddress;
         private HandleEntryMap _handleEntryMap;
 
-        public Handles(Profile profile, DataProviderBase dataProvider, ulong pid, ulong handleTableAddress) : base(profile, dataProvider)
+        public Handles(DataModel model, ulong pid, ulong handleTableAddress) : base(model)
         {
             // check pre-reqs
-            if (_profile == null || _dataProvider.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
+            if (_profile == null || _model.KernelBaseAddress == 0 || model.KernelAddressSpace == null)
                 throw new ArgumentException("Missing Prerequisites");
             _pid = pid;
             _handleTableAddress = handleTableAddress;
@@ -52,11 +53,11 @@ namespace MemoryExplorer.Tools
             try
             {
                 Debug.WriteLine("Handle Table Address: 0x" + _handleTableAddress.ToString("X"));
-                HandleTable ht = new HandleTable(_profile, _dataProvider, _handleTableAddress);
+                HandleTable ht = new HandleTable(_model, _handleTableAddress);
                 List<HandleTableEntry> records = EnumerateHandles(ht.TableStartAddress, ht.Level);
                 foreach (HandleTableEntry e in records)
                 {
-                    ulong pa = _dataProvider.ActiveAddressSpace.vtop(e.ObjectPointer);
+                    ulong pa = _model.ActiveAddressSpace.vtop(e.ObjectPointer);
                     if (pa == 0)
                         continue;
                     results.Add(e);

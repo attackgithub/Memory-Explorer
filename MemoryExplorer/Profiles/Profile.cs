@@ -23,13 +23,13 @@ namespace MemoryExplorer.Profiles
         private string _architecture = null;
         private ulong _poolAlign = 0;
         private byte[] _dummyBuffer = null;
-        private AddressBase _kernelAddressSpace;
-        private List<ObjectTypeRecord> _objectTypeList = new List<ObjectTypeRecord>();
+        //private AddressBase _kernelAddressSpace;
+        //private List<ObjectTypeRecord> _objectTypeList = new List<ObjectTypeRecord>();
 
         public bool IsActive { get { return _active; } }
         public string Architecture { get { return _architecture; } }
         public ulong PoolAlign { get { return _poolAlign; } }
-        public AddressBase KernelAddressSpace { get => _kernelAddressSpace; set => _kernelAddressSpace = value; }
+        //public AddressBase KernelAddressSpace { get => _kernelAddressSpace; set => _kernelAddressSpace = value; }
 
         public Profile(string dllLocation, DataProviderBase provider, DataModel model)
         {
@@ -145,7 +145,7 @@ namespace MemoryExplorer.Profiles
             }
         }
 
-        public List<ObjectTypeRecord> ObjectTypeList { get => _objectTypeList; set => _objectTypeList = value; }
+        //public List<ObjectTypeRecord> ObjectTypeList { get => _objectTypeList; set => _objectTypeList = value; }
 
 
 
@@ -294,6 +294,18 @@ namespace MemoryExplorer.Profiles
             {
                 throw new System.ArgumentException("Structure or Member Not Present");
             }                        
+        }
+        public string GetObjectName(ulong type)
+        {
+            lock (AccessLock)
+            {
+                foreach (ObjectTypeRecord item in _model.ObjectTypeList)
+                {
+                    if (item.Index == type)
+                        return item.Name;
+                }
+            }
+            return null;
         }
     }
 }

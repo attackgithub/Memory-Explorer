@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 
 namespace MemoryExplorer.ModelObjects
@@ -7,7 +8,7 @@ namespace MemoryExplorer.ModelObjects
     {
         private MmVadShort _shorty;
         private string _name = "";
-        public MmVad(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress, physicalAddress)
+        public MmVad(DataModel model, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(model, virtualAddress, physicalAddress)
         {
             //_physicalAddress = physicalAddress;
             //Overlay("_MMVAD");

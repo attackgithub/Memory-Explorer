@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Processes;
 using MemoryExplorer.Profiles;
@@ -26,12 +27,12 @@ namespace MemoryExplorer.Tools
         /// Project must contain a valid kernelAs - kernel address space
         /// Project must contain the image file MD5 hash (fileHash)
         /// </prerequisites>
-        List<ProcessInfo> _processList;
-        public PsList2(Profile profile, DataProviderBase dataProvider, List<ProcessInfo> processList=null) : base(profile, dataProvider)
+        List<ProcessInfo> _processList;        
+        public PsList2(DataModel model, List<ProcessInfo> processList=null) : base(model)
         {
             _processList = processList;
             // check pre-reqs
-            if (_profile == null || _dataProvider.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
+            if (_profile == null || _model.KernelBaseAddress == 0 || model.KernelAddressSpace == null)
                 throw new ArgumentException("Missing Prerequisites");
         }
         public HashSet<ulong> Run()
@@ -55,13 +56,13 @@ namespace MemoryExplorer.Tools
                         if (info.ProcessName == "csrss.exe")
                         {
                             ulong handleTableAddress = info.ObjectTableAddress;
-                            HandleTable ht = new HandleTable(_profile, _dataProvider, handleTableAddress);
+                            HandleTable ht = new HandleTable(_model, handleTableAddress);
                             List<HandleTableEntry> records = EnumerateHandles(ht.TableStartAddress, ht.Level);
                             foreach (HandleTableEntry e in records)
                             {
                                 try
                                 {
-                                    ObjectHeader header = new ObjectHeader(_profile, _dataProvider, e.ObjectPointer);
+                                    ObjectHeader header = new ObjectHeader(_model, e.ObjectPointer);
                                     string objectName = GetObjectName(e.TypeInfo);
                                     if (objectName == "Process")
                                         results.Add(e.ObjectPointer + (ulong)header.Size);
@@ -73,7 +74,7 @@ namespace MemoryExplorer.Tools
                             }
                         }
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         continue;
                     }                    
@@ -83,9 +84,9 @@ namespace MemoryExplorer.Tools
             }
             // either we didn't have a process list, or it didn't contain any CSRSS processes
             uint processHeadOffset = (uint)_profile.GetConstant("PsActiveProcessHead");
-            ulong vAddr = _dataProvider.KernelBaseAddress + processHeadOffset;
-            _dataProvider.ActiveAddressSpace = _profile.KernelAddressSpace;
-            LIST_ENTRY le = new LIST_ENTRY(_dataProvider, vAddr);
+            ulong vAddr = _model.KernelBaseAddress + processHeadOffset;
+            _model.ActiveAddressSpace = _model.KernelAddressSpace;
+            LIST_ENTRY le = new LIST_ENTRY(_model, vAddr);
             //ulong apl = (ulong)_profile.GetOffset("_EPROCESS", "ActiveProcessLinks");
             //List<LIST_ENTRY> lists = FindAllLists(_dataProvider, le);
             //foreach (LIST_ENTRY entry in lists)

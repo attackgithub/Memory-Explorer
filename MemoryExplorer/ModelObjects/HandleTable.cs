@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ namespace MemoryExplorer.ModelObjects
         private const ulong LEVEL_MASK = 7;
 
 
-        public HandleTable(Profile profile, DataProviderBase dataProvider, ulong virtualAddress) : base(profile, dataProvider, virtualAddress)
+        public HandleTable(DataModel model, ulong virtualAddress) : base(model, virtualAddress)
         {
             Overlay("_HANDLE_TABLE");
             _tableCode = Members.TableCode & 0xffffffffffff;

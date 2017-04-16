@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 using System;
 
@@ -12,7 +13,7 @@ namespace MemoryExplorer.ModelObjects
         private ulong _bodySize;
         private string _tag;
 
-        public RtlBalancedNode(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public RtlBalancedNode(DataModel model, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(model, virtualAddress)
         {
             _physicalAddress = physicalAddress;
             Overlay("_RTL_BALANCED_NODE");
@@ -31,7 +32,7 @@ namespace MemoryExplorer.ModelObjects
                 _right = BitConverter.ToUInt64(children, 4);
             }
             ulong poolHeaderSize = (ulong)_profile.GetStructureSize("_POOL_HEADER");
-            PoolHeader ph = new PoolHeader(_profile, _dataProvider, virtualAddress: _virtualAddress - poolHeaderSize);
+            PoolHeader ph = new PoolHeader(_model, virtualAddress: _virtualAddress - poolHeaderSize);
             _tag = ph.Tag;
             _bodySize = (ph.BlockSize * _profile.PoolAlign) - (ulong)ph.Size;
         }

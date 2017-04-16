@@ -1,10 +1,12 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Profiles;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -24,11 +26,14 @@ namespace MemoryExplorer.Tools
         protected Profile _profile = null;
         protected bool _isx64;
         protected DataProviderBase _dataProvider = null;
+        protected DataModel _model = null;
+        protected MxObjectTypes _objectTypes = null;
 
-        public ToolBase(Profile profile, DataProviderBase dataProvider)
+        public ToolBase(DataModel model)
         {
-            _profile = profile;
-            _dataProvider = dataProvider;
+            _model = model;
+            _profile = model.ActiveProfile;
+            _dataProvider = model.DataProvider;
             _isx64 = (_profile.Architecture == "AMD64");
         }
         protected List<LIST_ENTRY> FindAllLists(DataProviderBase dataProvider, LIST_ENTRY source)
@@ -36,7 +41,7 @@ namespace MemoryExplorer.Tools
             List<LIST_ENTRY> results = new List<LIST_ENTRY>();
             List<ulong> seen = new List<ulong>();
             List<LIST_ENTRY> stack = new List<LIST_ENTRY>();
-            AddressBase addressSpace = dataProvider.ActiveAddressSpace;
+            AddressBase addressSpace = _model.ActiveAddressSpace;
             stack.Add(source);
             while (stack.Count > 0)
             {
@@ -50,13 +55,13 @@ namespace MemoryExplorer.Tools
                     if (Blink != 0)
                     {
                         ulong refr = addressSpace.vtop(Blink);
-                        stack.Add(new LIST_ENTRY(dataProvider, item.Blink));
+                        stack.Add(new LIST_ENTRY(_model, item.Blink));
                     }
                     ulong Flink = item.Flink;
                     if (Flink != 0)
                     {
                         ulong refr = addressSpace.vtop(Flink);
-                        stack.Add(new LIST_ENTRY(dataProvider, item.Flink));
+                        stack.Add(new LIST_ENTRY(_model, item.Flink));
                     }
                 }
             }
@@ -224,7 +229,7 @@ namespace MemoryExplorer.Tools
                 for (int i = 0; i < count; i++)
                 {
                     Array.Copy(buffer, (4096 / count) * i, transfer, 0, 4096 / count);
-                    HandleTableEntry hte = new HandleTableEntry(_profile, transfer, handleAddress);
+                    HandleTableEntry hte = new HandleTableEntry(_model, transfer, handleAddress);
                     if (hte.IsValid)
                         results.Add(hte);
                     handleAddress++;
@@ -246,19 +251,70 @@ namespace MemoryExplorer.Tools
             }
             return results;
         }
-        protected string GetObjectName(ulong index)
+        protected string GetObjectName(ulong type, ulong vAddr=0, byte cookie=0)
+        {
+            if (_objectTypes == null)
+            {
+                string archiveFile = Path.Combine(_model.DataProvider.CacheFolder, "1005.dat");
+                FileInfo fi = new FileInfo(archiveFile);
+                if (fi.Exists)
+                {
+                    _objectTypes = new MxObjectTypes(_model);
+                }
+                foreach (var record in _objectTypes.Records)
+                {
+                    Debug.WriteLine("Address: 0x" + record.vAddress.ToString("X8") + "\tIndex: " + record.Index + "\tCount: " + record.TotalNumberOfObjects + "\tObject: " + record.Name);
+                }
+            }
+            try
+            {
+                // if it's windows 10, you'll need to de-obfuscate
+                // return ((vaddr >> 8) ^ cookie ^ int(self.m("TypeIndex"))) & 0xFF
+                double version = _model.OsVersion;
+                if (version == 0)
+                {
+                    try
+                    {
+                        string v = GetArchiveItem("1004.dat", 0);
+                        if (v != "")
+                            version = double.Parse(v);
+                    }
+                    catch { }
+                    
+                }
+                ulong realValue = type;
+                if (version > 9.0)
+                    realValue = (ulong)(((int)((vAddr >> 8) ^ type ^ cookie)) & 0xff);
+                foreach (ObjectTypeRecord item in _objectTypes.Records)
+                {
+                    if (item.Index == realValue)
+                        return item.Name;
+                }
+                return "";
+            }
+            catch (Exception)
+            {
+                return "";
+            }
+
+        }
+        protected string GetArchiveItem(string archiveFile, int index)
         {
             try
             {
-                //List<ObjectTypeRecord> lookup = _profile.ObjectTypeList;
-                //foreach (ObjectTypeRecord t in lookup)
-                //{
-                //    if (t.Index == index)
-                //        return t.Name;
-                //}
-                return "--";
+                string file = Path.Combine(_model.DataProvider.CacheFolder, archiveFile);
+                FileInfo fi = new FileInfo(file);
+                if (fi.Exists)
+                {
+                    string[] items = File.ReadAllLines(file);
+                    return items[index];
+                }
+                return "";
             }
-            catch { return "--"; }
+            catch (Exception)
+            {
+                return "";
+            }
         }
     }
 }

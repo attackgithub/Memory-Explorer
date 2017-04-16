@@ -1,5 +1,6 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 using System;
 using System.Collections.Generic;
@@ -19,16 +20,16 @@ namespace MemoryExplorer.ModelObjects
         private ulong _driverStart;
 
 
-        public DriverObject(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
+        public DriverObject(DataModel model, ulong virtualAddress=0, ulong physicalAddress=0) : base(model, virtualAddress)
         {            
             _physicalAddress = physicalAddress;
             Initialise();
-            ObjectHeader oh = new ObjectHeader(_profile);
+            ObjectHeader oh = new ObjectHeader(_model);
             long headerSize = oh.Size;
             if (headerSize != -1)
-                _header = new ObjectHeader(_profile, _dataProvider, _virtualAddress - (uint)headerSize);
+                _header = new ObjectHeader(_model, _virtualAddress - (uint)headerSize);
         }
-        public DriverObject(Profile profile, DataProviderBase dataProvider, ObjectHeader header, ulong virtualAddress=0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public DriverObject(DataModel model, ObjectHeader header, ulong virtualAddress=0, ulong physicalAddress = 0) : base(model, virtualAddress)
         {
             _physicalAddress = physicalAddress;
             _header = header;
@@ -39,11 +40,11 @@ namespace MemoryExplorer.ModelObjects
         {
             Overlay("_DRIVER_OBJECT");
             byte[] dnBuffer = Members.DriverName;
-            UnicodeString us = new UnicodeString(_profile, _dataProvider, dnBuffer);
+            UnicodeString us = new UnicodeString(_model, dnBuffer);
             _driverName = us.Name;
             _driverExtensionVirtualAddress = Members.DriverExtension & 0xffffffffffff;
             if(_driverExtensionVirtualAddress != 0)
-                _driverExtension = new DriverExtension(_profile, _dataProvider, virtualAddress: _driverExtensionVirtualAddress);
+                _driverExtension = new DriverExtension(_model, virtualAddress: _driverExtensionVirtualAddress);
             _driverSize = Members.DriverSize;
             _driverStart = Members.DriverStart & 0xffffffffffff;
 
@@ -94,7 +95,7 @@ namespace MemoryExplorer.ModelObjects
         {
             get
             {
-                return _dataProvider.ActiveAddressSpace.vtop(_driverStart);
+                return _model.ActiveAddressSpace.vtop(_driverStart);
             }
         }
         public ulong DriverExtensionVirtualAddress

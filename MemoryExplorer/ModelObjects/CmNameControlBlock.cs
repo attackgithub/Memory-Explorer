@@ -1,5 +1,6 @@
 ﻿using MemoryExplorer.Address;
 using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 using System;
 using System.Text;
@@ -9,7 +10,7 @@ namespace MemoryExplorer.ModelObjects
     public class CmNameControlBlock : StructureBase
     {
         string _name = "";
-        public CmNameControlBlock(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public CmNameControlBlock(DataModel model, ulong virtualAddress = 0) : base(model, virtualAddress)
         {
             Overlay("_CM_NAME_CONTROL_BLOCK");
             int nameLength = Members.NameLength;

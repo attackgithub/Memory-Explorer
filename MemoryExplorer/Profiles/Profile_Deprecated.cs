@@ -35,7 +35,7 @@ namespace MemoryExplorer.Profiles
         private string _cacheLocation = "";
         private DataModel _model;
 
-        public List<ObjectTypeRecord> ObjectTypeList
+        public List<ObjectTypeRecord> ObjectTypeList2
         {
             get { return _objectTypeList; }
             set { _objectTypeList = value; }
@@ -701,7 +701,7 @@ namespace MemoryExplorer.Profiles
                     return dict;
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return null;
             }

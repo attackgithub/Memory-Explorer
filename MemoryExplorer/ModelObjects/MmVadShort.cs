@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 using System;
 using System.Runtime.InteropServices;
@@ -9,13 +10,13 @@ namespace MemoryExplorer.ModelObjects
     {
         private uint _flags;
         private uint _flags1;
-        public MmVadShort(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress, physicalAddress)
+        public MmVadShort(DataModel model, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(model, virtualAddress, physicalAddress)
         {
             Overlay("_MMVAD_SHORT");
             _flags = Members.u;
             _flags1 = Members.u1;
         }
-        public MmVadShort(Profile profile, DataProviderBase dataProvider, byte[] buffer) : base(profile, dataProvider, 0, 0)
+        public MmVadShort(DataModel model, byte[] buffer) : base(model, 0, 0)
         {
             //var dll = _profile.GetStructureAssembly("_MMVAD_SHORT");
             //Type t = dll.GetType("liveforensics.MMVAD_SHORT");

@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 using System;
 using System.Collections.Generic;
@@ -11,12 +12,12 @@ namespace MemoryExplorer.ModelObjects
 {
     public class Subsection :StructureBase
     {
-        public Subsection(Profile profile, DataProviderBase dataProvider, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(profile, dataProvider, virtualAddress)
+        public Subsection(DataModel model, ulong virtualAddress = 0, ulong physicalAddress = 0) : base(model, virtualAddress)
         {
             _physicalAddress = physicalAddress;
             Overlay("_SUBSECTION");
         }
-        public Subsection(Profile profile, DataProviderBase dataProvider, byte[] buffer) : base(profile, dataProvider, 0)
+        public Subsection(DataModel model, byte[] buffer) : base(model, 0)
         {
             //var dll = _profile.GetStructureAssembly("_SUBSECTION");
             //Type t = dll.GetType("liveforensics.SUBSECTION");

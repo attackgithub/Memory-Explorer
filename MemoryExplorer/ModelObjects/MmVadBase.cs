@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 
 namespace MemoryExplorer.ModelObjects
@@ -51,7 +52,7 @@ namespace MemoryExplorer.ModelObjects
     }
     public class MmVadBase : StructureBase
     {
-        public MmVadBase(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
+        public MmVadBase(DataModel model, ulong virtualAddress=0, ulong physicalAddress=0) : base(model, virtualAddress)
         {
 
         }

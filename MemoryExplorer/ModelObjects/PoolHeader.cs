@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.Profiles;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ namespace MemoryExplorer.ModelObjects
 {
     public class PoolHeader : StructureBase
     {
-        public PoolHeader(Profile profile, DataProviderBase dataProvider, ulong virtualAddress=0, ulong physicalAddress=0) : base(profile, dataProvider, virtualAddress)
+        public PoolHeader(DataModel model, ulong virtualAddress=0, ulong physicalAddress=0) : base(model, virtualAddress)
         {
             _physicalAddress = physicalAddress;
             Overlay("_POOL_HEADER");

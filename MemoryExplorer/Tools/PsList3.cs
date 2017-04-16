@@ -1,4 +1,5 @@
 ﻿using MemoryExplorer.Data;
+using MemoryExplorer.Model;
 using MemoryExplorer.ModelObjects;
 using MemoryExplorer.Processes;
 using MemoryExplorer.Profiles;
@@ -29,11 +30,11 @@ namespace MemoryExplorer.Tools
         /// <param name="dataProvider"></param>
         /// <param name="processList"></param>
         List<ProcessInfo> _processList;
-        public PsList3(Profile profile, DataProviderBase dataProvider, List<ProcessInfo> processList = null) : base(profile, dataProvider)
+        public PsList3(DataModel model, List<ProcessInfo> processList = null) : base(model)
         {
             _processList = processList;
             // check pre-reqs
-            if (_profile == null || _dataProvider.KernelBaseAddress == 0 || _profile.KernelAddressSpace == null)
+            if (_profile == null || _model.KernelBaseAddress == 0 || model.KernelAddressSpace == null)
                 throw new ArgumentException("Missing Prerequisites");
         }
         public HashSet<ulong> Run()
@@ -48,7 +49,7 @@ namespace MemoryExplorer.Tools
             }
             HashSet<ulong> results = new HashSet<ulong>();
             uint tableOffset = (uint)_profile.GetConstant("PspCidTable");
-            ulong vAddr = _dataProvider.KernelBaseAddress + tableOffset;
+            ulong vAddr = _model.KernelBaseAddress + tableOffset;
             ulong tableAddress = 0;
             if (_isx64)
             {
@@ -64,7 +65,7 @@ namespace MemoryExplorer.Tools
                     return null;
                 tableAddress = (ulong)v;
             }
-            HandleTable ht = new HandleTable(_profile, _dataProvider, tableAddress);
+            HandleTable ht = new HandleTable(_model, tableAddress);
             List<HandleTableEntry> records = EnumerateHandles(ht.TableStartAddress, ht.Level);
             //ulong bodyOffset = (ulong)_profile.GetOffset("_OBJECT_HEADER", "Body");
             //foreach (HandleTableEntry e in records)
